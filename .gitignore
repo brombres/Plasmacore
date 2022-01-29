@@ -7,4 +7,5 @@ BuildLocal.rogue
 *.o
 .DS_Store
 *~
-.xcuserdata
+xcuserdata
+
