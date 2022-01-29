@@ -13,6 +13,8 @@
 		30C6726B27A5110700B21D55 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726A27A5110700B21D55 /* Shaders.metal */; };
 		30C6726E27A5110900B21D55 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726D27A5110900B21D55 /* Assets.xcassets */; };
 		30C6727127A5110900B21D55 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726F27A5110900B21D55 /* Main.storyboard */; };
+		30C6727E27A5193700B21D55 /* RogueInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30C6727D27A5193700B21D55 /* RogueInterface.mm */; };
+		30C6728227A5196800B21D55 /* RogueProgram.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30C6728027A5196800B21D55 /* RogueProgram.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +27,11 @@
 		30C6726D27A5110900B21D55 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		30C6727027A5110900B21D55 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		30C6727227A5110900B21D55 /* Project_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Project_macOS.entitlements; sourceTree = "<group>"; };
+		30C6727D27A5193700B21D55 /* RogueInterface.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueInterface.mm; path = ../../../Libraries/Framework/Swift/RogueInterface.mm; sourceTree = "<group>"; };
+		30C6727F27A5194A00B21D55 /* RogueInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueInterface.h; path = ../../../Libraries/Framework/Swift/RogueInterface.h; sourceTree = "<group>"; };
+		30C6728027A5196800B21D55 /* RogueProgram.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueProgram.mm; path = ../../../Build/macOS/Source/RogueProgram.mm; sourceTree = "<group>"; };
+		30C6728127A5196800B21D55 /* RogueProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueProgram.h; path = ../../../Build/macOS/Source/RogueProgram.h; sourceTree = "<group>"; };
+		30C6728327A51DA400B21D55 /* BridgingHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BridgingHeader.h; path = ../../../Libraries/Framework/Swift/BridgingHeader.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +64,11 @@
 		30C6726327A5110700B21D55 /* Project-macOS */ = {
 			isa = PBXGroup;
 			children = (
+				30C6728327A51DA400B21D55 /* BridgingHeader.h */,
+				30C6728127A5196800B21D55 /* RogueProgram.h */,
+				30C6728027A5196800B21D55 /* RogueProgram.mm */,
+				30C6727F27A5194A00B21D55 /* RogueInterface.h */,
+				30C6727D27A5193700B21D55 /* RogueInterface.mm */,
 				30C6726427A5110700B21D55 /* AppDelegate.swift */,
 				30C6726627A5110700B21D55 /* GameViewController.swift */,
 				30C6726827A5110700B21D55 /* Renderer.swift */,
@@ -140,7 +152,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				30C6726B27A5110700B21D55 /* Shaders.metal in Sources */,
+				30C6727E27A5193700B21D55 /* RogueInterface.mm in Sources */,
 				30C6726727A5110700B21D55 /* GameViewController.swift in Sources */,
+				30C6728227A5196800B21D55 /* RogueProgram.mm in Sources */,
 				30C6726927A5110700B21D55 /* Renderer.swift in Sources */,
 				30C6726527A5110700B21D55 /* AppDelegate.swift in Sources */,
 			);
@@ -296,7 +310,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.plasmacore.Project-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Framework/Swift/BridgingHeader.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -322,7 +336,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.plasmacore.Project-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Framework/Swift/BridgingHeader.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
