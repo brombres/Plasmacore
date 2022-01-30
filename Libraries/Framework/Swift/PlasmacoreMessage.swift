@@ -2,56 +2,27 @@
   import Cocoa
 #endif
 
-// High-low byte order for Int32, Int64, and Real64
-//
-// Message Queue
-//   while (has_another)
-//     message_size : Int32              # number of bytes that follow not including this
-//     message      : Byte[message_size]
-//   endWhile
+// High-low byte order for all multi-byte values.
 //
 // Message
-//   type_name_count : Int32                 # 0 means a reply
-//   type_name_utf8  : UTF8[type_name_count]
-//   message_id      : Int32                 # serial number (always present, only needed with RSVP replies)
 //   timestamp       : Real64
-//   while (position < message_size)
-//     arg_name_count : Int32
-//     arg_name       : UTF8[arg_name_count]
-//     arg_data_type  : Byte
-//     arg_data_size  : Int32
-//     arg_data       : Byte[arg_data_size]
-//   endWhile
-//
-// Data Types
-//   DATA_TYPE_REAL64  = 1   # value:Int64 (Real64.integer_bits stored)
-//   DATA_TYPE_INT64   = 2   # high:Int32, low:Int32
-//   DATA_TYPE_INT32   = 3   # value:Int32
-//   DATA_TYPE_BYTE    = 4   # Byte[arg_data_size]
+//   message_id      : Int32X                  # serial number (always present, only needed when reply expected)
+//   type_name_count : Int32X                  # 0 indicates a reply
+//   type_name       : Int32X[type_name_count]
+//   arbitrary_data  : Byte[...]
 
 class PlasmacoreMessage
 {
-  struct DataType
-  {
-    static let REAL64  = 1
-    static let INT64   = 2
-    static let INT32   = 3
-    static let BYTE    = 4
-  }
-
   static var next_message_id = 1
 
-  var type       : String
-  var message_id : Int
   var timestamp  : Double
+  var message_id = 0
 
-  var data          = [UInt8]()
-  var string_buffer = [Character]()
-  var entries  = [String:Int]()
-  var position = 0
+  var data       = [UInt8]()
+  var entries    = [String:Int]()
+  var position   = 0
 
   var _reply:PlasmacoreMessage? = nil
-  var _block_transmission = false
 
   convenience init( type:String )
   {
@@ -62,21 +33,18 @@ class PlasmacoreMessage
   convenience init( data:[UInt8] )
   {
     self.init()
-    self.data = data
-    type = readString()
-    message_id = readInt32()
-    timestamp = readReal64()
-    while (indexAnother()) {}
+    self.data  = data
+    timestamp  = readReal64()
+    message_id = readInt32X()
   }
 
   convenience init( type:String, message_id:Int )
   {
     self.init()
-    self.type = type
     self.message_id = message_id
-    writeString( type )
-    writeInt32( message_id )
     writeReal64( timestamp )
+    writeInt32X( message_id )
+    writeString( type )
   }
 
   convenience init( reply_to_message_id:Int )
@@ -86,8 +54,6 @@ class PlasmacoreMessage
 
   init()
   {
-    type = "Unspecified"
-    message_id = 0
     timestamp = PlasmacoreMessage.currentTime()
   }
 
@@ -95,186 +61,16 @@ class PlasmacoreMessage
   {
     if (_reply == nil)
     {
-      _reply = PlasmacoreMessage( type:"", message_id:message_id )
-      _reply!._block_transmission = true
+      _reply = PlasmacoreMessage( reply_to_message_id:message_id )
     }
     return _reply!
   }
 
-  func getBytes( name:String )->[UInt8]
-  {
-    if let offset = entries[ name ]
-    {
-      position = offset
-      switch (readByte())
-      {
-        case DataType.BYTE:
-          return readBytes()
-        default:
-          break
-      }
-    }
-    return [UInt8]()
-  }
-
-  func getDictionary( name:String, default_value:String="" )->[String:AnyObject]?
-  {
-    let jsonString = getString(name: name, default_value: default_value)
-    if let data = jsonString.data(using: String.Encoding.utf8) {
-        do {
-            return try JSONSerialization.jsonObject(with: data, options: []) as? [String:AnyObject]
-        } catch let error as NSError {
-            print(error)
-        }
-    }
-    return nil
-
-  }
-
-  func getInt32( name:String, default_value:Int=0 )->Int
-  {
-    if let offset = entries[ name ]
-    {
-      position = offset
-      let arg_type = readByte()
-      let arg_size = readInt32()
-      switch (arg_type)
-      {
-        case DataType.REAL64:
-          return Int(readReal64())
-
-        case DataType.INT64:
-          return Int(readInt64())
-
-        case DataType.INT32:
-          return readInt32()
-
-        case DataType.BYTE:
-          if (arg_size == 0) { return 0 }
-          return (readByte())
-
-        default:
-          return default_value
-      }
-    }
-    return default_value
-
-  }
-
-  func getInt64( name:String, default_value:Int64=0 )->Int64
-  {
-    if let offset = entries[ name ]
-    {
-      position = offset
-      let arg_type = readByte()
-      let arg_size = readInt32()
-      switch (arg_type)
-      {
-        case DataType.REAL64:
-          return Int64(readReal64())
-
-        case DataType.INT64:
-          return readInt64()
-
-        case DataType.INT32:
-          return Int64(readInt32())
-
-        case DataType.BYTE:
-          if (arg_size == 0) { return 0 }
-          return Int64( readByte() )
-
-        default:
-          return default_value
-      }
-    }
-    return default_value
-
-  }
-
-  func getLogical( name:String, default_value:Bool=false )->Bool
-  {
-    return getInt32( name: name, default_value:(default_value ? 1 : 0) ) != 0
-  }
-
-  func getReal64( name:String, default_value:Double=0.0 )->Double
-  {
-    if let offset = entries[ name ]
-    {
-      position = offset
-      let arg_type = readByte()
-      let arg_size = readInt32()
-      switch (arg_type)
-      {
-      case DataType.REAL64:
-        return readReal64()
-
-      case DataType.INT64:
-        return Double(readInt64())
-
-      case DataType.INT32:
-        return Double(readInt32())
-
-      case DataType.BYTE:
-        if (arg_size == 0) { return 0 }
-        return Double(readByte())
-
-      default:
-        return default_value
-      }
-    }
-    return default_value
-
-  }
-
-  func getString( name:String, default_value:String="" )->String
-  {
-    if let offset = entries[ name ]
-    {
-      position = offset
-      let arg_type = readByte()
-      switch (arg_type)
-      {
-        case DataType.BYTE:
-          return readString()
-        default:
-          return default_value
-      }
-    }
-    return default_value
-  }
-
-  func indexAnother()->Bool
-  {
-    if (position == data.count) { return false }
-    let name = readString()
-    entries[ name ] = position
-
-    readByte()  // skip over arg_type for now
-    position += readInt32()
-    return true
-  }
-
-  func post()
-  {
-    if (_block_transmission) { return }
-    Plasmacore.singleton.post( self );
-  }
-
-  func post_rsvp( _ callback:@escaping ((PlasmacoreMessage)->Void) )
-  {
-    if (_block_transmission) { return }
-    Plasmacore.singleton.post_rsvp( self, callback:callback );
-  }
+  //func post_rsvp( _ callback:@escaping ((PlasmacoreMessage)->Void) )
 
   @discardableResult
   func send()->PlasmacoreMessage?
   {
-    if (_block_transmission) { return nil }
-
-    Plasmacore.singleton.update()  // transmit any post()ed messages
-
-    objc_sync_enter(Plasmacore.singleton); defer { objc_sync_exit(Plasmacore.singleton) }
-
     if let result_data = RogueInterface_send_message( data, Int32(data.count) )
     {
       return PlasmacoreMessage( data:[UInt8](result_data) )
@@ -286,170 +82,116 @@ class PlasmacoreMessage
   }
 
   @discardableResult
-  func set( name:String, value:[UInt8] )->PlasmacoreMessage
-  {
-    position = data.count
-    writeString( name )
-    entries[ name ] = position
-    writeByte( DataType.BYTE )
-    writeBytes( value )
-    return self
-  }
-
-  @discardableResult
-  func set( name:String, value:Int64 )->PlasmacoreMessage
-  {
-    position = data.count
-    writeString( name )
-    entries[ name ] = position
-    writeTypeAndSize( DataType.INT64, size: 8 )
-    writeInt32( Int(value>>32) )
-    writeInt32( Int(value) )
-    return self
-  }
-
-  @discardableResult
-  func set( name:String, value:Int )->PlasmacoreMessage
-  {
-    position = data.count
-    writeString( name )
-    entries[ name ] = position
-    writeTypeAndSize( DataType.INT32, size: 4 )
-    writeInt32( value )
-    return self
-  }
-
-  @discardableResult
-  func set( name:String, value:Bool )->PlasmacoreMessage
-  {
-    position = data.count
-    writeString( name )
-    entries[ name ] = position
-    writeTypeAndSize( DataType.BYTE, size: 1 )
-    writeByte( value ? 1 : 0 )
-    return self
-  }
-
-  @discardableResult
-  func set( name:String, value:Double )->PlasmacoreMessage
-  {
-    position = data.count
-    writeString( name )
-    entries[ name ] = position
-    writeTypeAndSize( DataType.REAL64, size: 8 )
-    writeReal64( value )
-    return self
-  }
-
-  @discardableResult
-  func set( name:String, value:String )->PlasmacoreMessage
-  {
-    position = data.count
-    writeString( name )
-    entries[ name ] = position
-    writeByte( DataType.BYTE )  // type
-    writeString( value )
-    return self
-  }
-
-  //---------------------------------------------------------------------------
-  // PRIVATE
-  //---------------------------------------------------------------------------
-
-  @discardableResult
-  fileprivate func readByte()->Int
+  func readByte()->Int
   {
     if (position >= data.count) { return 0 }
+    let result = Int( data[position] )
     position += 1
-    return Int(data[position-1])
+    return result
   }
 
-  fileprivate func readBytes()->[UInt8]
+  func readInt32()->Int
   {
-    let count = readInt32()
-    var buffer = [UInt8]()
-    if (count > 0)
+    var result = readByte() << 24
+    result |= readByte()    << 16
+    result |= readByte()    <<  8
+    return result | readByte()
+  }
+
+  func readInt32X()->Int
+  {
+    // Reads a variable-length encoded value that is stored in 1..5 bytes.
+    // Encoded values are treated as signed.
+    //
+    // - If the first two bits are not "10" then the first byte is cast to
+    //   a signed integer value and returned. This allows for the range
+    //   -64..127 using the following bit patterns:
+    //
+    //     0xxxxxxx    0 .. 127
+    //     11xxxxxx  -64 ..  -1
+    //
+    // - If the first two bits are "10" then the data has been encoded
+    //   in the next 6 bits as well as any number of following bytes,
+    //   (up to 4 additional) using 7 data bits per byte with an MSBit
+    //   of 0 representing a halt or 1 a continuation. The next bit after
+    //   the leading 10 in the first byte is treated as negative magnitude.
+    //
+    //     10xxxxxx 0yyyyyyy            (13-bit number xxxxxxyyyyyyy)
+    //     10xxxxxx 1yyyyyyy 0zzzzzzz   (20-bit number xxxxxxyyyyyyyzzzzzzz)
+    //     etc.
+    let b = readByte()
+    if ((b & 0xc0) != 0x80)
     {
-      buffer.reserveCapacity( count )
-      for _ in 1...count
+      return Int(Int8(b))
+    }
+
+    var result = (b & 0b0011_1111)  //  0..63  (positive)
+    if (result >= 32)
+    {
+      result -= 64  // -64..63 (negative)
+    }
+
+    for _ in 1...4 // up to 4 more bytes
+    {
+      let next = readByte()
+      result = (result << 7) | (next & 0b0111_1111)
+      if ((next & 0b1000_0000) != 0)
       {
-        buffer.append( UInt8(readByte()) )
+        return result
       }
     }
-    return buffer
+
+    return result
   }
 
-  fileprivate func readInt32()->Int
-  {
-    var result = readByte()
-    result = (result << 8) | readByte()
-    result = (result << 8) | readByte()
-    return (result << 8) | readByte()
-  }
-
-  fileprivate func readInt64()->Int64
-  {
-    var n = UInt64( readInt32() ) << 32
-    n = n | UInt64( UInt32(readInt32()) )
-    return Int64(n)
-  }
-
-  fileprivate func readReal64()->Double
+  func readReal64()->Double
   {
     var n = UInt64( readInt32() ) << 32
     n = n | UInt64( UInt32(readInt32()) )
     return Double(bitPattern:n)
   }
 
-  fileprivate func readString()->String
+  func readString()->String
   {
-    let bytes = readBytes()
-    if let string = String( bytes:bytes, encoding:.utf8 )
+    let count  = readInt32X()
+    let result = ""
+    var characters = result.unicodeScalars
+    if (count > 0)
     {
-      return string
+      characters.reserveCapacity( count )
+      for _ in 1...count
+      {
+        if let ch = UnicodeScalar( readInt32X() )
+        {
+          characters.append( ch )
+        }
+      }
     }
-    else
-    {
-      return ""
-    }
+
+    return result
   }
 
-  fileprivate static func currentTime()->Double
+  static func currentTime()->Double
   {
     var darwin_time : timeval = timeval( tv_sec:0, tv_usec:0 )
     gettimeofday( &darwin_time, nil )
     return (Double(darwin_time.tv_sec)) + (Double(darwin_time.tv_usec) / 1000000)
   }
 
-  fileprivate func writeTypeAndSize( _ type:Int, size:Int )
+  func writeByte( _ value:Int )
   {
-    writeByte( type )
-    writeInt32( size )
-  }
-
-  fileprivate func writeByte( _ value:Int )
-  {
-    position += 1
-    if (position > data.count)
+    if (position >= data.count)
     {
       data.append( UInt8(value&255) )
     }
     else
     {
-      data[ position-1 ] = UInt8( value )
+      data[ position ] = UInt8( value )
     }
+    position += 1
   }
 
-  fileprivate func writeBytes( _ bytes:[UInt8] )
-  {
-    writeInt32( bytes.count )
-    for byte in bytes
-    {
-      writeByte( Int(byte) )
-    }
-  }
-
-  fileprivate func writeInt32( _ value:Int )
+  func writeInt32( _ value:Int )
   {
     writeByte( value >> 24 )
     writeByte( value >> 16 )
@@ -457,16 +199,63 @@ class PlasmacoreMessage
     writeByte( value )
   }
 
-  fileprivate func writeReal64( _ value:Double )
+  func writeInt32X( _ value:Int )
+  {
+    // Writes a variable-length encoded value that is stored in 1..5 bytes.
+    // See readInt32X for encoding details
+    if (value >= -64 && value < 128)
+    {
+      data.append( UInt8(value&255) )
+    }
+    else
+    {
+      var extra_bytes = 1
+      var shift = 7
+      var min = -0x1000
+      var max =  0x0FFF
+      for _ in 1...3
+      {
+        if (value >= min && value <= max)
+        {
+          break;
+        }
+        extra_bytes += 1
+        shift += 7
+        min =  min << 7
+        max = (max << 7) | 0xFF
+      }
+
+      writeByte( 0b10_000000 | ((value>>shift)&0b11_1111) )
+
+      if (extra_bytes > 1)
+      {
+        for _ in 2...extra_bytes
+        {
+          shift -= 7
+          writeByte( 0b1000_0000 | ((value>>shift) & 0b0111_1111) )
+        }
+      }
+
+      shift -= 7
+      writeByte( (value>>shift) & 0b0111_1111 )
+    }
+  }
+
+  func writeReal64( _ value:Double )
   {
     let bits = value.bitPattern
     writeInt32( Int((bits>>32)&0xFFFFffff) )
     writeInt32( Int(bits&0xFFFFffff) )
   }
 
-  fileprivate func writeString( _ value:String )
+  func writeString( _ value:String )
   {
-    writeBytes( Array(value.utf8) )
+    let characters = value.unicodeScalars
+    writeInt32X( characters.count )
+    for ch in characters
+    {
+      writeInt32X( Int(ch.value) )
+    }
   }
 }
 

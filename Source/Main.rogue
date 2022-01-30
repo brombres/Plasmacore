@@ -1,2 +1,6 @@
-println "Hello World from Rogue!"
+$include "Libraries/Rogue/Plasmacore"
+uses Plasmacore
+
+println "** Rogue **"
+Message("Hello World").send
 

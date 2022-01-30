@@ -2,14 +2,17 @@
 #include "RogueProgram.h"
 
 #import <AVFoundation/AVAudioPlayer.h>
+#import <MetalKit/MetalKit.h>
 
+//#include <metal_stdlib>
+//#include <simd/simd.h>
 
 #ifdef ROGUE_PLATFORM_IOS
-  //#import <UIKit/UIKit.h>
-  //#import <GLKit/GLKit.h>
-  //#import "Project-iOS-Swift.h"
+  #import <UIKit/UIKit.h>
+  #import <GLKit/GLKit.h>
+  #import "Project_iOS-Swift.h"
 #else
-  //#import "Project-macOS-Swift.h"
+  #import "Project_macOS-Swift.h"
 #endif
 
 #include <cstdio>
@@ -153,7 +156,7 @@ void PlasmacoreSound_play( void* sound, bool repeating )
   {
     AVAudioPlayer* player = (__bridge AVAudioPlayer*) sound;
     player.numberOfLoops = repeating ? -1 : 0;
-    [PlasmacoreInterface play_sound:player];
+    [NativeInterface play_sound:player];
   }
 }
 
@@ -181,7 +184,7 @@ void PlasmacoreSound_set_volume( void* sound, double volume )
 //-----------------------------------------------------------------------------
 bool PlasmacoreMessage_send( RogueByte_List* bytes )
 {
-  NSData* result = [PlasmacoreInterface dispatch:bytes->data->as_bytes count:bytes->count];
+  NSData* result = [NativeInterface receiveMessage:bytes->data->as_bytes count:bytes->count];
   if (result)
   {
     RogueInt32 count = (RogueInt32) result.length;
@@ -241,9 +244,30 @@ extern "C" NSData* RogueInterface_post_messages( const unsigned char* data, int 
     return [NSData data];
   }
 }
+*/
+
+bool NativeInterface_send_message( RogueByte_List* bytes )
+{
+  NSData* result = [NativeInterface receiveMessage:bytes->data->as_bytes count:bytes->count];
+  if (result)
+  {
+    RogueInt32 count = (RogueInt32) result.length;
+    RogueByte_List__clear( bytes );
+    RogueByte_List__reserve__Int32( bytes, count );
+    bytes->count = count;
+    [result getBytes:bytes->data->as_bytes length:count];
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
 
 extern "C" NSData* RogueInterface_send_message( const unsigned char* data, int count )
 {
+return nil;
+/*
   RogueClassPlasmacore__MessageManager* mm =
     (RogueClassPlasmacore__MessageManager*) ROGUE_SINGLETON(Plasmacore__MessageManager);
   RogueByte_List* list = mm->direct_message_buffer;
@@ -261,8 +285,10 @@ extern "C" NSData* RogueInterface_send_message( const unsigned char* data, int c
   {
     return nil;
   }
+*/
 }
 
+/*
 extern "C" void RogueInterface_set_arg_count( int count )
 {
   RogueInterface_argc = count;

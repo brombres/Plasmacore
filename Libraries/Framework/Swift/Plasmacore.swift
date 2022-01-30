@@ -6,33 +6,7 @@ import Foundation
 
 import AVFoundation
 
-@objc class PlasmacoreInterface : NSObject
-{
-  @objc class func dispatch( _ data:UnsafePointer<UInt8>, count:Int )->NSData?
-  {
-    let m = PlasmacoreMessage( data:Array(UnsafeBufferPointer(start:data,count:count)) )
-    Plasmacore.singleton.dispatch( m )
-    if let reply = m._reply
-    {
-      reply._block_transmission = false
-      return NSData( bytes:reply.data, length:reply.data.count )
-    }
-    else
-    {
-      return nil
-    }
-  }
-
-  @objc class func play_sound( _ player:AVAudioPlayer )
-  {
-    DispatchQueue.global().async
-    {
-        player.play()
-    }
-  }
-}
-
-
+/*
 class Plasmacore
 {
   static let _singleton = Plasmacore()
@@ -387,4 +361,5 @@ class PlasmacoreMessageListener
     self.callback = callback
   }
 }
+*/
 
