@@ -73,9 +73,8 @@ class Message
       message_id = read_int32x
 
     method is_type( type:String )->Logical
-      position = 0
+      position = 8 # just past timestamp
       read_int32x  # Message ID
-      read_real64  # Timestamp
       local n = read_int32x
       if (n != type.count) return false
       if (read_int32x != forEach in type) return false

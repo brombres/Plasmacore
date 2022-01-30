@@ -2,5 +2,5 @@ $include "Libraries/Rogue/Plasmacore"
 uses Plasmacore
 
 println "** Rogue **"
-Message("Hello World").send
+Message("Log").[ write_string("Hello World") ].send
 

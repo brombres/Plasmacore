@@ -57,6 +57,28 @@ class PlasmacoreMessage
     timestamp = PlasmacoreMessage.currentTime()
   }
 
+  func isType( name:String )->Bool
+  {
+    position = 8 // just past timestamp
+    message_id = readInt32X()
+
+    let characters = name.unicodeScalars
+    let count = readInt32X()
+    if (characters.count != count)
+    {
+      return false
+    }
+
+    for ch in characters
+    {
+      if (Int(ch.value) != readInt32X())
+      {
+        return false
+      }
+    }
+    return true
+  }
+
   func reply()->PlasmacoreMessage
   {
     if (_reply == nil)
@@ -122,7 +144,14 @@ class PlasmacoreMessage
     let b = readByte()
     if ((b & 0xc0) != 0x80)
     {
-      return Int(Int8(b))
+      if ((b & 0x80) != 0)
+      {
+        return b - 256
+      }
+      else
+      {
+        return b
+      }
     }
 
     var result = (b & 0b0011_1111)  //  0..63  (positive)
@@ -154,21 +183,21 @@ class PlasmacoreMessage
   func readString()->String
   {
     let count  = readInt32X()
-    let result = ""
-    var characters = result.unicodeScalars
+    var characters = "".unicodeScalars
     if (count > 0)
     {
       characters.reserveCapacity( count )
       for _ in 1...count
       {
-        if let ch = UnicodeScalar( readInt32X() )
+        let n = readInt32X()
+        if let ch = UnicodeScalar( n )
         {
           characters.append( ch )
         }
       }
     }
 
-    return result
+    return String(characters)
   }
 
   static func currentTime()->Double
