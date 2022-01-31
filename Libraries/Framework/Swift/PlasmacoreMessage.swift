@@ -30,7 +30,7 @@ class PlasmacoreMessage
 
   var _reply:PlasmacoreMessage? = nil
 
-  convenience init( type:String )
+  convenience init( _ type:String )
   {
     self.init( type:type, message_id:PlasmacoreMessage.next_message_id )
     PlasmacoreMessage.next_message_id += 1
@@ -202,15 +202,7 @@ class PlasmacoreMessage
 
   func writeByte( _ value:Int )
   {
-    if (position >= data.count)
-    {
-      data.append( UInt8(value&255) )
-    }
-    else
-    {
-      data[ position ] = UInt8( value )
-    }
-    position += 1
+    data.append( UInt8(value&255) )
   }
 
   func writeLogical( _ value:Bool )
@@ -233,7 +225,7 @@ class PlasmacoreMessage
     // See readInt32X for encoding details
     if (value >= -64 && value < 128)
     {
-      data.append( UInt8(value&255) )
+      writeByte( value )
     }
     else
     {

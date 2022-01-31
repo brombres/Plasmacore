@@ -199,7 +199,7 @@ class Renderer: NSObject, MTKViewDelegate {
   {
     /// Update any game state before rendering
     Plasmacore.singleton.collect_garbage()
-    guard let m = PlasmacoreMessage(type:"Cube.state").send() else { return }
+    guard let m = PlasmacoreMessage("Cube.state").send() else { return }
 
     let ax  = m.readReal32()
     let ay  = m.readReal32()
@@ -284,9 +284,12 @@ class Renderer: NSObject, MTKViewDelegate {
 
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
     /// Respond to drawable size or orientation changes here
-
     let aspect = Float(size.width) / Float(size.height)
-      projectionMatrix = matrix_perspective_right_hand(fovyRadians: radians_from_degrees(65), aspectRatio:aspect, nearZ: 0.1, farZ: 100.0)
+let m = PlasmacoreMessage("Test.size_change")
+m.writeReal64(size.width)
+m.writeReal64(size.height)
+m.send()
+    projectionMatrix = matrix_perspective_right_hand(fovyRadians: radians_from_degrees(65), aspectRatio:aspect, nearZ: 0.1, farZ: 100.0)
   }
 }
 

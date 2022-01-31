@@ -274,17 +274,17 @@ class Message
           min = min :<<: 7
           max = (max :<<: 7) | 0xFF
         endLoop
-        write_byte( 0b10_000000 | ((value:>>>:shift)&0b11_1111) )
+        data.add( 0b10_000000 | ((value:>>>:shift)&0b11_1111) )
         loop extra_bytes-1
           shift -= 7
-          write_byte( 0b1000_0000 | ((value:>>>:shift) & 0b0111_1111) )
+          data.add( 0b1000_0000 | ((value:>>>:shift) & 0b0111_1111) )
         endLoop
         shift -= 7
-        write_byte( (value:>>>:shift) & 0b0111_1111 )
+        data.add( (value:>>>:shift) & 0b0111_1111 )
       endIf
 
     method write_logical( value:Logical )
-      write_byte( which{value:1 || 0} )
+      data.add( which{value:1 || 0} )
 
     method write_real32( value:Real32 )
       write_int32( value.integer_bits )

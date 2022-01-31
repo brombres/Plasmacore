@@ -23,3 +23,10 @@ MessageListener["Cube.state"] =
     reply.send
   endFunction
 
+MessageListener["Test.size_change"] =
+  function( m:Message )
+    local w = m.read_real64
+    local h = m.read_real64
+    @trace w,h
+  endFunction
+

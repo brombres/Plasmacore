@@ -16,7 +16,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification)
     {
-      Plasmacore.singleton.launch()
     }
 
     func applicationWillTerminate(_ aNotification: Notification)

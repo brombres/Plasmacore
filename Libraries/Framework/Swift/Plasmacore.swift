@@ -17,6 +17,7 @@ class Plasmacore
       let result = _singleton
       if (result.is_launched) { return result }
       result.configure()
+      result.launch()
       return result
     }
   }
