@@ -18,6 +18,7 @@
 		30C6728527A66C0C00B21D55 /* Plasmacore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6728427A66C0C00B21D55 /* Plasmacore.swift */; };
 		30C6728727A6746100B21D55 /* NativeInterface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6728627A6746100B21D55 /* NativeInterface.swift */; };
 		30C6728927A6829F00B21D55 /* PlasmacoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6728827A6829F00B21D55 /* PlasmacoreMessage.swift */; };
+		30C6728B27A72FF000B21D55 /* PlasmacoreUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6728A27A72FF000B21D55 /* PlasmacoreUtility.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		30C6728427A66C0C00B21D55 /* Plasmacore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Plasmacore.swift; path = ../../../Libraries/Framework/Swift/Plasmacore.swift; sourceTree = "<group>"; };
 		30C6728627A6746100B21D55 /* NativeInterface.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = NativeInterface.swift; path = ../../../Libraries/Framework/Swift/NativeInterface.swift; sourceTree = "<group>"; };
 		30C6728827A6829F00B21D55 /* PlasmacoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreMessage.swift; path = ../../../Libraries/Framework/Swift/PlasmacoreMessage.swift; sourceTree = "<group>"; };
+		30C6728A27A72FF000B21D55 /* PlasmacoreUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreUtility.swift; path = ../../../Libraries/Framework/Swift/PlasmacoreUtility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,9 +72,10 @@
 		30C6726327A5110700B21D55 /* Project-macOS */ = {
 			isa = PBXGroup;
 			children = (
-				30C6728827A6829F00B21D55 /* PlasmacoreMessage.swift */,
-				30C6728627A6746100B21D55 /* NativeInterface.swift */,
 				30C6728427A66C0C00B21D55 /* Plasmacore.swift */,
+				30C6728827A6829F00B21D55 /* PlasmacoreMessage.swift */,
+				30C6728A27A72FF000B21D55 /* PlasmacoreUtility.swift */,
+				30C6728627A6746100B21D55 /* NativeInterface.swift */,
 				30C6728327A51DA400B21D55 /* BridgingHeader.h */,
 				30C6728127A5196800B21D55 /* RogueProgram.h */,
 				30C6728027A5196800B21D55 /* RogueProgram.mm */,
@@ -97,6 +100,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 30C6727527A5110900B21D55 /* Build configuration list for PBXNativeTarget "Project-macOS" */;
 			buildPhases = (
+				30C6728E27A7619200B21D55 /* Compile Rogue */,
 				30C6725D27A5110700B21D55 /* Sources */,
 				30C6725E27A5110700B21D55 /* Frameworks */,
 				30C6725F27A5110700B21D55 /* Resources */,
@@ -155,6 +159,28 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		30C6728E27A7619200B21D55 /* Compile Rogue */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Compile Rogue";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd ../..\nenv -i PATH=/opt/morlock/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin HOME=$HOME IDE=true rogo macos\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		30C6725D27A5110700B21D55 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -163,6 +189,7 @@
 				30C6728527A66C0C00B21D55 /* Plasmacore.swift in Sources */,
 				30C6726B27A5110700B21D55 /* Shaders.metal in Sources */,
 				30C6727E27A5193700B21D55 /* RogueInterface.mm in Sources */,
+				30C6728B27A72FF000B21D55 /* PlasmacoreUtility.swift in Sources */,
 				30C6726727A5110700B21D55 /* GameViewController.swift in Sources */,
 				30C6728727A6746100B21D55 /* NativeInterface.swift in Sources */,
 				30C6728227A5196800B21D55 /* RogueProgram.mm in Sources */,

@@ -15,12 +15,18 @@ class PlasmacoreMessage
 {
   static var next_message_id = 1
 
-  var timestamp  : Double
-  var message_id = 0
+  var timestamp      : Double
+  var message_id     = 0
+  var type           = ""
 
-  var data       = [UInt8]()
-  var entries    = [String:Int]()
-  var position   = 0
+  var data           = [UInt8]()
+  var entries        = [String:Int]()
+  var position       = 0
+
+  // This variable pair is used to prevent a reply from being sent (with send()) while
+  // in the original callback so that it can be sent back as a synchronous response.
+  var defer_reply    = false
+  var send_requested = false
 
   var _reply:PlasmacoreMessage? = nil
 
@@ -36,63 +42,46 @@ class PlasmacoreMessage
     self.data  = data
     timestamp  = readReal64()
     message_id = readInt32X()
+    type       = readString()
   }
 
   convenience init( type:String, message_id:Int )
   {
     self.init()
     self.message_id = message_id
+    self.type = type
     writeReal64( timestamp )
     writeInt32X( message_id )
     writeString( type )
   }
 
-  convenience init( reply_to_message_id:Int )
+  convenience init( reply_to_message_id:Int, defer_reply:Bool )
   {
-    self.init( type: "", message_id: reply_to_message_id )
+    self.init( type:"", message_id: reply_to_message_id )
+    self.defer_reply = defer_reply
   }
 
   init()
   {
-    timestamp = PlasmacoreMessage.currentTime()
-  }
-
-  func isType( name:String )->Bool
-  {
-    position = 8 // just past timestamp
-    message_id = readInt32X()
-
-    let characters = name.unicodeScalars
-    let count = readInt32X()
-    if (characters.count != count)
-    {
-      return false
-    }
-
-    for ch in characters
-    {
-      if (Int(ch.value) != readInt32X())
-      {
-        return false
-      }
-    }
-    return true
+    timestamp = PlasmacoreUtility.currentTime()
   }
 
   func reply()->PlasmacoreMessage
   {
     if (_reply == nil)
     {
-      _reply = PlasmacoreMessage( reply_to_message_id:message_id )
+      _reply = PlasmacoreMessage( reply_to_message_id:message_id, defer_reply:self.defer_reply )
     }
     return _reply!
   }
 
-  //func post_rsvp( _ callback:@escaping ((PlasmacoreMessage)->Void) )
-
   @discardableResult
   func send()->PlasmacoreMessage?
   {
+    if (send_requested) { return nil }
+    send_requested = true
+    if (defer_reply) { return nil }
+
     if let result_data = RogueInterface_send_message( data, Int32(data.count) )
     {
       return PlasmacoreMessage( data:[UInt8](result_data) )
@@ -103,13 +92,29 @@ class PlasmacoreMessage
     }
   }
 
-  @discardableResult
+  func sendRSVP( callback:@escaping ((PlasmacoreMessage)->Void) )
+  {
+    if let reply = send()
+    {
+      callback( reply );
+    }
+    else
+    {
+      Plasmacore.singleton.setReplyCallback( self, callback:callback )
+    }
+  }
+
   func readByte()->Int
   {
     if (position >= data.count) { return 0 }
     let result = Int( data[position] )
     position += 1
     return result
+  }
+
+  func readLogical()->Bool
+  {
+    return (readByte() != 0)
   }
 
   func readInt32()->Int
@@ -200,13 +205,6 @@ class PlasmacoreMessage
     return String(characters)
   }
 
-  static func currentTime()->Double
-  {
-    var darwin_time : timeval = timeval( tv_sec:0, tv_usec:0 )
-    gettimeofday( &darwin_time, nil )
-    return (Double(darwin_time.tv_sec)) + (Double(darwin_time.tv_usec) / 1000000)
-  }
-
   func writeByte( _ value:Int )
   {
     if (position >= data.count)
@@ -218,6 +216,12 @@ class PlasmacoreMessage
       data[ position ] = UInt8( value )
     }
     position += 1
+  }
+
+  func writeLogical( _ value:Bool )
+  {
+    if (value) { writeByte(1) }
+    else       { writeByte(0) }
   }
 
   func writeInt32( _ value:Int )

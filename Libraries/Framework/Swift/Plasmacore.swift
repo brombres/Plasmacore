@@ -6,7 +6,6 @@ import Foundation
 
 import AVFoundation
 
-/*
 class Plasmacore
 {
   static let _singleton = Plasmacore()
@@ -17,10 +16,12 @@ class Plasmacore
     {
       let result = _singleton
       if (result.is_launched) { return result }
-      return result.configure().launch()
+      result.configure()
+      return result
     }
   }
 
+/*
   class func start()
   {
     singleton.instanceStart( report:true )
@@ -35,34 +36,24 @@ class Plasmacore
   {
     PlasmacoreMessage( type:"Application.on_save" ).send()
   }
-
-  class func setMessageListener( type:String, listener:@escaping ((PlasmacoreMessage)->Void) )
-  {
-    _singleton.instanceSetMessageListener( type: type, once:false, listener: listener )
-  }
-
-  class func setMessageListener( type:String, once:Bool, listener:@escaping ((PlasmacoreMessage)->Void) )
-  {
-    _singleton.instanceSetMessageListener( type: type, once:once, listener: listener )
-  }
-
-  class func removeMessageListener( type:String )
-  {
-    _singleton.instanceRemoveMessageListener( type:type )
-  }
+  */
 
   var is_configured = false
   var is_launched   = false
 
+/*
   var idleUpdateFrequency = 0.5
 
   var pending_message_data = [UInt8]()
   var io_buffer = [UInt8]()
 
   var is_sending = false
+  */
 
   var listeners       = [String:PlasmacoreMessageListener]()
   var reply_listeners = [Int:PlasmacoreMessageListener]()
+
+  /*
   var resources = [Int:AnyObject]()
   var next_resource_id = 1
 
@@ -71,85 +62,23 @@ class Plasmacore
   fileprivate init()
   {
   }
+*/
 
-  func instanceSetMessageListener( type:String, listener:@escaping ((PlasmacoreMessage)->Void) )
+  func configure()
   {
-    instanceSetMessageListener( type:type, once:false, listener:listener )
-  }
-
-  func instanceSetMessageListener( type:String, once:Bool, listener:@escaping ((PlasmacoreMessage)->Void) )
-  {
-    objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
-
-    listeners[ type ] = PlasmacoreMessageListener( type:type, once:once, callback:listener )
-  }
-
-  @discardableResult
-  func configure()->Plasmacore
-  {
-    if (is_configured) { return self }
+    if (is_configured) { return }
     is_configured = true
 
-    instanceSetMessageListener( type: "", listener:
+    // Create an empty-string listener to dispatch replies
+    setMessageListener( type: "", listener:
       {
         (m:PlasmacoreMessage) in
-          if let info = Plasmacore.singleton.reply_listeners.removeValue( forKey: m.message_id )
+          if let info = Plasmacore.singleton.reply_listeners.removeValue( forKey:m.message_id )
           {
             info.callback( m )
           }
       }
     )
-
-    #if os(OSX)
-    instanceSetMessageListener( type:"Window.create", listener:
-      {
-        (m:PlasmacoreMessage) in
-        let name = m.getString( name:"name" )
-        var className = name
-        if let bundleID = Bundle.main.bundleIdentifier
-        {
-          if let dotIndex = Plasmacore.lastIndexOf( bundleID, lookFor:"." )
-          {
-            className = "\(bundleID[bundleID.index(bundleID.startIndex,offsetBy:dotIndex+1)...]).\(name)"
-          }
-        }
-
-        let controller : NSWindowController
-        if let controllerType = NSClassFromString( className ) as? NSWindowController.Type
-        {
-          NSLog( "Found controller \(className)" )
-          controller = controllerType.init( windowNibName:name )
-        }
-        else if let controllerType = NSClassFromString( name ) as? NSWindowController.Type
-        {
-          NSLog( "Found controller \(name)" )
-          controller = controllerType.init( windowNibName:name )
-        }
-        else
-        {
-          NSLog( "===============================================================================" )
-          NSLog( "ERROR" )
-          NSLog( "  No class found named \(name) or \(className)." )
-          NSLog( "===============================================================================" )
-          controller = NSWindowController( windowNibName:name )
-        }
-
-        Plasmacore.singleton.resources[ m.getInt32(name:"id") ] = controller
-        NSLog( "Controller window:\(String(describing:controller.window))" )
-      }
-    )
-
-    instanceSetMessageListener( type:"Window.show", listener:
-      {
-        (m:PlasmacoreMessage) in
-          let window_id = m.getInt32( name:"id" )
-          if let window = Plasmacore.singleton.resources[ window_id ] as? NSWindowController
-          {
-            window.showWindow( self )
-          }
-      }
-    )
-    #endif // os(OSX)
 
     RogueInterface_set_arg_count( Int32(CommandLine.arguments.count) )
     for (index,arg) in CommandLine.arguments.enumerated()
@@ -158,9 +87,9 @@ class Plasmacore
     }
 
     RogueInterface_configure();
-    return self
   }
 
+  /*
   func addResource( resource:AnyObject? )->Int
   {
     let result = next_resource_id
@@ -185,67 +114,41 @@ class Plasmacore
   {
     return resources[ id ]
   }
+  */
 
-  @discardableResult
-  func launch()->Plasmacore
+  func launch()
   {
-    if (is_launched) { return self }
+    if (is_launched) { return }
     is_launched = true
 
+    configure()
+
     RogueInterface_launch()
+/*
     let m = PlasmacoreMessage( type:"Application.on_launch" )
 #if os(OSX)
   m.set( name:"is_window_based", value:true )
 #endif
     m.post()
-    return self
+*/
   }
 
-  static func lastIndexOf( _ st:String, lookFor:String )->Int?
-  {
-    if let r = st.range( of: lookFor, options:.backwards )
-    {
-      return st.distance(from: st.startIndex, to: r.lowerBound)
-    }
-
-    return nil
-  }
+/*
 
   func relaunch()->Plasmacore
   {
     PlasmacoreMessage( type:"Application.on_launch" ).set( name:"is_window_based", value:true ).post()
     return self
   }
+*/
 
-  func instanceRemoveMessageListener( type:String )
+  func removeMessageListener( type:String )
   {
     objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
     listeners.removeValue( forKey:type )
   }
 
-  func post( _ m:PlasmacoreMessage )
-  {
-    objc_sync_enter( self ); defer { objc_sync_exit(self) }    // @synchronized (self)
-
-    let size = m.data.count
-    pending_message_data.append( UInt8((size>>24)&255) )
-    pending_message_data.append( UInt8((size>>16)&255) )
-    pending_message_data.append( UInt8((size>>8)&255) )
-    pending_message_data.append( UInt8(size&255) )
-    for b in m.data
-    {
-      pending_message_data.append( b )
-    }
-    update()
-  }
-
-  func post_rsvp( _ m:PlasmacoreMessage, callback:@escaping ((PlasmacoreMessage)->Void) )
-  {
-    objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
-    reply_listeners[ m.message_id ] = PlasmacoreMessageListener( type:"", once:true, callback:callback )
-    post( m )
-  }
-
+/*
   func setIdleUpdateFrequency( _ f:Double )->Plasmacore
   {
     idleUpdateFrequency = f
@@ -256,7 +159,22 @@ class Plasmacore
     }
     return self
   }
+  */
 
+  func setMessageListener( type:String, listener:@escaping ((PlasmacoreMessage)->Void) )
+  {
+    objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
+
+    listeners[ type ] = PlasmacoreMessageListener( type:type, once:false, callback:listener )
+  }
+
+  func setReplyCallback( _ message:PlasmacoreMessage, callback:@escaping ((PlasmacoreMessage)->Void) )
+  {
+    objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
+    reply_listeners[ message.message_id ] = PlasmacoreMessageListener( type:"", once:true, callback:callback )
+  }
+
+/*
   func instanceStart( report:Bool )
   {
     if ( !is_launched ) { configure().launch() }
@@ -278,18 +196,20 @@ class Plasmacore
       update_timer = nil
     }
   }
+*/
 
-  func dispatch( _ m:PlasmacoreMessage )
+  func dispatch( _ message:PlasmacoreMessage )
   {
     objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
 
-    if let listener = listeners[ m.type ]
+    if let listener = listeners[ message.type ]
     {
-      listener.callback( m )
       if (listener.once) { listeners.removeValue( forKey:listener.type ) }
+      listener.callback( message )
     }
   }
 
+/*
   @objc func update()
   {
     objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
@@ -346,10 +266,28 @@ class Plasmacore
     io_buffer.removeAll()
     is_sending = false
   }
+*/
 }
 
 class PlasmacoreMessageListener
 {
+  //  Plasmacore.singleton.setMessageListener( type: "ArbitraryCategory.name", listener:
+  //    {
+  //      (m:PlasmacoreMessage) in
+  //        // Unpack message
+  //        let integer_32     = m.readInt32()
+  //        let integet_32x    = m.readInt32X()  # 1..5 bytes
+  //        let logical        = m.readLogical() # true/false
+  //        let real_number_64 = m.readReal64()
+  //        let string         = m.readString()
+  //
+  //        // Optional reply
+  //        let reply = m.reply()
+  //        reply.writeInt32X( value:value )
+  //        ...
+  //        reply.send()  # 'reply' can be saved and sent later
+  //    }
+  //  )
   var type      : String
   let once      : Bool
   var callback  : ((PlasmacoreMessage)->Void)
@@ -361,5 +299,4 @@ class PlasmacoreMessageListener
     self.callback = callback
   }
 }
-*/
 

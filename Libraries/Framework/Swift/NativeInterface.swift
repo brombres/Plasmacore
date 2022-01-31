@@ -11,23 +11,27 @@ import AVFoundation
   @objc class func receiveMessage( _ data:UnsafePointer<UInt8>, count:Int )->NSData?
   {
     let m = PlasmacoreMessage( data:Array(UnsafeBufferPointer(start:data,count:count)) )
-    if (m.isType(name:"Log"))
-    {
-      print( m.readString() )
-    }
-    /*
+
+    m.defer_reply = true
     Plasmacore.singleton.dispatch( m )
+    m.defer_reply = false
+
     if let reply = m._reply
     {
-      reply._block_transmission = false
-      return NSData( bytes:reply.data, length:reply.data.count )
+      if (reply.send_requested)
+      {
+        return NSData( bytes:reply.data, length:reply.data.count )
+      }
+      else
+      {
+        reply.defer_reply = false
+        return nil
+      }
     }
     else
     {
       return nil
     }
-    */
-    return nil
   }
 }
 

@@ -3,26 +3,77 @@ module Plasmacore
 $essential Byte[].clear()
 $essential Byte[].reserve(Int32)
 
-class MessageManager
-  GLOBAL PROPERTIES
-    next_id  = 1
-    pool     = Message[]
+class MessageManager [singleton]
+  PROPERTIES
+    next_id         = 1
+    pool            = Message[]
+    recycle_queue   = Message[]
+    listeners       = StringTable<<Function(Message)>>()
+    reply_listeners = Table<<Int32,Function(Message)>>()
 
-  GLOBAL METHODS
-    method message->Message
+  METHODS
+    method init
+      set_listener( "",
+        # Reply listener
+        function(m:Message)
+          local callback = MessageManager.reply_listeners.remove( m.message_id )
+          if (callback) callback( m )
+        endFunction
+      )
+
+    method message->Message [essential]
+      (forEach in recycle_queue).recycle
       if (pool.count) return pool.remove_last.[ init ]
       return Message()
+
+    method receive_message( m:Message )->Logical [essential]
+      # Returns "true" if there's a reply
+      if (m.type.count == 0)
+        local listener = reply_listeners.remove( m.message_id )
+        if (listener) listener( m )
+        m.recycle
+        return false
+
+      else
+        local listener = listeners[ m.type ]
+        if (not listener)
+          m.recycle
+          return false
+        endIf
+
+        listener( m )
+
+        if (m.m_reply)
+          if (m.m_reply.send_requested)
+            m.data.[ clear ].add( m.m_reply.data )
+            m.m_reply.recycle
+            MessageManager.recycle_queue.add( m )
+            return true
+          else
+            m.m_reply.defer_reply = false
+          endIf
+        endIf
+        m.recycle
+        return false
+
+      endIf
+
+    method set_listener( type:String, listener:Function(Message) )
+      listeners[ type ] = listener
 
 endClass
 
 class Message
   PROPERTIES
-    message_id : Int32
-    timestamp  : Real64
-    data       = Byte[]
-    position   : Int32   # for reading
-    ref_count  : Int32
-    m_reply    : Message
+    message_id     : Int32
+    timestamp      : Real64
+    type           = StringBuilder()
+    data           = Byte[]
+    position       : Int32   # for reading
+    ref_count      : Int32
+    m_reply        : Message
+    defer_reply    = false
+    send_requested = false
 
   GLOBAL METHODS
     method create( type:String )->Message
@@ -30,6 +81,7 @@ class Message
 
       m.message_id = MessageManager.next_id
       ++MessageManager.next_id
+      m.type.[clear].print( type )
 
       m.write_real64( m.timestamp )
       m.write_int32x( m.message_id )
@@ -41,6 +93,7 @@ class Message
       local m = MessageManager.message
 
       m.message_id = message_id
+      m.type.[clear]
 
       m.write_real64( m.timestamp )
       m.write_int32x( m.message_id )
@@ -54,6 +107,7 @@ class Message
       m.data.add( data )
       m.timestamp = m.read_real64
       m.message_id = m.read_int32x
+      m.type.[clear].print( m.read_string )
 
       return m
 
@@ -62,29 +116,26 @@ class Message
       timestamp = System.time
       position = 0
       data.clear
-      ref_count = 0
+      type.clear
       m_reply = null
+      defer_reply = false
+      send_requested = false
 
-    method init_from_data
+    method init_from_data [essential]
       position = 0
-      ref_count = 0
       m_reply = null
       timestamp  = read_real64
       message_id = read_int32x
-
-    method is_type( type:String )->Logical
-      position = 8 # just past timestamp
-      read_int32x  # Message ID
-      local n = read_int32x
-      if (n != type.count) return false
-      if (read_int32x != forEach in type) return false
-      return true
+      type.[clear].print( read_string )
 
     method read_byte->Int32
       if (position >= data.count) return 0
       local result = data[ position ]
       ++position
       return result
+
+    method read_logical->Logical
+      return read_byte?
 
     method read_int32->Int32
       local result = read_byte :<<: 24
@@ -148,37 +199,45 @@ class Message
       endLoop
 
     method recycle
-      if (MessageManager.pool.contains( this ))
-        println "**** Message.recycle: Message already exists in pool!!!! ****"
-      endIf
+      if (MessageManager.pool.contains( this )) return
       data.limit_capacity( 1024 )  # Don't let occassional huge messages sit on unused memory
       MessageManager.pool.add( this )
 
-    method release
-      --ref_count
-      if (not ref_count) MessageManager.pool.add( this )
-
     method reply->Message
-      if (not m_reply) m_reply = Message( message_id )
+      if (not m_reply)
+        if (type.count == 0) throw Error( "Message: cannot reply to a reply." )
+        m_reply = Message( message_id )
+        m_reply.defer_reply = this.defer_reply
+      endIf
       return m_reply
-
-    method retain
-      # Messages only need to be retain()d if you want to keep a reference to them
-      # outside the normal listener callbacks.
-      ++ref_count
 
     method send->Message
       nativeHeader struct RogueByte_List;
       nativeHeader bool NativeInterface_send_message( RogueByte_List* bytes );
 
+      if (send_requested) return null
+      send_requested = true
+      if (defer_reply) return null
+
       local has_reply : Logical
       native @|$has_reply = NativeInterface_send_message( $this->data );
       if (has_reply)
         init_from_data  # reply has been placed in same Byte[] buffer
+        MessageManager.recycle_queue.add( this )
         return this
       else
         recycle
         return null
+      endIf
+
+    method send_rsvp( callback:Function(Message) )
+      local reply = send
+      if (reply)
+        # Immediate reply
+        callback( reply )
+      else
+        # Asynchronous reply
+        MessageManager.reply_listeners[ message_id ] = callback
       endIf
 
     method to->Byte[]
@@ -220,6 +279,9 @@ class Message
         write_byte( (value:>>>:shift) & 0b0111_1111 )
       endIf
 
+    method write_logical( value:Logical )
+      write_byte( which{value:1 || 0} )
+
     method write_real64( value:Real64 )
       # Writes 4 bytes in high-low order, e.g. 0x12345678 -> [12,34,56,78]
       local bits = value.integer_bits
@@ -231,3 +293,11 @@ class Message
       write_int32x( forEach in value )
 
 endClass
+
+class MessageListener [singleton]
+  # Convenience class
+  METHODS
+    method set( message_type:String, listener:Function(Message) )
+      MessageManager.set_listener( message_type, listener )
+endClass
+

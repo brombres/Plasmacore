@@ -266,29 +266,26 @@ bool NativeInterface_send_message( RogueByte_List* bytes )
 
 extern "C" NSData* RogueInterface_send_message( const unsigned char* data, int count )
 {
-return nil;
-/*
   RogueClassPlasmacore__MessageManager* mm =
     (RogueClassPlasmacore__MessageManager*) ROGUE_SINGLETON(Plasmacore__MessageManager);
-  RogueByte_List* list = mm->direct_message_buffer;
-  RogueByte_List__clear( list );
+  RogueClassPlasmacore__Message* m = RoguePlasmacore__MessageManager__message( mm );
+  RogueByte_List* list = m->data;
   RogueByte_List__reserve__Int32( list, count );
   memcpy( list->data->as_bytes, data, count );
   list->count = count;
+  RoguePlasmacore__Message__init_from_data( m );
 
-  if (RoguePlasmacore__MessageManager__receive_message(mm))
+  if (RoguePlasmacore__MessageManager__receive_message__Plasmacore__Message(mm,m))
   {
-    // direct_message_buffer has been filled with result bytes
+    // message data buffer has been filled with result bytes
     return [[NSData alloc] initWithBytes:list->data->as_bytes length:list->count];
   }
   else
   {
     return nil;
   }
-*/
 }
 
-/*
 extern "C" void RogueInterface_set_arg_count( int count )
 {
   RogueInterface_argc = count;
@@ -303,5 +300,4 @@ extern "C" void RogueInterface_set_arg_value( int index, const char* value )
   strcpy( copy, value );
   RogueInterface_argv[ index ] = copy;
 }
-*/
 

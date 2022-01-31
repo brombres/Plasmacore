@@ -27,8 +27,8 @@ void RogueInterface_launch();
 //bool PlasmacoreMessage_dispatch_to_rogue( const unsigned char* data );
 //NSData* RogueInterface_post_messages( const unsigned char* data, int count );
 NSData* RogueInterface_send_message( const unsigned char* data, int count );
-//void    RogueInterface_set_arg_count( int count );
-//void    RogueInterface_set_arg_value( int index, const char* value );
+void    RogueInterface_set_arg_count( int count );
+void    RogueInterface_set_arg_value( int index, const char* value );
 
 #ifdef __cplusplus
 } // extern "C"

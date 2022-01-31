@@ -2,7 +2,10 @@
 # to this folder and type "rogo" at the command line.
 
 routine rogo_default
-  #rogo_help
+  rogo_help
+endRoutine
+
+routine rogo_macos
   local targets = "macOS,ObjC,Plasmacore,C++,Desktop"
   execute "roguec Source/Main.rogue --target=$ --gc=manual --output=Build/macOS/Source/RogueProgram"(targets)
 endRoutine
