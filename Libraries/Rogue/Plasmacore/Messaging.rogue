@@ -22,12 +22,11 @@ class MessageManager [singleton]
       )
 
     method message->Message [essential]
-      (forEach in recycle_queue).recycle
+      #while (not recycle_queue.is_empty) recycle_queue.remove_last.recycle
       if (pool.count) return pool.remove_last.[ init ]
       return Message()
 
     method receive_message( m:Message )->Logical [essential]
-      # Returns "true" if there's a reply
       if (m.type.count == 0)
         local listener = reply_listeners.remove( m.message_id )
         if (listener) listener( m )
@@ -50,7 +49,7 @@ class MessageManager [singleton]
             MessageManager.recycle_queue.add( m )
             return true
           else
-            m.m_reply.defer_reply = false
+            m.m_reply.defer_reply = false  # a later send() will actually dispatch the reply
           endIf
         endIf
         m.recycle
@@ -70,7 +69,6 @@ class Message
     type           = StringBuilder()
     data           = Byte[]
     position       : Int32   # for reading
-    ref_count      : Int32
     m_reply        : Message
     defer_reply    = false
     send_requested = false
@@ -81,7 +79,7 @@ class Message
 
       m.message_id = MessageManager.next_id
       ++MessageManager.next_id
-      m.type.[clear].print( type )
+      m.type.print( type )
 
       m.write_real64( m.timestamp )
       m.write_int32x( m.message_id )
@@ -93,7 +91,6 @@ class Message
       local m = MessageManager.message
 
       m.message_id = message_id
-      m.type.[clear]
 
       m.write_real64( m.timestamp )
       m.write_int32x( m.message_id )
@@ -127,6 +124,10 @@ class Message
       timestamp  = read_real64
       message_id = read_int32x
       type.[clear].print( read_string )
+
+    method description->String
+      if (type.count == 0) return "[response]"
+      else                 return type
 
     method read_byte->Int32
       if (position >= data.count) return 0
@@ -177,6 +178,9 @@ class Message
 
       return result
 
+    method read_real32->Real32
+      return read_int32.real_bits
+
     method read_real64->Real64
       local bits = read_int32->Int64 :<<: 32
       return (bits | read_int32).real_bits
@@ -199,9 +203,9 @@ class Message
       endLoop
 
     method recycle
-      if (MessageManager.pool.contains( this )) return
-      data.limit_capacity( 1024 )  # Don't let occassional huge messages sit on unused memory
-      MessageManager.pool.add( this )
+      #if (MessageManager.pool.contains( this )) return
+      #data.limit_capacity( 1024 )  # Don't let occassional huge messages sit on unused memory
+      #MessageManager.pool.add( this )
 
     method reply->Message
       if (not m_reply)
@@ -282,8 +286,10 @@ class Message
     method write_logical( value:Logical )
       write_byte( which{value:1 || 0} )
 
+    method write_real32( value:Real32 )
+      write_int32( value.integer_bits )
+
     method write_real64( value:Real64 )
-      # Writes 4 bytes in high-low order, e.g. 0x12345678 -> [12,34,56,78]
       local bits = value.integer_bits
       write_int32( bits :>>: 32 )
       write_int32( bits )

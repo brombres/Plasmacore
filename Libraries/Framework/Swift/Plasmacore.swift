@@ -89,6 +89,12 @@ class Plasmacore
     RogueInterface_configure();
   }
 
+  func collect_garbage()
+  {
+    objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
+    RogueInterface_collect_garbage()
+  }
+
   /*
   func addResource( resource:AnyObject? )->Int
   {
@@ -206,6 +212,20 @@ class Plasmacore
     {
       if (listener.once) { listeners.removeValue( forKey:listener.type ) }
       listener.callback( message )
+    }
+  }
+
+  func _send( _ m:PlasmacoreMessage )->PlasmacoreMessage?
+  {
+    objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
+
+    if let result_data = RogueInterface_send_message( m.data, Int32(m.data.count) )
+    {
+      return PlasmacoreMessage( data:[UInt8](result_data) )
+    }
+    else
+    {
+      return nil
     }
   }
 

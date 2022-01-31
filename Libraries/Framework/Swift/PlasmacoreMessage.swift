@@ -82,14 +82,7 @@ class PlasmacoreMessage
     send_requested = true
     if (defer_reply) { return nil }
 
-    if let result_data = RogueInterface_send_message( data, Int32(data.count) )
-    {
-      return PlasmacoreMessage( data:[UInt8](result_data) )
-    }
-    else
-    {
-      return nil
-    }
+    return Plasmacore.singleton._send( self )
   }
 
   func sendRSVP( callback:@escaping ((PlasmacoreMessage)->Void) )
@@ -169,13 +162,15 @@ class PlasmacoreMessage
     {
       let next = readByte()
       result = (result << 7) | (next & 0b0111_1111)
-      if ((next & 0b1000_0000) != 0)
-      {
-        return result
-      }
+      if ((next & 0b1000_0000) == 0) { return result }
     }
 
     return result
+  }
+
+  func readReal32()->Float
+  {
+    return Float( bitPattern:UInt32(readInt32()) )
   }
 
   func readReal64()->Double
@@ -272,6 +267,11 @@ class PlasmacoreMessage
       shift -= 7
       writeByte( (value>>shift) & 0b0111_1111 )
     }
+  }
+
+  func writeReal32( _ value:Float )
+  {
+    writeInt32( Int(value.bitPattern) )
   }
 
   func writeReal64( _ value:Double )

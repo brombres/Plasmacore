@@ -1,14 +1,25 @@
 $include "Libraries/Rogue/Plasmacore"
 uses Plasmacore
 
-class Settings [singleton]
+println "** Rogue **"
+
+class Cube [singleton]
   PROPERTIES
-    on_exit : Message
+    rotation : Real64
+
+  METHODS
+    method update
+      rotation += 0.01
 endClass
 
-println "** Rogue **"
-MessageListener//ShouldTerminate = (m) => m.reply.[write_logical(false)].send; Settings.on_exit.send
-MessageListener//NotifyOnExit = (m) => Settings.on_exit = m.reply
-Message("Log").[ write_string("Hello World") ].send
-Message("Marco").send_rsvp( (m) => println "FN:" + m.read_string )
+MessageListener["Cube.state"] =
+  function( m:Message )
+    Cube.update
+    local reply = m.reply
+    reply.write_real32( 1 )
+    reply.write_real32( 0 )
+    reply.write_real32( 0 )
+    reply.write_real32( Cube.rotation )
+    reply.send
+  endFunction
 
