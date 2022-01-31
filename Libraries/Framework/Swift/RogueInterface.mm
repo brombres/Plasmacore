@@ -249,10 +249,10 @@ extern "C" NSData* RogueInterface_send_message( const unsigned char* data, int c
   list->count = count;
   RoguePlasmacore__Message__init_from_data( m );
 
-  if (RoguePlasmacore__MessageManager__receive_message__Plasmacore__Message(mm,m))
+  RogueByte_List* response_data = RoguePlasmacore__MessageManager__receive_message__Plasmacore__Message( mm, m );
+  if (response_data)
   {
-    // message data buffer has been filled with result bytes
-    return [[NSData alloc] initWithBytes:list->data->as_bytes length:list->count];
+    return [[NSData alloc] initWithBytes:response_data->data->as_bytes length:response_data->count];
   }
   else
   {

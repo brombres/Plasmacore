@@ -22,38 +22,38 @@ class MessageManager [singleton]
       )
 
     method message->Message [essential]
-      #while (not recycle_queue.is_empty) recycle_queue.remove_last.recycle
+      while (not recycle_queue.is_empty) recycle_queue.remove_last.recycle
       if (pool.count) return pool.remove_last.[ init ]
       return Message()
 
-    method receive_message( m:Message )->Logical [essential]
+    method receive_message( m:Message )->Byte[] [essential]
       if (m.type.count == 0)
         local listener = reply_listeners.remove( m.message_id )
         if (listener) listener( m )
         m.recycle
-        return false
+        return null
 
       else
         local listener = listeners[ m.type ]
         if (not listener)
           m.recycle
-          return false
+          return null
         endIf
 
         listener( m )
 
         if (m.m_reply)
           if (m.m_reply.send_requested)
-            m.data.[ clear ].add( m.m_reply.data )
-            m.m_reply.recycle
-            MessageManager.recycle_queue.add( m )
-            return true
+            local result = m.m_reply.data
+            MessageManager.recycle_queue.add( m.m_reply )
+            m.recycle
+            return result
           else
             m.m_reply.defer_reply = false  # a later send() will actually dispatch the reply
           endIf
         endIf
         m.recycle
-        return false
+        return null
 
       endIf
 
@@ -203,9 +203,9 @@ class Message
       endLoop
 
     method recycle
-      #if (MessageManager.pool.contains( this )) return
-      #data.limit_capacity( 1024 )  # Don't let occassional huge messages sit on unused memory
-      #MessageManager.pool.add( this )
+      if (MessageManager.pool.contains( this )) return
+      data.limit_capacity( 1024 )  # Don't let occassional huge messages sit on unused memory
+      MessageManager.pool.add( this )
 
     method reply->Message
       if (not m_reply)
