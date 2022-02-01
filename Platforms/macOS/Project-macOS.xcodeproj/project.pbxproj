@@ -13,6 +13,7 @@
 		30B4950927A8E57A00BCB47D /* PlasmacoreUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950527A8E57A00BCB47D /* PlasmacoreUtility.swift */; };
 		30B4950A27A8E57A00BCB47D /* PlasmacoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950627A8E57A00BCB47D /* PlasmacoreMessage.swift */; };
 		30B4950D27A8E59000BCB47D /* RogueProgram.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950B27A8E59000BCB47D /* RogueProgram.mm */; };
+		30B4950F27A9280600BCB47D /* RenderCmd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950E27A9280600BCB47D /* RenderCmd.swift */; };
 		30C6726527A5110700B21D55 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726427A5110700B21D55 /* AppDelegate.swift */; };
 		30C6726727A5110700B21D55 /* PlasmacoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */; };
 		30C6726927A5110700B21D55 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726827A5110700B21D55 /* Renderer.swift */; };
@@ -31,6 +32,7 @@
 		30B4950627A8E57A00BCB47D /* PlasmacoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreMessage.swift; path = ../../../Libraries/Framework/Swift/PlasmacoreMessage.swift; sourceTree = "<group>"; };
 		30B4950B27A8E59000BCB47D /* RogueProgram.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueProgram.mm; path = ../../../Build/macOS/Source/RogueProgram.mm; sourceTree = "<group>"; };
 		30B4950C27A8E59000BCB47D /* RogueProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueProgram.h; path = ../../../Build/macOS/Source/RogueProgram.h; sourceTree = "<group>"; };
+		30B4950E27A9280600BCB47D /* RenderCmd.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RenderCmd.swift; sourceTree = "<group>"; };
 		30C6726127A5110700B21D55 /* Project-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Project-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		30C6726427A5110700B21D55 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlasmacoreViewController.swift; sourceTree = "<group>"; };
@@ -56,6 +58,7 @@
 		30B494FE27A8E52000BCB47D /* Plasmacore */ = {
 			isa = PBXGroup;
 			children = (
+				30B4950E27A9280600BCB47D /* RenderCmd.swift */,
 				30B4950C27A8E59000BCB47D /* RogueProgram.h */,
 				30B4950B27A8E59000BCB47D /* RogueProgram.mm */,
 				30B4950427A8E57A00BCB47D /* BridgingHeader.h */,
@@ -202,6 +205,7 @@
 				30B4950927A8E57A00BCB47D /* PlasmacoreUtility.swift in Sources */,
 				30C6726527A5110700B21D55 /* AppDelegate.swift in Sources */,
 				30B4950D27A8E59000BCB47D /* RogueProgram.mm in Sources */,
+				30B4950F27A9280600BCB47D /* RenderCmd.swift in Sources */,
 				30B4950A27A8E57A00BCB47D /* PlasmacoreMessage.swift in Sources */,
 				30B4950827A8E57A00BCB47D /* NativeInterface.swift in Sources */,
 			);

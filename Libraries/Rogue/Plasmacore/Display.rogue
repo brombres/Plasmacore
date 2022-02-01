@@ -1,0 +1,29 @@
+module Plasmacore
+
+class Display [singleton]
+  PROPERTIES
+    q = Message("")  # RenderCmd queue
+    width        : Int32
+    height       : Int32
+
+  METHODS
+    method clear( color=Color.BLACK:Color )
+      q.write_cmd( RenderCmd.CLEAR_COLOR )
+      q.write_color( color )
+
+    method render( info:Message )
+      width  = info.read_int32x
+      height = info.read_int32x
+
+      q = info.reply
+
+      Plasmacore.update_and_draw
+
+      q.write_cmd( RenderCmd.END )
+      q.send
+
+    method size->XY
+      return XY( width, height )
+
+endClass
+

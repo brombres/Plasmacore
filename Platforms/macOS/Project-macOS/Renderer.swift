@@ -37,6 +37,7 @@ class Renderer: NSObject, MTKViewDelegate
   var projectionMatrix     : matrix_float4x4 = matrix_float4x4()
   var display_width        = 0
   var display_height       = 0
+  var clear_color          = 0
 
   //var rotation: Float = 0
 
@@ -208,11 +209,10 @@ class Renderer: NSObject, MTKViewDelegate
     uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents() + uniformBufferOffset).bindMemory(to:Uniforms.self, capacity:1)
   }
 
-  private func updateGameState()
+  private func rogueRender()
   {
     /// Update any game state before rendering
-    Plasmacore.singleton.collect_garbage()
-    guard let m = PlasmacoreMessage("Cube.state").send() else { return }
+    guard var m = PlasmacoreMessage("Cube.state").send() else { return }
 
     let ax  = m.readReal32()
     let ay  = m.readReal32()
@@ -225,6 +225,30 @@ class Renderer: NSObject, MTKViewDelegate
     let modelMatrix = matrix4x4_rotation(radians: rotation, axis: rotationAxis)
     let viewMatrix = matrix4x4_translation(0.0, 0.0, -8.0)
     uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
+
+    m = PlasmacoreMessage( "Display.render" )
+    m.writeInt32X( display_width )
+    m.writeInt32X( display_height )
+    if let q = m.send()
+    {
+      while (true)
+      {
+        let opcode = q.readInt32X()
+        if let cmd = RenderCmd( rawValue:opcode )
+        //if let cmd = RenderCmd( rawValue:q.readInt32X() )
+        {
+          switch (cmd)
+          {
+            case .END:         return
+            case .CLEAR_COLOR: clear_color = q.readInt32()
+          }
+        }
+        else
+        {
+          print( "[ERROR] Unhandled RenderCmd" )
+        }
+      }
+    }
   }
 
   func draw(in view: MTKView)
@@ -242,10 +266,7 @@ class Renderer: NSObject, MTKViewDelegate
         }
 
       self.updateDynamicBufferState()
-      self.updateGameState()
-
-      //let m = PlasmacoreMessage( "Display.render" )
-
+      self.rogueRender()
 
       /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
       ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -253,7 +274,12 @@ class Renderer: NSObject, MTKViewDelegate
 
       if let renderPass = renderPass
       {
-        renderPass.colorAttachments[0].clearColor = MTLClearColorMake(0.5, 0.5, 0.5, 1);
+        let bg = UInt( clear_color )
+        let bg_r = Double( (bg >> 16) & 255 ) / 255.0
+        let bg_g = Double( (bg >> 8)  & 255 ) / 255.0
+        let bg_b = Double(  bg        & 255 ) / 255.0
+        let bg_a = Double( (bg >> 24) & 255 ) / 255.0
+        renderPass.colorAttachments[0].clearColor = MTLClearColorMake( bg_r, bg_g, bg_b, bg_a )
 
         /// Final pass rendering code here
         if let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPass)
@@ -301,6 +327,7 @@ class Renderer: NSObject, MTKViewDelegate
       }
       commandBuffer.commit()
     }
+    Plasmacore.singleton.collect_garbage()
   }
 
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)

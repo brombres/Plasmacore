@@ -244,6 +244,12 @@ class Message
     method write_byte( value:Int32 )
       data.add( value )
 
+    method write_cmd( value:RenderCmd )
+      write_int32x( value->Int32 )
+
+    method write_color( color:Color )
+      write_int32( color.argb )
+
     method write_int32( value:Int32 )
       # Writes 4 bytes in high-low order, e.g. 0x12345678 -> [12,34,56,78]
       data.add( value:>>>:24 )

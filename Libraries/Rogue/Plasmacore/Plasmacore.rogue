@@ -1,2 +1,32 @@
+module Plasmacore
+uses Bitmap [export]
+uses Geometry [export]
+
+$include "Plasmacore/Display.rogue"
 $include "Plasmacore/Messaging.rogue"
+$include "Plasmacore/RenderCmd.rogue"
+
+class Plasmacore [singleton]
+  PROPERTIES
+    draw_handler   : Function
+    update_handler : Function
+
+    last_time      : Real64
+
+  METHODS
+    method draw
+      if (draw_handler) draw_handler()
+
+    method update
+      if (update_handler) update_handler()
+
+    method update_and_draw
+      local cur_time = System.time
+      local update_count = ((cur_time - last_time) * 60 + 0.1)->Int32
+      last_time = cur_time
+
+      if (update_count < 1 or update_count > 30) update_count = 1
+      loop (update_count) update
+      draw
+endClass
 

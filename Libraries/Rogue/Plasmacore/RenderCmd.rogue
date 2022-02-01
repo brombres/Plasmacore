@@ -1,0 +1,6 @@
+module Plasmacore
+
+enum RenderCmd
+  END
+  CLEAR_COLOR
+endEnum

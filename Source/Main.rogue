@@ -23,10 +23,10 @@ MessageListener["Cube.state"] =
     reply.send
   endFunction
 
-MessageListener["Test.size_change"] =
-  function( m:Message )
-    local w = m.read_real64
-    local h = m.read_real64
-    @trace w,h
+MessageListener["Display.render"] = (Display => render)
+
+Plasmacore.draw_handler =
+  function
+    Display.clear( Random.color )
   endFunction
 
