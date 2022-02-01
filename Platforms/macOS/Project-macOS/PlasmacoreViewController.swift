@@ -1,5 +1,5 @@
 //
-//  GameViewController.swift
+//  PlasmacoreViewController.swift
 //  Project-macOS
 //
 //  Created by Abe Pralle on 1/28/22.
@@ -9,7 +9,7 @@ import Cocoa
 import MetalKit
 
 // Our macOS specific view controller
-class GameViewController: NSViewController
+class PlasmacoreViewController: NSViewController
 {
     var renderer : Renderer!
     var mtkView  : MTKView!
@@ -18,7 +18,7 @@ class GameViewController: NSViewController
         super.viewDidLoad()
 
         guard let mtkView = self.view as? MTKView else {
-            print("View attached to GameViewController is not an MTKView")
+            print("View attached to PlasmacoreViewController is not an MTKView")
             return
         }
 

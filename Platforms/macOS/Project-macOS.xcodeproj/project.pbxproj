@@ -14,7 +14,7 @@
 		30B4950A27A8E57A00BCB47D /* PlasmacoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950627A8E57A00BCB47D /* PlasmacoreMessage.swift */; };
 		30B4950D27A8E59000BCB47D /* RogueProgram.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950B27A8E59000BCB47D /* RogueProgram.mm */; };
 		30C6726527A5110700B21D55 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726427A5110700B21D55 /* AppDelegate.swift */; };
-		30C6726727A5110700B21D55 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726627A5110700B21D55 /* GameViewController.swift */; };
+		30C6726727A5110700B21D55 /* PlasmacoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */; };
 		30C6726927A5110700B21D55 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726827A5110700B21D55 /* Renderer.swift */; };
 		30C6726B27A5110700B21D55 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726A27A5110700B21D55 /* Shaders.metal */; };
 		30C6726E27A5110900B21D55 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726D27A5110900B21D55 /* Assets.xcassets */; };
@@ -33,7 +33,7 @@
 		30B4950C27A8E59000BCB47D /* RogueProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueProgram.h; path = ../../../Build/macOS/Source/RogueProgram.h; sourceTree = "<group>"; };
 		30C6726127A5110700B21D55 /* Project-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Project-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		30C6726427A5110700B21D55 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		30C6726627A5110700B21D55 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
+		30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlasmacoreViewController.swift; sourceTree = "<group>"; };
 		30C6726827A5110700B21D55 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		30C6726A27A5110700B21D55 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		30C6726C27A5110700B21D55 /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
@@ -90,7 +90,7 @@
 			children = (
 				30B494FE27A8E52000BCB47D /* Plasmacore */,
 				30C6726427A5110700B21D55 /* AppDelegate.swift */,
-				30C6726627A5110700B21D55 /* GameViewController.swift */,
+				30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */,
 				30C6726827A5110700B21D55 /* Renderer.swift */,
 				30C6726A27A5110700B21D55 /* Shaders.metal */,
 				30C6726C27A5110700B21D55 /* ShaderTypes.h */,
@@ -195,7 +195,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				30C6726B27A5110700B21D55 /* Shaders.metal in Sources */,
-				30C6726727A5110700B21D55 /* GameViewController.swift in Sources */,
+				30C6726727A5110700B21D55 /* PlasmacoreViewController.swift in Sources */,
 				30C6726927A5110700B21D55 /* Renderer.swift in Sources */,
 				30B4950027A8E54800BCB47D /* Plasmacore.swift in Sources */,
 				30B4950727A8E57A00BCB47D /* RogueInterface.mm in Sources */,
