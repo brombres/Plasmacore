@@ -65,7 +65,6 @@ endClass
 class Message
   PROPERTIES
     message_id     : Int32
-    timestamp      : Real64
     type           = StringBuilder()
     data           = Byte[]
     position       : Int32   # for reading
@@ -81,7 +80,6 @@ class Message
       ++MessageManager.next_id
       m.type.print( type )
 
-      m.write_real64( m.timestamp )
       m.write_int32x( m.message_id )
       m.write_string( type )
 
@@ -92,7 +90,6 @@ class Message
 
       m.message_id = message_id
 
-      m.write_real64( m.timestamp )
       m.write_int32x( m.message_id )
       m.write_int32x( 0 )  # empty string for message type
 
@@ -102,7 +99,6 @@ class Message
       local m = MessageManager.message
 
       m.data.add( data )
-      m.timestamp = m.read_real64
       m.message_id = m.read_int32x
       m.type.[clear].print( m.read_string )
 
@@ -110,7 +106,6 @@ class Message
 
   METHODS
     method init
-      timestamp = System.time
       position = 0
       data.clear
       type.clear
@@ -121,7 +116,6 @@ class Message
     method init_from_data [essential]
       position = 0
       m_reply = null
-      timestamp  = read_real64
       message_id = read_int32x
       type.[clear].print( read_string )
 

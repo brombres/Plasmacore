@@ -5,7 +5,6 @@
 // High-low byte order for all multi-byte values.
 //
 // Message
-//   timestamp       : Real64
 //   message_id      : Int32X                  # serial number (always present, only needed when reply expected)
 //   type_name_count : Int32X                  # 0 indicates a reply
 //   type_name       : Int32X[type_name_count]
@@ -15,7 +14,6 @@ class PlasmacoreMessage
 {
   static var next_message_id = 1
 
-  var timestamp      : Double
   var message_id     = 0
   var type           = ""
 
@@ -40,7 +38,6 @@ class PlasmacoreMessage
   {
     self.init()
     self.data  = data
-    timestamp  = readReal64()
     message_id = readInt32X()
     type       = readString()
   }
@@ -50,7 +47,6 @@ class PlasmacoreMessage
     self.init()
     self.message_id = message_id
     self.type = type
-    writeReal64( timestamp )
     writeInt32X( message_id )
     writeString( type )
   }
@@ -63,7 +59,6 @@ class PlasmacoreMessage
 
   init()
   {
-    timestamp = PlasmacoreUtility.currentTime()
   }
 
   func reply()->PlasmacoreMessage

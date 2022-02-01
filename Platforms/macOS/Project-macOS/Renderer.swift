@@ -35,6 +35,8 @@ class Renderer: NSObject, MTKViewDelegate
   var uniforms             : UnsafeMutablePointer<Uniforms>
 
   var projectionMatrix     : matrix_float4x4 = matrix_float4x4()
+  var display_width        = 0
+  var display_height       = 0
 
   //var rotation: Float = 0
 
@@ -44,6 +46,8 @@ class Renderer: NSObject, MTKViewDelegate
   {
     self.device       = metalKitView.device!
     self.commandQueue = self.device.makeCommandQueue()!
+
+    metalKitView.preferredFramesPerSecond = 60
 
     let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
 
@@ -240,14 +244,19 @@ class Renderer: NSObject, MTKViewDelegate
       self.updateDynamicBufferState()
       self.updateGameState()
 
+      //let m = PlasmacoreMessage( "Display.render" )
+
+
       /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
       ///   holding onto the drawable and blocking the display pipeline any longer than necessary
-      let renderPassDescriptor = view.currentRenderPassDescriptor
+      let renderPass = view.currentRenderPassDescriptor
 
-      if let renderPassDescriptor = renderPassDescriptor
+      if let renderPass = renderPass
       {
+        renderPass.colorAttachments[0].clearColor = MTLClearColorMake(0.5, 0.5, 0.5, 1);
+
         /// Final pass rendering code here
-        if let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
+        if let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPass)
         {
           renderEncoder.label = "Primary Render Encoder"
           renderEncoder.pushDebugGroup("Draw Box")
@@ -297,11 +306,10 @@ class Renderer: NSObject, MTKViewDelegate
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
   {
     /// Respond to drawable size or orientation changes here
+    display_width  = Int(size.width)
+    display_height = Int(size.height)
+
     let aspect = Float(size.width) / Float(size.height)
-let m = PlasmacoreMessage("Test.size_change")
-m.writeReal64(size.width)
-m.writeReal64(size.height)
-m.send()
     projectionMatrix = matrix_perspective_right_hand(fovyRadians: radians_from_degrees(65), aspectRatio:aspect, nearZ: 0.1, farZ: 100.0)
   }
 }
