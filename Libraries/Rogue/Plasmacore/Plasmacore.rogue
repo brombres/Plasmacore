@@ -1,10 +1,14 @@
 module Plasmacore
 uses Bitmap [export]
 uses Geometry [export]
+uses Math/Matrix [export]
 
 $include "Plasmacore/Display.rogue"
 $include "Plasmacore/Messaging.rogue"
+$include "Plasmacore/ObjectTransform.rogue"
+$include "Plasmacore/ProjectionTransform.rogue"
 $include "Plasmacore/RenderCmd.rogue"
+$include "Plasmacore/ViewTransform.rogue"
 
 class Plasmacore [singleton]
   PROPERTIES

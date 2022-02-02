@@ -1,0 +1,12 @@
+module Plasmacore
+
+class ProjectionTransform
+  GLOBAL METHODS
+    method pop
+      Display.q.write_cmd( RenderCmd.POP_PROJECTION_TRANSFORM )
+
+    method push( m:Matrix )
+      Display.q.write_cmd( RenderCmd.PUSH_PROJECTION_TRANSFORM )
+      Display.q.write_matrix( m )
+endClass
+

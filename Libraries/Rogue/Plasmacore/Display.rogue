@@ -7,6 +7,9 @@ class Display [singleton]
     height       : Int32
 
   METHODS
+    method aspect_ratio->Real64
+      return width->Real64 / height
+
     method clear( color=Color.BLACK:Color )
       q.write_cmd( RenderCmd.CLEAR_COLOR )
       q.write_color( color )

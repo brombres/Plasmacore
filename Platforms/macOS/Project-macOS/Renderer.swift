@@ -212,21 +212,12 @@ class Renderer: NSObject, MTKViewDelegate
   private func rogueRender()
   {
     /// Update any game state before rendering
-    guard var m = PlasmacoreMessage("Cube.state").send() else { return }
-
-    let ax  = m.readReal32()
-    let ay  = m.readReal32()
-    let az  = m.readReal32()
-    let rotation = m.readReal32()
-
     uniforms[0].projectionMatrix = projectionMatrix
 
-    let rotationAxis = SIMD3<Float>(ax,ay,az)
-    let modelMatrix = matrix4x4_rotation(radians: rotation, axis: rotationAxis)
-    let viewMatrix = matrix4x4_translation(0.0, 0.0, -8.0)
-    uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
+    var modelMatrix:matrix_float4x4 = matrix_float4x4()
+    var viewMatrix:matrix_float4x4 = matrix_float4x4()
 
-    m = PlasmacoreMessage( "Display.render" )
+    let m = PlasmacoreMessage( "Display.render" )
     m.writeInt32X( display_width )
     m.writeInt32X( display_height )
     if let q = m.send()
@@ -235,13 +226,31 @@ class Renderer: NSObject, MTKViewDelegate
       {
         let opcode = q.readInt32X()
         if let cmd = RenderCmd( rawValue:opcode )
-        //if let cmd = RenderCmd( rawValue:q.readInt32X() )
         {
           switch (cmd)
           {
-            case .END:         return
-            case .CLEAR_COLOR: clear_color = q.readInt32()
+            case .END:
+              break
+            case .CLEAR_COLOR:
+              clear_color = q.readInt32()
+              continue
+            case .PUSH_OBJECT_TRANSFORM:
+              modelMatrix = q.readMatrix()
+              continue
+            case .POP_OBJECT_TRANSFORM:
+              continue  // TODO
+            case .PUSH_VIEW_TRANSFORM:
+              viewMatrix = q.readMatrix()
+              continue
+            case .POP_VIEW_TRANSFORM:
+              continue  // TODO
+            case .PUSH_PROJECTION_TRANSFORM:
+              projectionMatrix = q.readMatrix()
+              continue
+            case .POP_PROJECTION_TRANSFORM:
+              continue  // TODO
           }
+          break  // END
         }
         else
         {
@@ -249,6 +258,8 @@ class Renderer: NSObject, MTKViewDelegate
         }
       }
     }
+
+    uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
   }
 
   func draw(in view: MTKView)
@@ -335,48 +346,6 @@ class Renderer: NSObject, MTKViewDelegate
     /// Respond to drawable size or orientation changes here
     display_width  = Int(size.width)
     display_height = Int(size.height)
-
-    let aspect = Float(size.width) / Float(size.height)
-    projectionMatrix = matrix_perspective_right_hand(fovyRadians: radians_from_degrees(65), aspectRatio:aspect, nearZ: 0.1, farZ: 100.0)
   }
 }
 
-// Generic matrix math utility functions
-func matrix4x4_rotation(radians: Float, axis: SIMD3<Float>) -> matrix_float4x4
-{
-  let unitAxis = normalize(axis)
-  let ct = cosf(radians)
-  let st = sinf(radians)
-  let ci = 1 - ct
-  let x = unitAxis.x, y = unitAxis.y, z = unitAxis.z
-  return matrix_float4x4.init(
-    columns:
-    (
-      vector_float4(    ct + x * x * ci, y * x * ci + z * st, z * x * ci - y * st, 0),
-      vector_float4(x * y * ci - z * st,     ct + y * y * ci, z * y * ci + x * st, 0),
-      vector_float4(x * z * ci + y * st, y * z * ci - x * st,     ct + z * z * ci, 0),
-      vector_float4(                  0,                   0,                   0, 1)
-    )
-  )
-}
-
-func matrix4x4_translation(_ translationX: Float, _ translationY: Float, _ translationZ: Float) -> matrix_float4x4 {
-  return matrix_float4x4.init(columns:(vector_float4(1, 0, 0, 0),
-        vector_float4(0, 1, 0, 0),
-        vector_float4(0, 0, 1, 0),
-        vector_float4(translationX, translationY, translationZ, 1)))
-}
-
-func matrix_perspective_right_hand(fovyRadians fovy: Float, aspectRatio: Float, nearZ: Float, farZ: Float) -> matrix_float4x4 {
-  let ys = 1 / tanf(fovy * 0.5)
-    let xs = ys / aspectRatio
-    let zs = farZ / (nearZ - farZ)
-    return matrix_float4x4.init(columns:(vector_float4(xs,  0, 0,   0),
-          vector_float4( 0, ys, 0,   0),
-          vector_float4( 0,  0, zs, -1),
-          vector_float4( 0,  0, zs * nearZ, 0)))
-}
-
-func radians_from_degrees(_ degrees: Float) -> Float {
-  return (degrees / 180) * .pi
-}

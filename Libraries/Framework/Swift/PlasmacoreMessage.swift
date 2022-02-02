@@ -163,6 +163,15 @@ class PlasmacoreMessage
     return result
   }
 
+  func readMatrix()->matrix_float4x4
+  {
+    let c1 = readXYZ()
+    let c2 = readXYZ()
+    let c3 = readXYZ()
+    let c4 = readXYZ()
+    return matrix_float4x4.init( columns:(c1,c2,c3,c4) )
+  }
+
   func readReal32()->Float
   {
     return Float( bitPattern:UInt32(readInt32()) )
@@ -193,6 +202,15 @@ class PlasmacoreMessage
     }
 
     return String(characters)
+  }
+
+  func readXYZ()->vector_float4
+  {
+    let x = readReal32()
+    let y = readReal32()
+    let z = readReal32()
+    let w = readReal32()
+    return vector_float4( x, y, z, w )
   }
 
   func writeByte( _ value:Int )
