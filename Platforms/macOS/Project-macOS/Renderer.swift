@@ -11,10 +11,14 @@ import Metal
 import MetalKit
 import simd
 
-// The 256 byte aligned size of our uniform structure
 let alignedUniformsSize = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
+// The 256 byte aligned size of our uniform structure.
+// "Uniforms" are shader variables that remain constant for a given render batch
+// such as projectionMatrix and modelViewMatrix.
 
 let maxBuffersInFlight = 3
+// The maximum number of MTLCommandBuffers (AKA frame renders) that can
+// be queued for rendering.
 
 enum RendererError : Error {
   case badVertexDescriptor
@@ -23,32 +27,65 @@ enum RendererError : Error {
 class Renderer: NSObject, MTKViewDelegate
 {
   public let device        : MTLDevice
-  let commandQueue         : MTLCommandQueue
-  var dynamicUniformBuffer : MTLBuffer
-  var pipelineState        : MTLRenderPipelineState
-  var depthState           : MTLDepthStencilState
-  var colorMap             : MTLTexture
 
-  let inFlightSemaphore    = DispatchSemaphore(value: maxBuffersInFlight)
+  let commandQueue         : MTLCommandQueue
+  // A queue of MTLCommandBuffers for rendering. Each MTLCommandBuffer will render
+  // possibly multiple passes to a single target drawable such as the MTKView or an
+  // offscreen texture.
+
+  let inFlightSemaphore    = DispatchSemaphore(value:maxBuffersInFlight)
+  // A DispatchSemaphore is a synchronized counter. In this case it is used to
+  // limit the number of queued or in-progress command buffers / render batches /
+  // "frames". To render a batch we call:
+  //
+  //   inFlightSemaphore.wait()
+  //   ...
+  //   inFlightSemaphore.signal()
+  //
+  // The wait() call will decrement the counter and continue. It blocks if 3
+  // batches have called wait() before any of them call signal(); as soon as
+  // one batch finishes and calls signal() than the blocked wait() returns.
+
+  var dynamicUniformBuffer : MTLBuffer
   var uniformBufferOffset  = 0
   var uniformBufferIndex   = 0
   var uniforms             : UnsafeMutablePointer<Uniforms>
+  // dynamicUniformBuffer
+  //   Three sets of transform matrices for our max of three concurrent batches
+  //
+  // uniformBufferIndex
+  //   0..2 - the index of the current batch uniform data.
+  //
+  // uniformBufferOffset
+  //   The byte offset of the current batch uniform data.
+  //
+  // uniforms
+  //   A pointer to the current batch uniforms.
 
-  var projectionMatrix     : matrix_float4x4 = matrix_float4x4()
-  var display_width        = 0
-  var display_height       = 0
-  var clear_color          = 0
+  var mtlVertexDescriptor : MTLVertexDescriptor
+  var pipelineState       : MTLRenderPipelineState
+  var depthState          : MTLDepthStencilState
 
-  //var rotation: Float = 0
 
-  var mesh : MTKMesh
+  // Display state
+  var display_width  = 0
+  var display_height = 0
+  var clear_color    = 0
+
+  var projectionMatrix:matrix_float4x4 = matrix_float4x4()
+  var modelMatrix:matrix_float4x4 = matrix_float4x4()
+  var viewMatrix:matrix_float4x4 = matrix_float4x4()
+
+  // Demo-specific assets
+  var mesh     : MTKMesh?
+  var colorMap : MTLTexture?
 
   init?( metalKitView:MTKView )
   {
+    metalKitView.preferredFramesPerSecond = 60
+
     self.device       = metalKitView.device!
     self.commandQueue = self.device.makeCommandQueue()!
-
-    metalKitView.preferredFramesPerSecond = 60
 
     let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
 
@@ -65,7 +102,7 @@ class Renderer: NSObject, MTKViewDelegate
     metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
     metalKitView.sampleCount = 1
 
-    let mtlVertexDescriptor = Renderer.buildMetalVertexDescriptor()
+    mtlVertexDescriptor = Renderer.buildMetalVertexDescriptor()
 
     do
     {
@@ -82,26 +119,6 @@ class Renderer: NSObject, MTKViewDelegate
     depthStateDescriptor.depthCompareFunction = MTLCompareFunction.less
     depthStateDescriptor.isDepthWriteEnabled = true
     self.depthState = device.makeDepthStencilState(descriptor:depthStateDescriptor)!
-
-    do
-    {
-      mesh = try Renderer.buildMesh(device: device, mtlVertexDescriptor: mtlVertexDescriptor)
-    }
-    catch
-    {
-      print("Unable to build MetalKit Mesh. Error info: \(error)")
-        return nil
-    }
-
-    do
-    {
-      colorMap = try Renderer.loadTexture(device: device, textureName: "ColorMap")
-    }
-    catch
-    {
-      print("Unable to load texture. Error info: \(error)")
-        return nil
-    }
 
     super.init()
   }
@@ -156,6 +173,29 @@ class Renderer: NSObject, MTKViewDelegate
       return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
   }
 
+  func prepareDemoAssets()
+  {
+    do
+    {
+      mesh = try Renderer.buildMesh(device: device, mtlVertexDescriptor: mtlVertexDescriptor)
+    }
+    catch
+    {
+      print("Unable to build MetalKit Mesh. Error info: \(error)")
+      return
+    }
+
+    do
+    {
+      colorMap = try Renderer.loadTexture(device: device, textureName: "ColorMap")
+    }
+    catch
+    {
+      print("Unable to load texture. Error info: \(error)")
+      return
+    }
+  }
+
   class func buildMesh( device:MTLDevice, mtlVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
   {
     /// Create and condition mesh data to feed into a pipeline using the given vertex descriptor
@@ -200,23 +240,8 @@ class Renderer: NSObject, MTKViewDelegate
     )
   }
 
-  private func updateDynamicBufferState()
-  {
-    /// Update the state of our uniform buffers before rendering
-
-    uniformBufferIndex  = (uniformBufferIndex + 1) % maxBuffersInFlight
-    uniformBufferOffset = alignedUniformsSize * uniformBufferIndex
-    uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents() + uniformBufferOffset).bindMemory(to:Uniforms.self, capacity:1)
-  }
-
   private func rogueRender()
   {
-    /// Update any game state before rendering
-    uniforms[0].projectionMatrix = projectionMatrix
-
-    var modelMatrix:matrix_float4x4 = matrix_float4x4()
-    var viewMatrix:matrix_float4x4 = matrix_float4x4()
-
     let m = PlasmacoreMessage( "Display.render" )
     m.writeInt32X( display_width )
     m.writeInt32X( display_height )
@@ -258,87 +283,113 @@ class Renderer: NSObject, MTKViewDelegate
         }
       }
     }
-
-    uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
   }
 
-  func draw(in view: MTKView)
+  func makeCommandBuffer()->MTLCommandBuffer?
   {
-    /// Per frame updates hare
     _ = inFlightSemaphore.wait(timeout: DispatchTime.distantFuture)
 
     if let commandBuffer = commandQueue.makeCommandBuffer()
     {
       let semaphore = inFlightSemaphore
-        commandBuffer.addCompletedHandler
+      commandBuffer.addCompletedHandler
+      {
+        (_ commandBuffer)-> Swift.Void in
+          semaphore.signal()
+      }
+
+      uniformBufferIndex  = (uniformBufferIndex + 1) % maxBuffersInFlight
+      uniformBufferOffset = alignedUniformsSize * uniformBufferIndex
+      uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents() + uniformBufferOffset).bindMemory(to:Uniforms.self, capacity:1)
+
+      return commandBuffer
+    }
+    else
+    {
+      return nil
+    }
+  }
+
+  func draw(in view: MTKView)
+  {
+    rogueRender()
+
+    renderView( view )
+    Plasmacore.singleton.collect_garbage()
+  }
+
+  func renderView( _ view:MTKView )
+  {
+    guard let commandBuffer = makeCommandBuffer() else { return }
+
+    if (mesh == nil)
+    {
+      // Better to check a flag and see if we've already tried to load the assets, but these
+      // demo assets will be going away soon anyhow.
+      prepareDemoAssets()
+    }
+
+    uniforms[0].projectionMatrix = projectionMatrix
+    uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
+
+    /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
+    ///   holding onto the drawable and blocking the display pipeline any longer than necessary
+    let renderPass = view.currentRenderPassDescriptor
+
+    if let renderPass = renderPass
+    {
+      let bg = UInt( clear_color )
+      let bg_r = Double( (bg >> 16) & 255 ) / 255.0
+      let bg_g = Double( (bg >> 8)  & 255 ) / 255.0
+      let bg_b = Double(  bg        & 255 ) / 255.0
+      let bg_a = Double( (bg >> 24) & 255 ) / 255.0
+      renderPass.colorAttachments[0].clearColor = MTLClearColorMake( bg_r, bg_g, bg_b, bg_a )
+
+      /// Final pass rendering code here
+      if let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPass)
+      {
+        renderEncoder.label = "Primary Render Encoder"
+        renderEncoder.pushDebugGroup("Draw Box")
+        renderEncoder.setCullMode(.back)
+        renderEncoder.setFrontFacing(.counterClockwise)
+        renderEncoder.setRenderPipelineState(pipelineState)
+        renderEncoder.setDepthStencilState(depthState)
+        renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: BufferIndex.uniforms.rawValue)
+        renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: BufferIndex.uniforms.rawValue)
+
+        for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
         {
-          (_ commandBuffer)-> Swift.Void in
-            semaphore.signal()
+          guard let layout = element as? MDLVertexBufferLayout else { return }
+          if layout.stride != 0
+          {
+            let buffer = mesh!.vertexBuffers[index]
+            renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
+          }
         }
 
-      self.updateDynamicBufferState()
-      self.rogueRender()
+        renderEncoder.setFragmentTexture(colorMap!, index: TextureIndex.color.rawValue)
 
-      /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
-      ///   holding onto the drawable and blocking the display pipeline any longer than necessary
-      let renderPass = view.currentRenderPassDescriptor
-
-      if let renderPass = renderPass
-      {
-        let bg = UInt( clear_color )
-        let bg_r = Double( (bg >> 16) & 255 ) / 255.0
-        let bg_g = Double( (bg >> 8)  & 255 ) / 255.0
-        let bg_b = Double(  bg        & 255 ) / 255.0
-        let bg_a = Double( (bg >> 24) & 255 ) / 255.0
-        renderPass.colorAttachments[0].clearColor = MTLClearColorMake( bg_r, bg_g, bg_b, bg_a )
-
-        /// Final pass rendering code here
-        if let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPass)
+        for submesh in mesh!.submeshes
         {
-          renderEncoder.label = "Primary Render Encoder"
-          renderEncoder.pushDebugGroup("Draw Box")
-          renderEncoder.setCullMode(.back)
-          renderEncoder.setFrontFacing(.counterClockwise)
-          renderEncoder.setRenderPipelineState(pipelineState)
-          renderEncoder.setDepthStencilState(depthState)
-          renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: BufferIndex.uniforms.rawValue)
-          renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: BufferIndex.uniforms.rawValue)
+          renderEncoder.drawIndexedPrimitives(
+            type: submesh.primitiveType,
+            indexCount: submesh.indexCount,
+            indexType: submesh.indexType,
+            indexBuffer: submesh.indexBuffer.buffer,
+            indexBufferOffset: submesh.indexBuffer.offset
+          )
+        }
 
-          for (index, element) in mesh.vertexDescriptor.layouts.enumerated()
-          {
-            guard let layout = element as? MDLVertexBufferLayout else { return }
-            if layout.stride != 0
-            {
-              let buffer = mesh.vertexBuffers[index]
-              renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
-            }
-          }
+        renderEncoder.popDebugGroup()
+        renderEncoder.endEncoding()
 
-          renderEncoder.setFragmentTexture(colorMap, index: TextureIndex.color.rawValue)
-
-          for submesh in mesh.submeshes
-          {
-            renderEncoder.drawIndexedPrimitives(
-              type: submesh.primitiveType,
-              indexCount: submesh.indexCount,
-              indexType: submesh.indexType,
-              indexBuffer: submesh.indexBuffer.buffer,
-              indexBufferOffset: submesh.indexBuffer.offset
-            )
-          }
-
-          renderEncoder.popDebugGroup()
-          renderEncoder.endEncoding()
-
-          if let drawable = view.currentDrawable
-          {
-            commandBuffer.present(drawable)
-          }
+        if let drawable = view.currentDrawable
+        {
+          commandBuffer.present(drawable)
         }
       }
-      commandBuffer.commit()
     }
-    Plasmacore.singleton.collect_garbage()
+    commandBuffer.commit()
   }
 
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
