@@ -14,7 +14,7 @@ import simd
 let alignedUniformsSize = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
 // The 256 byte aligned size of our uniform structure.
 // "Uniforms" are shader variables that remain constant for a given render batch
-// such as projectionMatrix and modelViewMatrix.
+// such as projectionTransform and worldTransform.
 
 let maxBuffersInFlight = 3
 // The maximum number of MTLCommandBuffers (AKA frame renders) that can
@@ -62,23 +62,30 @@ class Renderer: NSObject, MTKViewDelegate
   // uniforms
   //   A pointer to the current batch uniforms.
 
-  var mtlVertexDescriptor : MTLVertexDescriptor
-  var pipelineState       : MTLRenderPipelineState
-  var depthState          : MTLDepthStencilState
+  var texturedVertexDescriptor : MTLVertexDescriptor
+  var texturedPipeline         : MTLRenderPipelineState
 
+  var coloredVertexDescriptor  : MTLVertexDescriptor
+  var coloredPipeline          : MTLRenderPipelineState
+
+  var depthTestLT              : MTLDepthStencilState
 
   // Display state
   var display_width  = 0
   var display_height = 0
   var clear_color    = 0
 
-  var projectionMatrix:matrix_float4x4 = matrix_float4x4()
-  var modelMatrix:matrix_float4x4 = matrix_float4x4()
-  var viewMatrix:matrix_float4x4 = matrix_float4x4()
+  var projectionTransform:matrix_float4x4 = matrix_float4x4()
+  var objectTransform:matrix_float4x4 = matrix_float4x4()
+  var viewTransform:matrix_float4x4 = matrix_float4x4()
 
   // Demo-specific assets
   var mesh     : MTKMesh?
   var colorMap : MTLTexture?
+
+  var positionBuffer : MTLBuffer
+  var colorBuffer    : MTLBuffer
+  var uvBuffer       : MTLBuffer
 
   init?( metalKitView:MTKView )
   {
@@ -102,12 +109,16 @@ class Renderer: NSObject, MTKViewDelegate
     metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
     metalKitView.sampleCount = 1
 
-    mtlVertexDescriptor = Renderer.buildMetalVertexDescriptor()
+    texturedVertexDescriptor = Renderer.buildTexturedVertexDescriptor()
+    coloredVertexDescriptor = Renderer.buildColoredVertexDescriptor()
 
     do
     {
-      pipelineState = try Renderer.buildRenderPipelineWithDevice(device: device, metalKitView: metalKitView,
-          mtlVertexDescriptor: mtlVertexDescriptor)
+      let library = device.makeDefaultLibrary()
+      texturedPipeline = try Renderer.buildTexturedPipeline(device:device, metalKitView:metalKitView,
+          shaderLibrary:library, texturedVertexDescriptor:texturedVertexDescriptor)
+      coloredPipeline = try Renderer.buildColoredPipeline(device: device, metalKitView: metalKitView,
+          shaderLibrary:library, coloredVertexDescriptor:coloredVertexDescriptor)
     }
     catch
     {
@@ -118,66 +129,131 @@ class Renderer: NSObject, MTKViewDelegate
     let depthStateDescriptor = MTLDepthStencilDescriptor()
     depthStateDescriptor.depthCompareFunction = MTLCompareFunction.less
     depthStateDescriptor.isDepthWriteEnabled = true
-    self.depthState = device.makeDepthStencilState(descriptor:depthStateDescriptor)!
+    self.depthTestLT = device.makeDepthStencilState(descriptor:depthStateDescriptor)!
+
+    let positions:[Float] =
+    [
+       0.0,  0.5, 0,
+      -0.5, -0.5, 0,
+       0.5, -0.5, 0
+    ]
+    let colors:[Float] =
+    [
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1
+    ]
+    let uv:[Float] =
+    [
+      0, 0,
+      1, 0,
+      0, 1
+    ]
+
+    self.positionBuffer = self.device.makeBuffer( bytes:positions, length:(9*4), options:[MTLResourceOptions.storageModeShared] )!
+    self.colorBuffer = self.device.makeBuffer( bytes:colors, length:(12*4), options:[MTLResourceOptions.storageModeShared] )!
+    self.uvBuffer = self.device.makeBuffer( bytes:uv, length:(6*4), options:[MTLResourceOptions.storageModeShared] )!
+                                                  //options:MTLResourceOptionCPUCacheModeDefault];
 
     super.init()
   }
 
-  class func buildMetalVertexDescriptor() -> MTLVertexDescriptor
+  class func buildTexturedVertexDescriptor() -> MTLVertexDescriptor
   {
     // Create a Metal vertex descriptor specifying how vertices will by laid out for input into our render
     //   pipeline and how we'll layout our Model IO vertices
 
-    let mtlVertexDescriptor = MTLVertexDescriptor()
+    let texturedVertexDescriptor = MTLVertexDescriptor()
 
-    mtlVertexDescriptor.attributes[VertexAttribute.position.rawValue].format = MTLVertexFormat.float3
-    mtlVertexDescriptor.attributes[VertexAttribute.position.rawValue].offset = 0
-    mtlVertexDescriptor.attributes[VertexAttribute.position.rawValue].bufferIndex = BufferIndex.meshPositions.rawValue
+    texturedVertexDescriptor.attributes[TexturedVertexAttribute.position.rawValue].format = MTLVertexFormat.float3
+    texturedVertexDescriptor.attributes[TexturedVertexAttribute.position.rawValue].offset = 0
+    texturedVertexDescriptor.attributes[TexturedVertexAttribute.position.rawValue].bufferIndex = TexturedBufferIndex.meshPositions.rawValue
 
-    mtlVertexDescriptor.attributes[VertexAttribute.texcoord.rawValue].format = MTLVertexFormat.float2
-    mtlVertexDescriptor.attributes[VertexAttribute.texcoord.rawValue].offset = 0
-    mtlVertexDescriptor.attributes[VertexAttribute.texcoord.rawValue].bufferIndex = BufferIndex.meshGenerics.rawValue
+    texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].format = MTLVertexFormat.float2
+    texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].offset = 0
+    texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].bufferIndex = TexturedBufferIndex.meshGenerics.rawValue
 
-    mtlVertexDescriptor.layouts[BufferIndex.meshPositions.rawValue].stride = 12
-    mtlVertexDescriptor.layouts[BufferIndex.meshPositions.rawValue].stepRate = 1
-    mtlVertexDescriptor.layouts[BufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshPositions.rawValue].stride = 12
+    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshPositions.rawValue].stepRate = 1
+    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-    mtlVertexDescriptor.layouts[BufferIndex.meshGenerics.rawValue].stride = 8
-    mtlVertexDescriptor.layouts[BufferIndex.meshGenerics.rawValue].stepRate = 1
-    mtlVertexDescriptor.layouts[BufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stride = 8
+    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepRate = 1
+    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-    return mtlVertexDescriptor
+    return texturedVertexDescriptor
   }
 
-  class func buildRenderPipelineWithDevice( device:MTLDevice, metalKitView:MTKView,
-      mtlVertexDescriptor: MTLVertexDescriptor) throws -> MTLRenderPipelineState
+  class func buildColoredVertexDescriptor() -> MTLVertexDescriptor
   {
-    /// Build a render state pipeline object
+    let coloredVertexDescriptor = MTLVertexDescriptor()
 
-    let library = device.makeDefaultLibrary()
+    coloredVertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].format = MTLVertexFormat.float3
+    coloredVertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].offset = 0
+    coloredVertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].bufferIndex = ColoredBufferIndex.meshPositions.rawValue
 
-      let vertexFunction = library?.makeFunction(name: "vertexShader")
-      let fragmentFunction = library?.makeFunction(name: "fragmentShader")
+    coloredVertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].format = MTLVertexFormat.float4
+    coloredVertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].offset = 0
+    coloredVertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].bufferIndex = ColoredBufferIndex.meshGenerics.rawValue
 
-      let pipelineDescriptor = MTLRenderPipelineDescriptor()
-      pipelineDescriptor.label = "RenderPipeline"
-      pipelineDescriptor.sampleCount = metalKitView.sampleCount
-      pipelineDescriptor.vertexFunction = vertexFunction
-      pipelineDescriptor.fragmentFunction = fragmentFunction
-      pipelineDescriptor.vertexDescriptor = mtlVertexDescriptor
+    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stride = 12
+    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepRate = 1
+    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-      pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
-      pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-      pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stride = 16
+    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepRate = 1
+    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-      return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+    return coloredVertexDescriptor
+  }
+
+  class func buildTexturedPipeline( device:MTLDevice, metalKitView:MTKView,
+      shaderLibrary:MTLLibrary?, texturedVertexDescriptor:MTLVertexDescriptor )
+      throws -> MTLRenderPipelineState
+  {
+    let vertexFunction = shaderLibrary?.makeFunction(name: "texturedVertexShader")
+    let fragmentFunction = shaderLibrary?.makeFunction(name: "texturedFragmentShader")
+
+    let pipelineDescriptor = MTLRenderPipelineDescriptor()
+    pipelineDescriptor.label = "RenderPipeline"
+    pipelineDescriptor.sampleCount = metalKitView.sampleCount
+    pipelineDescriptor.vertexFunction = vertexFunction
+    pipelineDescriptor.fragmentFunction = fragmentFunction
+    pipelineDescriptor.vertexDescriptor = texturedVertexDescriptor
+
+    pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
+    pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+    pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+
+    return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+  }
+
+  class func buildColoredPipeline( device:MTLDevice, metalKitView:MTKView,
+      shaderLibrary:MTLLibrary?, coloredVertexDescriptor:MTLVertexDescriptor)
+      throws -> MTLRenderPipelineState
+  {
+    let vertexFunction = shaderLibrary?.makeFunction(name: "coloredVertexShader")
+    let fragmentFunction = shaderLibrary?.makeFunction(name: "coloredFragmentShader")
+
+    let pipelineDescriptor = MTLRenderPipelineDescriptor()
+    pipelineDescriptor.label = "RenderPipeline"
+    pipelineDescriptor.sampleCount = metalKitView.sampleCount
+    pipelineDescriptor.vertexFunction = vertexFunction
+    pipelineDescriptor.fragmentFunction = fragmentFunction
+    pipelineDescriptor.vertexDescriptor = coloredVertexDescriptor
+
+    pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
+    pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+    pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+
+    return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
   }
 
   func prepareDemoAssets()
   {
     do
     {
-      mesh = try Renderer.buildMesh(device: device, mtlVertexDescriptor: mtlVertexDescriptor)
+      mesh = try Renderer.buildMesh(device: device, texturedVertexDescriptor: texturedVertexDescriptor)
     }
     catch
     {
@@ -196,7 +272,7 @@ class Renderer: NSObject, MTKViewDelegate
     }
   }
 
-  class func buildMesh( device:MTLDevice, mtlVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
+  class func buildMesh( device:MTLDevice, texturedVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
   {
     /// Create and condition mesh data to feed into a pipeline using the given vertex descriptor
     let metalAllocator = MTKMeshBufferAllocator(device: device)
@@ -206,14 +282,14 @@ class Renderer: NSObject, MTKViewDelegate
         inwardNormals:false,
         allocator: metalAllocator)
 
-    let mdlVertexDescriptor = MTKModelIOVertexDescriptorFromMetal(mtlVertexDescriptor)
+    let mdlVertexDescriptor = MTKModelIOVertexDescriptorFromMetal(texturedVertexDescriptor)
 
     guard let attributes = mdlVertexDescriptor.attributes as? [MDLVertexAttribute] else
     {
       throw RendererError.badVertexDescriptor
     }
-    attributes[VertexAttribute.position.rawValue].name = MDLVertexAttributePosition
-    attributes[VertexAttribute.texcoord.rawValue].name = MDLVertexAttributeTextureCoordinate
+    attributes[TexturedVertexAttribute.position.rawValue].name = MDLVertexAttributePosition
+    attributes[TexturedVertexAttribute.texcoord.rawValue].name = MDLVertexAttributeTextureCoordinate
 
     mdlMesh.vertexDescriptor = mdlVertexDescriptor
 
@@ -260,17 +336,17 @@ class Renderer: NSObject, MTKViewDelegate
               clear_color = q.readInt32()
               continue
             case .PUSH_OBJECT_TRANSFORM:
-              modelMatrix = q.readMatrix()
+              objectTransform = q.readMatrix()
               continue
             case .POP_OBJECT_TRANSFORM:
               continue  // TODO
             case .PUSH_VIEW_TRANSFORM:
-              viewMatrix = q.readMatrix()
+              viewTransform = q.readMatrix()
               continue
             case .POP_VIEW_TRANSFORM:
               continue  // TODO
             case .PUSH_PROJECTION_TRANSFORM:
-              projectionMatrix = q.readMatrix()
+              projectionTransform = q.readMatrix()
               continue
             case .POP_PROJECTION_TRANSFORM:
               continue  // TODO
@@ -329,8 +405,8 @@ class Renderer: NSObject, MTKViewDelegate
       prepareDemoAssets()
     }
 
-    uniforms[0].projectionMatrix = projectionMatrix
-    uniforms[0].modelViewMatrix = simd_mul(viewMatrix, modelMatrix)
+    uniforms[0].projectionTransform = projectionTransform
+    uniforms[0].worldTransform = simd_mul(viewTransform, objectTransform)
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
     ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -352,10 +428,14 @@ class Renderer: NSObject, MTKViewDelegate
         renderEncoder.pushDebugGroup("Draw Box")
         renderEncoder.setCullMode(.back)
         renderEncoder.setFrontFacing(.counterClockwise)
-        renderEncoder.setRenderPipelineState(pipelineState)
-        renderEncoder.setDepthStencilState(depthState)
-        renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: BufferIndex.uniforms.rawValue)
-        renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: BufferIndex.uniforms.rawValue)
+        renderEncoder.setDepthStencilState(depthTestLT)
+
+        //----------------------------------------------------------------------
+        // Cube
+        //----------------------------------------------------------------------
+        renderEncoder.setRenderPipelineState(texturedPipeline)
+        renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
+        renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
 
         for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
         {
@@ -367,18 +447,39 @@ class Renderer: NSObject, MTKViewDelegate
           }
         }
 
-        renderEncoder.setFragmentTexture(colorMap!, index: TextureIndex.color.rawValue)
+        renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
 
-        for submesh in mesh!.submeshes
-        {
-          renderEncoder.drawIndexedPrimitives(
-            type: submesh.primitiveType,
-            indexCount: submesh.indexCount,
-            indexType: submesh.indexType,
-            indexBuffer: submesh.indexBuffer.buffer,
-            indexBufferOffset: submesh.indexBuffer.offset
-          )
-        }
+        //for submesh in mesh!.submeshes
+        //{
+        //  renderEncoder.drawIndexedPrimitives(
+        //    type: submesh.primitiveType,
+        //    indexCount: submesh.indexCount,
+        //    indexType: submesh.indexType,
+        //    indexBuffer: submesh.indexBuffer.buffer,
+        //    indexBufferOffset: submesh.indexBuffer.offset
+        //  )
+        //}
+
+        //----------------------------------------------------------------------
+        // Triangle
+        //----------------------------------------------------------------------
+        renderEncoder.setRenderPipelineState(coloredPipeline)
+        renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: ColoredBufferIndex.uniforms.rawValue)
+        renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: ColoredBufferIndex.uniforms.rawValue)
+
+        renderEncoder.setVertexBuffer( positionBuffer, offset:0, index:ColoredBufferIndex.meshPositions.rawValue )
+        renderEncoder.setVertexBuffer( colorBuffer,    offset:0, index:ColoredBufferIndex.meshGenerics.rawValue )
+
+        //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
+
+        renderEncoder.drawPrimitives(
+          type:          MTLPrimitiveType.triangle,
+          vertexStart:   0,
+          vertexCount:   3,
+          instanceCount: 1
+        )
+
+        //----------------------------------------------------------------------
 
         renderEncoder.popDebugGroup()
         renderEncoder.endEncoding()

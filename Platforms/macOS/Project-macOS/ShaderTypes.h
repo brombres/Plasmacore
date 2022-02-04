@@ -20,29 +20,57 @@
 
 #include <simd/simd.h>
 
-typedef NS_ENUM(NSInteger, BufferIndex)
+//------------------------------------------------------------------------------
+// General
+//------------------------------------------------------------------------------
+typedef struct
 {
-    BufferIndexMeshPositions = 0,
-    BufferIndexMeshGenerics  = 1,
-    BufferIndexUniforms      = 2
-};
-
-typedef NS_ENUM(NSInteger, VertexAttribute)
-{
-    VertexAttributePosition  = 0,
-    VertexAttributeTexcoord  = 1,
-};
+  // Uniforms are shader constants
+    matrix_float4x4 projectionTransform;
+    matrix_float4x4 worldTransform;
+} Uniforms;
 
 typedef NS_ENUM(NSInteger, TextureIndex)
 {
-    TextureIndexColor    = 0,
+  // TextureIndexColor, here, is used as TextureIndex.color in Swift
+  TextureIndexColor = 0,  // Stage 0 of multi-stage textures is the texture color
 };
 
-typedef struct
+
+//------------------------------------------------------------------------------
+// TexturedVertex
+// TransformedTexturedVertex
+//------------------------------------------------------------------------------
+typedef NS_ENUM(NSInteger, TexturedBufferIndex)
 {
-    matrix_float4x4 projectionMatrix;
-    matrix_float4x4 modelViewMatrix;
-} Uniforms;
+    TexturedBufferIndexMeshPositions = 0,
+    TexturedBufferIndexMeshGenerics  = 1,
+    TexturedBufferIndexUniforms      = 2,
+};
+
+typedef NS_ENUM(NSInteger, TexturedVertexAttribute)
+{
+    TexturedVertexAttributePosition = 0,
+    TexturedVertexAttributeTexcoord = 1,
+};
+
+//------------------------------------------------------------------------------
+// ColoredVertex
+// TransformedColoredVertex
+//------------------------------------------------------------------------------
+typedef NS_ENUM(NSInteger, ColoredBufferIndex)
+{
+    ColoredBufferIndexMeshPositions = 0,
+    ColoredBufferIndexMeshGenerics  = 1,
+    ColoredBufferIndexUniforms      = 2,
+};
+
+typedef NS_ENUM(NSInteger, ColoredVertexAttribute)
+{
+    ColoredVertexAttributePosition = 0,
+    ColoredVertexAttributeColor = 1,
+};
+
 
 #endif /* ShaderTypes_h */
 

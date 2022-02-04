@@ -30,7 +30,7 @@ Plasmacore.draw_handler =
     Cube.update
     Display.clear( Color.GRAY )
     ProjectionTransform.push( Matrix.perspective(Degrees(65)->Radians,Display.aspect_ratio,0.1,100) )
-    ViewTransform.push( Matrix.translate(XYZ(0,0,-16)) )
-    ObjectTransform.push( Matrix.rotate(Radians(Cube.rotation), XYZ(1,0,1)) )
+    ViewTransform.push( Matrix.translate(XYZ(0,0,-8)) )
+    ObjectTransform.push( Matrix.rotate(Radians(Cube.rotation), XYZ(1,0,0)) )
   endFunction
 
