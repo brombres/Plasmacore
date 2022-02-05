@@ -28,6 +28,7 @@ enum RendererError : Error
 class Renderer: NSObject, MTKViewDelegate
 {
   public let device        : MTLDevice
+  public let metalKitView  : MTKView
 
   let commandQueue         : MTLCommandQueue
   // A queue of MTLCommandBuffers for rendering. Each MTLCommandBuffer will render
@@ -47,10 +48,14 @@ class Renderer: NSObject, MTKViewDelegate
   // batches have called wait() before any of them call signal(); as soon as
   // one batch finishes and calls signal() than the blocked wait() returns.
 
-  var renderBuffer         : RenderBuffer
+  public let shaderLibrary : MTLLibrary?
 
-  var dynamicUniformBuffer : MTLBuffer
-  var uniformBufferOffset  = 0
+  var renderBuffer         : RenderBuffer
+  var renderModeFillShape  : RenderModeFillShape?
+  var renderMode           : RenderMode?
+
+  public var dynamicUniformBuffer : MTLBuffer
+  public var uniformBufferOffset  = 0
   var uniformBufferIndex   = 0
   var uniforms             : UnsafeMutablePointer<Uniforms>
   // dynamicUniformBuffer
@@ -67,9 +72,6 @@ class Renderer: NSObject, MTKViewDelegate
 
   var texturedVertexDescriptor : MTLVertexDescriptor
   var texturedPipeline         : MTLRenderPipelineState
-
-  var coloredVertexDescriptor  : MTLVertexDescriptor
-  var coloredPipeline          : MTLRenderPipelineState
 
   var depthTestLT              : MTLDepthStencilState
 
@@ -88,11 +90,13 @@ class Renderer: NSObject, MTKViewDelegate
 
   init?( metalKitView:MTKView )
   {
+    self.metalKitView = metalKitView
     metalKitView.preferredFramesPerSecond = 60
 
     self.device       = metalKitView.device!
     self.commandQueue = self.device.makeCommandQueue()!
-    self.renderBuffer = RenderBuffer( device, maxBuffersInFlight )
+
+    renderBuffer = RenderBuffer( device, maxBuffersInFlight )
 
     let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
 
@@ -110,15 +114,12 @@ class Renderer: NSObject, MTKViewDelegate
     metalKitView.sampleCount = 1
 
     texturedVertexDescriptor = Renderer.buildTexturedVertexDescriptor()
-    coloredVertexDescriptor = Renderer.buildColoredVertexDescriptor()
 
+    shaderLibrary = device.makeDefaultLibrary()
     do
     {
-      let library = device.makeDefaultLibrary()
       texturedPipeline = try Renderer.buildTexturedPipeline(device:device, metalKitView:metalKitView,
-          shaderLibrary:library, texturedVertexDescriptor:texturedVertexDescriptor)
-      coloredPipeline = try Renderer.buildColoredPipeline(device: device, metalKitView: metalKitView,
-          shaderLibrary:library, coloredVertexDescriptor:coloredVertexDescriptor)
+          shaderLibrary:shaderLibrary, texturedVertexDescriptor:texturedVertexDescriptor)
     }
     catch
     {
@@ -132,6 +133,13 @@ class Renderer: NSObject, MTKViewDelegate
     self.depthTestLT = device.makeDepthStencilState(descriptor:depthStateDescriptor)!
 
     super.init()
+  }
+
+  func configure()
+  {
+    if (renderMode != nil) { return }
+    renderModeFillShape = RenderModeFillShape( self )
+    renderMode = renderModeFillShape
   }
 
   class func buildTexturedVertexDescriptor() -> MTLVertexDescriptor
@@ -160,29 +168,6 @@ class Renderer: NSObject, MTKViewDelegate
     return texturedVertexDescriptor
   }
 
-  class func buildColoredVertexDescriptor() -> MTLVertexDescriptor
-  {
-    let coloredVertexDescriptor = MTLVertexDescriptor()
-
-    coloredVertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].format = MTLVertexFormat.float3
-    coloredVertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].offset = 0
-    coloredVertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].bufferIndex = ColoredBufferIndex.meshPositions.rawValue
-
-    coloredVertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].format = MTLVertexFormat.float4
-    coloredVertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].offset = 0
-    coloredVertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].bufferIndex = ColoredBufferIndex.meshGenerics.rawValue
-
-    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stride = 12
-    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepRate = 1
-    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
-
-    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stride = 16
-    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepRate = 1
-    coloredVertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
-
-    return coloredVertexDescriptor
-  }
-
   class func buildTexturedPipeline( device:MTLDevice, metalKitView:MTKView,
       shaderLibrary:MTLLibrary?, texturedVertexDescriptor:MTLVertexDescriptor )
       throws -> MTLRenderPipelineState
@@ -196,27 +181,6 @@ class Renderer: NSObject, MTKViewDelegate
     pipelineDescriptor.vertexFunction = vertexFunction
     pipelineDescriptor.fragmentFunction = fragmentFunction
     pipelineDescriptor.vertexDescriptor = texturedVertexDescriptor
-
-    pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
-    pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-    pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-
-    return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-  }
-
-  class func buildColoredPipeline( device:MTLDevice, metalKitView:MTKView,
-      shaderLibrary:MTLLibrary?, coloredVertexDescriptor:MTLVertexDescriptor)
-      throws -> MTLRenderPipelineState
-  {
-    let vertexFunction = shaderLibrary?.makeFunction(name: "coloredVertexShader")
-    let fragmentFunction = shaderLibrary?.makeFunction(name: "coloredFragmentShader")
-
-    let pipelineDescriptor = MTLRenderPipelineDescriptor()
-    pipelineDescriptor.label = "RenderPipeline"
-    pipelineDescriptor.sampleCount = metalKitView.sampleCount
-    pipelineDescriptor.vertexFunction = vertexFunction
-    pipelineDescriptor.fragmentFunction = fragmentFunction
-    pipelineDescriptor.vertexDescriptor = coloredVertexDescriptor
 
     pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
     pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
@@ -365,6 +329,8 @@ class Renderer: NSObject, MTKViewDelegate
 
   func draw(in view: MTKView)
   {
+    configure()
+
     rogueRender()
 
     renderView( view )
@@ -440,31 +406,25 @@ class Renderer: NSObject, MTKViewDelegate
         //----------------------------------------------------------------------
         // Triangle
         //----------------------------------------------------------------------
-        renderEncoder.setRenderPipelineState(coloredPipeline)
-        renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: ColoredBufferIndex.uniforms.rawValue)
-        renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: ColoredBufferIndex.uniforms.rawValue)
+        renderMode!.ensureCapacity( 6 )
 
-        renderBuffer.reservePositionCapacity( 3 )
+        renderBuffer.addPosition( -2.0,  0.5, 0 )
+        renderBuffer.addPosition( -2.5, -0.5, 0 )
+        renderBuffer.addPosition( -1.5, -0.5, 0 )
+
         renderBuffer.addPosition(  0.0,  0.5, 0 )
         renderBuffer.addPosition( -0.5, -0.5, 0 )
         renderBuffer.addPosition(  0.5, -0.5, 0 )
-        renderBuffer.bindPositionBuffer( renderEncoder, ColoredBufferIndex.meshPositions.rawValue )
 
-        renderBuffer.reserveColorCapacity( 3 )
         renderBuffer.addColor( 1, 0, 0, 1 )
         renderBuffer.addColor( 0, 1, 0, 1 )
         renderBuffer.addColor( 0, 0, 1, 1 )
-        renderBuffer.bindColorBuffer( renderEncoder, ColoredBufferIndex.meshGenerics.rawValue )
 
+        renderBuffer.addColor( 0, 0, 1, 1 )
+        renderBuffer.addColor( 0, 0, 1, 1 )
+        renderBuffer.addColor( 0, 0, 1, 1 )
 
-        //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
-
-        renderEncoder.drawPrimitives(
-          type:          MTLPrimitiveType.triangle,
-          vertexStart:   0,
-          vertexCount:   3,
-          instanceCount: 1
-        )
+        renderMode!.render( renderEncoder )
 
         //----------------------------------------------------------------------
 
@@ -487,98 +447,3 @@ class Renderer: NSObject, MTKViewDelegate
     display_height = Int(size.height)
   }
 }
-
-class RenderBuffer
-{
-  let device           : MTLDevice
-  let maxFrames        : Int       // AKA maxBuffersInFlight
-
-  var frame            = 0         // 0..(maxFrames-1)
-
-  var positionCapacity = 6144      // must be a power of 2 for bitwise ops
-  var positionBuffer   : MTLBuffer
-  var positionCursor   = 0
-  public var positions : UnsafeMutablePointer<Float>
-
-  var colorCapacity    = 8192
-  var colorBuffer      : MTLBuffer
-  var colorCursor      = 0
-  public var colors    : UnsafeMutablePointer<Float>
-
-  init( _ device:MTLDevice, _ maxFrames:Int  )
-  {
-    self.device = device
-    self.maxFrames = maxFrames
-
-    positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-    positions = UnsafeMutableRawPointer( positionBuffer.contents() ).bindMemory( to:Float.self, capacity:positionCapacity )
-
-    colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-    colors = UnsafeMutableRawPointer( colorBuffer.contents() ).bindMemory( to:Float.self, capacity:colorCapacity )
-  }
-
-  func addColor( _ b:Float, _ r:Float, _ g:Float, _ a:Float )
-  {
-    colors[colorCursor]   = b
-    colors[colorCursor+1] = r
-    colors[colorCursor+2] = g
-    colors[colorCursor+3] = a
-    colorCursor += 4
-  }
-
-  func addPosition( _ x:Float, _ y:Float, _ z:Float )
-  {
-    positions[positionCursor]   = x
-    positions[positionCursor+1] = y
-    positions[positionCursor+2] = z
-    positionCursor += 3
-  }
-
-  func advanceFrame()
-  {
-    frame = (frame + 1) % maxFrames
-
-    var offset = positionCapacity * 4 * frame
-    positions = UnsafeMutableRawPointer( positionBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:positionCapacity )
-    positionCursor = 0
-
-    offset = colorCapacity * 4 * frame
-    colors = UnsafeMutableRawPointer( colorBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:colorCapacity )
-    colorCursor = 0
-  }
-
-  func bindColorBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
-  {
-    let offset = colorCapacity * 4 * frame
-    renderEncoder.setVertexBuffer( colorBuffer, offset:offset, index:index )
-  }
-
-  func bindPositionBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
-  {
-    let offset = positionCapacity * 4 * frame
-    renderEncoder.setVertexBuffer( positionBuffer, offset:offset, index:index )
-  }
-
-  func reserveColorCapacity( _ capacity:Int )
-  {
-    if (capacity*4 > colorCapacity)
-    {
-      colorCapacity = capacity * 4
-      colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      let offset = colorCapacity * 4 * frame
-      colors = UnsafeMutableRawPointer( colorBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:colorCapacity )
-    }
-  }
-
-  func reservePositionCapacity( _ capacity:Int )
-  {
-    if (capacity*3 > positionCapacity)
-    {
-      positionCapacity = capacity * 3
-      positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      let offset = positionCapacity * 4 * frame
-      positions = UnsafeMutableRawPointer( positionBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:positionCapacity )
-    }
-  }
-}
-

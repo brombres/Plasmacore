@@ -10,6 +10,8 @@
 		309BF32327AE36F200A6738B /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309BF31F27AE36F200A6738B /* Renderer.swift */; };
 		309BF32427AE36F200A6738B /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 309BF32027AE36F200A6738B /* Shaders.metal */; };
 		309BF32527AE36F200A6738B /* RenderCmd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309BF32227AE36F200A6738B /* RenderCmd.swift */; };
+		309BF32827AE677C00A6738B /* RenderBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309BF32627AE677C00A6738B /* RenderBuffer.swift */; };
+		309BF32927AE677C00A6738B /* RenderMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309BF32727AE677C00A6738B /* RenderMode.swift */; };
 		30B4950027A8E54800BCB47D /* Plasmacore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B494FF27A8E54800BCB47D /* Plasmacore.swift */; };
 		30B4950727A8E57A00BCB47D /* RogueInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950127A8E57A00BCB47D /* RogueInterface.mm */; };
 		30B4950827A8E57A00BCB47D /* NativeInterface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30B4950227A8E57A00BCB47D /* NativeInterface.swift */; };
@@ -27,6 +29,8 @@
 		309BF32027AE36F200A6738B /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../../Libraries/Framework/Swift/Shaders.metal; sourceTree = "<group>"; };
 		309BF32127AE36F200A6738B /* ShaderTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ShaderTypes.h; path = ../../../Libraries/Framework/Swift/ShaderTypes.h; sourceTree = "<group>"; };
 		309BF32227AE36F200A6738B /* RenderCmd.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderCmd.swift; path = ../../../Libraries/Framework/Swift/RenderCmd.swift; sourceTree = "<group>"; };
+		309BF32627AE677C00A6738B /* RenderBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderBuffer.swift; path = ../../../Libraries/Framework/Swift/RenderBuffer.swift; sourceTree = "<group>"; };
+		309BF32727AE677C00A6738B /* RenderMode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderMode.swift; path = ../../../Libraries/Framework/Swift/RenderMode.swift; sourceTree = "<group>"; };
 		30B494FF27A8E54800BCB47D /* Plasmacore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Plasmacore.swift; path = ../../../Libraries/Framework/Swift/Plasmacore.swift; sourceTree = "<group>"; };
 		30B4950127A8E57A00BCB47D /* RogueInterface.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueInterface.mm; path = ../../../Libraries/Framework/Swift/RogueInterface.mm; sourceTree = "<group>"; };
 		30B4950227A8E57A00BCB47D /* NativeInterface.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = NativeInterface.swift; path = ../../../Libraries/Framework/Swift/NativeInterface.swift; sourceTree = "<group>"; };
@@ -58,6 +62,8 @@
 		30B494FE27A8E52000BCB47D /* Plasmacore */ = {
 			isa = PBXGroup;
 			children = (
+				309BF32627AE677C00A6738B /* RenderBuffer.swift */,
+				309BF32727AE677C00A6738B /* RenderMode.swift */,
 				309BF32227AE36F200A6738B /* RenderCmd.swift */,
 				309BF31F27AE36F200A6738B /* Renderer.swift */,
 				309BF32027AE36F200A6738B /* Shaders.metal */,
@@ -208,6 +214,8 @@
 				309BF32527AE36F200A6738B /* RenderCmd.swift in Sources */,
 				309BF32327AE36F200A6738B /* Renderer.swift in Sources */,
 				30B4950827A8E57A00BCB47D /* NativeInterface.swift in Sources */,
+				309BF32827AE677C00A6738B /* RenderBuffer.swift in Sources */,
+				309BF32927AE677C00A6738B /* RenderMode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
