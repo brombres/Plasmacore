@@ -86,9 +86,6 @@ class Renderer: NSObject, MTKViewDelegate
   var mesh     : MTKMesh?
   var colorMap : MTLTexture?
 
-  var positionBuffer : MTLBuffer
-  var colorBuffer    : MTLBuffer
-
   init?( metalKitView:MTKView )
   {
     metalKitView.preferredFramesPerSecond = 60
@@ -133,23 +130,6 @@ class Renderer: NSObject, MTKViewDelegate
     depthStateDescriptor.depthCompareFunction = MTLCompareFunction.less
     depthStateDescriptor.isDepthWriteEnabled = true
     self.depthTestLT = device.makeDepthStencilState(descriptor:depthStateDescriptor)!
-
-    let positions:[Float] =
-    [
-       0.0,  0.5, 0,
-      -0.5, -0.5, 0,
-       0.5, -0.5, 0
-    ]
-    let colors:[Float] =
-    [
-      1, 0, 0, 1,
-      0, 1, 0, 1,
-      0, 0, 1, 1
-    ]
-
-    self.positionBuffer = self.device.makeBuffer( bytes:positions, length:(9*4), options:[MTLResourceOptions.storageModeShared] )!
-    self.colorBuffer = self.device.makeBuffer( bytes:colors, length:(12*4), options:[MTLResourceOptions.storageModeShared] )!
-                                                  //options:MTLResourceOptionCPUCacheModeDefault];
 
     super.init()
   }
@@ -373,6 +353,7 @@ class Renderer: NSObject, MTKViewDelegate
       uniformBufferIndex  = (uniformBufferIndex + 1) % maxBuffersInFlight
       uniformBufferOffset = alignedUniformsSize * uniformBufferIndex
       uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents() + uniformBufferOffset).bindMemory(to:Uniforms.self, capacity:1)
+      renderBuffer.advanceFrame()
 
       return commandBuffer
     }
@@ -463,8 +444,18 @@ class Renderer: NSObject, MTKViewDelegate
         renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: ColoredBufferIndex.uniforms.rawValue)
         renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: ColoredBufferIndex.uniforms.rawValue)
 
-        renderEncoder.setVertexBuffer( positionBuffer, offset:0, index:ColoredBufferIndex.meshPositions.rawValue )
-        renderEncoder.setVertexBuffer( colorBuffer,    offset:0, index:ColoredBufferIndex.meshGenerics.rawValue )
+        renderBuffer.reservePositionCapacity( 3 )
+        renderBuffer.addPosition(  0.0,  0.5, 0 )
+        renderBuffer.addPosition( -0.5, -0.5, 0 )
+        renderBuffer.addPosition(  0.5, -0.5, 0 )
+        renderBuffer.bindPositionBuffer( renderEncoder, ColoredBufferIndex.meshPositions.rawValue )
+
+        renderBuffer.reserveColorCapacity( 3 )
+        renderBuffer.addColor( 1, 0, 0, 1 )
+        renderBuffer.addColor( 0, 1, 0, 1 )
+        renderBuffer.addColor( 0, 0, 1, 1 )
+        renderBuffer.bindColorBuffer( renderEncoder, ColoredBufferIndex.meshGenerics.rawValue )
+
 
         //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
 
@@ -504,10 +495,15 @@ class RenderBuffer
 
   var frame            = 0         // 0..(maxFrames-1)
 
-  var positionCapacity = 4096      // must be a power of 2 for bitwise ops
+  var positionCapacity = 6144      // must be a power of 2 for bitwise ops
   var positionBuffer   : MTLBuffer
-
+  var positionCursor   = 0
   public var positions : UnsafeMutablePointer<Float>
+
+  var colorCapacity    = 8192
+  var colorBuffer      : MTLBuffer
+  var colorCursor      = 0
+  public var colors    : UnsafeMutablePointer<Float>
 
   init( _ device:MTLDevice, _ maxFrames:Int  )
   {
@@ -516,6 +512,73 @@ class RenderBuffer
 
     positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
     positions = UnsafeMutableRawPointer( positionBuffer.contents() ).bindMemory( to:Float.self, capacity:positionCapacity )
+
+    colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
+    colors = UnsafeMutableRawPointer( colorBuffer.contents() ).bindMemory( to:Float.self, capacity:colorCapacity )
+  }
+
+  func addColor( _ b:Float, _ r:Float, _ g:Float, _ a:Float )
+  {
+    colors[colorCursor]   = b
+    colors[colorCursor+1] = r
+    colors[colorCursor+2] = g
+    colors[colorCursor+3] = a
+    colorCursor += 4
+  }
+
+  func addPosition( _ x:Float, _ y:Float, _ z:Float )
+  {
+    positions[positionCursor]   = x
+    positions[positionCursor+1] = y
+    positions[positionCursor+2] = z
+    positionCursor += 3
+  }
+
+  func advanceFrame()
+  {
+    frame = (frame + 1) % maxFrames
+
+    var offset = positionCapacity * 4 * frame
+    positions = UnsafeMutableRawPointer( positionBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:positionCapacity )
+    positionCursor = 0
+
+    offset = colorCapacity * 4 * frame
+    colors = UnsafeMutableRawPointer( colorBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:colorCapacity )
+    colorCursor = 0
+  }
+
+  func bindColorBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
+  {
+    let offset = colorCapacity * 4 * frame
+    renderEncoder.setVertexBuffer( colorBuffer, offset:offset, index:index )
+  }
+
+  func bindPositionBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
+  {
+    let offset = positionCapacity * 4 * frame
+    renderEncoder.setVertexBuffer( positionBuffer, offset:offset, index:index )
+  }
+
+  func reserveColorCapacity( _ capacity:Int )
+  {
+    if (capacity*4 > colorCapacity)
+    {
+      colorCapacity = capacity * 4
+      colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
+      let offset = colorCapacity * 4 * frame
+      colors = UnsafeMutableRawPointer( colorBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:colorCapacity )
+    }
+  }
+
+  func reservePositionCapacity( _ capacity:Int )
+  {
+    if (capacity*3 > positionCapacity)
+    {
+      positionCapacity = capacity * 3
+      positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
+      let offset = positionCapacity * 4 * frame
+      positions = UnsafeMutableRawPointer( positionBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:positionCapacity )
+    }
   }
 }
 
