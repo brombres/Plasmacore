@@ -20,7 +20,8 @@ let maxBuffersInFlight = 3
 // The maximum number of MTLCommandBuffers (AKA frame renders) that can
 // be queued for rendering.
 
-enum RendererError : Error {
+enum RendererError : Error
+{
   case badVertexDescriptor
 }
 
@@ -45,6 +46,8 @@ class Renderer: NSObject, MTKViewDelegate
   // The wait() call will decrement the counter and continue. It blocks if 3
   // batches have called wait() before any of them call signal(); as soon as
   // one batch finishes and calls signal() than the blocked wait() returns.
+
+  var renderBuffer         : RenderBuffer
 
   var dynamicUniformBuffer : MTLBuffer
   var uniformBufferOffset  = 0
@@ -85,7 +88,6 @@ class Renderer: NSObject, MTKViewDelegate
 
   var positionBuffer : MTLBuffer
   var colorBuffer    : MTLBuffer
-  var uvBuffer       : MTLBuffer
 
   init?( metalKitView:MTKView )
   {
@@ -93,6 +95,7 @@ class Renderer: NSObject, MTKViewDelegate
 
     self.device       = metalKitView.device!
     self.commandQueue = self.device.makeCommandQueue()!
+    self.renderBuffer = RenderBuffer( device, maxBuffersInFlight )
 
     let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
 
@@ -143,16 +146,9 @@ class Renderer: NSObject, MTKViewDelegate
       0, 1, 0, 1,
       0, 0, 1, 1
     ]
-    let uv:[Float] =
-    [
-      0, 0,
-      1, 0,
-      0, 1
-    ]
 
     self.positionBuffer = self.device.makeBuffer( bytes:positions, length:(9*4), options:[MTLResourceOptions.storageModeShared] )!
     self.colorBuffer = self.device.makeBuffer( bytes:colors, length:(12*4), options:[MTLResourceOptions.storageModeShared] )!
-    self.uvBuffer = self.device.makeBuffer( bytes:uv, length:(6*4), options:[MTLResourceOptions.storageModeShared] )!
                                                   //options:MTLResourceOptionCPUCacheModeDefault];
 
     super.init()
@@ -498,6 +494,28 @@ class Renderer: NSObject, MTKViewDelegate
     /// Respond to drawable size or orientation changes here
     display_width  = Int(size.width)
     display_height = Int(size.height)
+  }
+}
+
+class RenderBuffer
+{
+  let device           : MTLDevice
+  let maxFrames        : Int       // AKA maxBuffersInFlight
+
+  var frame            = 0         // 0..(maxFrames-1)
+
+  var positionCapacity = 4096      // must be a power of 2 for bitwise ops
+  var positionBuffer   : MTLBuffer
+
+  public var positions : UnsafeMutablePointer<Float>
+
+  init( _ device:MTLDevice, _ maxFrames:Int  )
+  {
+    self.device = device
+    self.maxFrames = maxFrames
+
+    positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
+    positions = UnsafeMutableRawPointer( positionBuffer.contents() ).bindMemory( to:Float.self, capacity:positionCapacity )
   }
 }
 
