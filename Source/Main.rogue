@@ -9,7 +9,7 @@ class Cube [singleton]
 
   METHODS
     method update
-      rotation += 0.1
+      rotation += 0.01
 endClass
 
 MessageListener["Cube.state"] =

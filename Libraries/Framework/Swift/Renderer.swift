@@ -50,9 +50,11 @@ class Renderer: NSObject, MTKViewDelegate
 
   public let shaderLibrary : MTLLibrary?
 
-  var renderBuffer         : RenderBuffer
-  var renderModeFillShape  : RenderModeFillShape?
-  var renderMode           : RenderMode?
+  var renderBuffer                 : RenderBuffer
+
+  var isConfigured                 = false
+  var renderModeDrawLines          : RenderModeDrawLines?
+  var renderModeFillSolidTriangles : RenderModeFillSolidTriangles?
 
   public var dynamicUniformBuffer : MTLBuffer
   public var uniformBufferOffset  = 0
@@ -128,7 +130,7 @@ class Renderer: NSObject, MTKViewDelegate
     }
 
     let depthStateDescriptor = MTLDepthStencilDescriptor()
-    depthStateDescriptor.depthCompareFunction = MTLCompareFunction.less
+    depthStateDescriptor.depthCompareFunction = MTLCompareFunction.always
     depthStateDescriptor.isDepthWriteEnabled = true
     self.depthTestLT = device.makeDepthStencilState(descriptor:depthStateDescriptor)!
 
@@ -137,9 +139,10 @@ class Renderer: NSObject, MTKViewDelegate
 
   func configure()
   {
-    if (renderMode != nil) { return }
-    renderModeFillShape = RenderModeFillShape( self )
-    renderMode = renderModeFillShape
+    if (isConfigured) { return }
+    isConfigured = true
+    renderModeDrawLines          = RenderModeDrawLines( self )
+    renderModeFillSolidTriangles = RenderModeFillSolidTriangles( self )
   }
 
   class func buildTexturedVertexDescriptor() -> MTLVertexDescriptor
@@ -406,7 +409,8 @@ class Renderer: NSObject, MTKViewDelegate
         //----------------------------------------------------------------------
         // Triangle
         //----------------------------------------------------------------------
-        renderMode!.ensureCapacity( 6 )
+        var renderMode = renderModeFillSolidTriangles!.activate()
+        renderMode.reserveCapacity( 2 )
 
         renderBuffer.addPosition( -2.0,  0.5, 0 )
         renderBuffer.addPosition( -2.5, -0.5, 0 )
@@ -424,7 +428,41 @@ class Renderer: NSObject, MTKViewDelegate
         renderBuffer.addColor( 0, 0, 1, 1 )
         renderBuffer.addColor( 0, 0, 1, 1 )
 
-        renderMode!.render( renderEncoder )
+        renderMode.render( renderEncoder )
+
+
+        renderMode = renderModeDrawLines!.activate()
+        renderMode.reserveCapacity( 6 )
+
+        renderBuffer.addPosition( -2.0,  0.5, 0 )
+        renderBuffer.addPosition( -2.5, -0.5, 0 )
+        renderBuffer.addPosition( -2.5, -0.5, 0 )
+        renderBuffer.addPosition( -1.5, -0.5, 0 )
+        renderBuffer.addPosition( -1.5, -0.5, 0 )
+        renderBuffer.addPosition( -2.0,  0.5, 0 )
+
+
+        renderBuffer.addPosition(  0.0,  0.5, 0 )
+        renderBuffer.addPosition( -0.5, -0.5, 0 )
+        renderBuffer.addPosition( -0.5, -0.5, 0 )
+        renderBuffer.addPosition(  0.5, -0.5, 0 )
+        renderBuffer.addPosition(  0.5, -0.5, 0 )
+        renderBuffer.addPosition(  0.0,  0.5, 0 )
+
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+        renderBuffer.addColor( 1, 1, 1, 1 )
+
+        renderMode.render( renderEncoder )
 
         //----------------------------------------------------------------------
 

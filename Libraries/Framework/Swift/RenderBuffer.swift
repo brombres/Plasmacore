@@ -5,12 +5,12 @@ class RenderBuffer
 
   var frame                = 0         // 0..(maxFrames-1)
 
-  var positionCapacity     = 6144      // must be a power of 2 for bitwise ops
+  var positionCapacity     = 100
   var positionBuffer       : MTLBuffer
   public var positionCount = 0
   public var positions     : UnsafeMutablePointer<Float>
 
-  var colorCapacity        = 8192
+  var colorCapacity        = 100
   var colorBuffer          : MTLBuffer
   var colorCount           = 0
   public var colors        : UnsafeMutablePointer<Float>
@@ -21,10 +21,9 @@ class RenderBuffer
     self.maxFrames = maxFrames
 
     positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-    positions = UnsafeMutableRawPointer( positionBuffer.contents() ).bindMemory( to:Float.self, capacity:positionCapacity )
-
     colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-    colors = UnsafeMutableRawPointer( colorBuffer.contents() ).bindMemory( to:Float.self, capacity:colorCapacity )
+    positions = RenderBuffer.makeBufferPointer( positionBuffer, positionCapacity, frame )
+    colors = RenderBuffer.makeBufferPointer( colorBuffer, colorCapacity, frame )
   }
 
   func addColor( _ b:Float, _ r:Float, _ g:Float, _ a:Float )
@@ -47,48 +46,58 @@ class RenderBuffer
   func advanceFrame()
   {
     frame = (frame + 1) % maxFrames
-
-    var offset = positionCapacity * 4 * frame
-    positions = UnsafeMutableRawPointer( positionBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:positionCapacity )
     positionCount = 0
-
-    offset = colorCapacity * 4 * frame
-    colors = UnsafeMutableRawPointer( colorBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:colorCapacity )
     colorCount = 0
+    updateBufferPointers()
   }
 
-  func bindColorBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
+  func bindColorBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ firstIndex:Int, _ index:Int )
   {
-    let offset = colorCapacity * 4 * frame
+    let offset = (colorCapacity * frame + firstIndex) * 4
     renderEncoder.setVertexBuffer( colorBuffer, offset:offset, index:index )
   }
 
-  func bindPositionBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
+  func bindPositionBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ firstIndex:Int, _ index:Int )
   {
-    let offset = positionCapacity * 4 * frame
+    let offset = (positionCapacity * frame + firstIndex) * 4
     renderEncoder.setVertexBuffer( positionBuffer, offset:offset, index:index )
   }
 
-  func ensureColorCapacity( _ capacity:Int )
+  func reserveColorCapacity( _ additionalCapacity:Int )
   {
-    if (capacity > colorCapacity)
+    let requiredCapacity = colorCount + additionalCapacity
+    if (requiredCapacity > colorCapacity)
     {
-      colorCapacity = capacity
+      colorCapacity = requiredCapacity
       colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      let offset = colorCapacity * 4 * frame
-      colors = UnsafeMutableRawPointer( colorBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:colorCapacity )
+      colors    = RenderBuffer.makeBufferPointer( colorBuffer, colorCapacity, frame )
     }
   }
 
-  func ensurePositionCapacity( _ capacity:Int )
+  func reservePositionCapacity( _ additionalCapacity:Int )
   {
-    if (capacity > positionCapacity)
+    let requiredCapacity = positionCount + additionalCapacity
+    if (requiredCapacity > positionCapacity)
     {
-      positionCapacity = capacity
+      positionCapacity = requiredCapacity
       positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      let offset = positionCapacity * 4 * frame
-      positions = UnsafeMutableRawPointer( positionBuffer.contents() + offset ).bindMemory( to:Float.self, capacity:positionCapacity )
+      positions = RenderBuffer.makeBufferPointer( positionBuffer, positionCapacity, frame )
     }
+  }
+
+  func updateBufferPointers()
+  {
+    positions = RenderBuffer.makeBufferPointer( positionBuffer, positionCapacity, frame )
+    colors    = RenderBuffer.makeBufferPointer( colorBuffer, colorCapacity, frame )
+  }
+
+  //----------------------------------------------------------------------------
+  // Class Functions
+  //----------------------------------------------------------------------------
+  class func makeBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Float>
+  {
+    let offset = capacity * 4 * frame
+    return UnsafeMutableRawPointer( buffer.contents() + offset ).bindMemory( to:Float.self, capacity:capacity )
   }
 }
 

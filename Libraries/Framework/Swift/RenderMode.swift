@@ -1,13 +1,26 @@
+//==============================================================================
+// RenderMode
+//==============================================================================
 class RenderMode
 {
   let renderer : Renderer
+  var vertexDescriptor   : MTLVertexDescriptor?
+  var pipeline           : MTLRenderPipelineState?
+  var firstPositionIndex = 0
+
 
   init( _ renderer:Renderer )
   {
     self.renderer = renderer
   }
 
-  func ensureCapacity( _ n:Int )
+  func activate()->RenderMode
+  {
+    firstPositionIndex = renderer.renderBuffer.positionCount
+    return self
+  }
+
+  func reserveCapacity( _ n:Int )
   {
     preconditionFailure( "Override required." )
   }
@@ -18,17 +31,22 @@ class RenderMode
   }
 }
 
-class RenderModeFillShape : RenderMode
+//==============================================================================
+// RenderModeColoredShapes
+//==============================================================================
+class RenderModeColoredShapes : RenderMode
 {
-  let vertexDescriptor : MTLVertexDescriptor
-  var pipeline         : MTLRenderPipelineState?
+  var firstColorIndex = 0
 
-  override init( _ renderer:Renderer )
+  init( _ renderer:Renderer, _ label:String )
   {
+    super.init( renderer )
+
     //--------------------------------------------------------------------------
     // Vertex Descriptor
     //--------------------------------------------------------------------------
-    vertexDescriptor = MTLVertexDescriptor()
+    let vertexDescriptor = MTLVertexDescriptor()
+    self.vertexDescriptor = vertexDescriptor
 
     vertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].format = MTLVertexFormat.float3
     vertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].offset = 0
@@ -56,7 +74,7 @@ class RenderModeFillShape : RenderMode
       let metalKitView = renderer.metalKitView
 
       let pipelineDescriptor = MTLRenderPipelineDescriptor()
-      pipelineDescriptor.label = "RenderPipeline"
+      pipelineDescriptor.label = label
       pipelineDescriptor.sampleCount = metalKitView.sampleCount
       pipelineDescriptor.vertexFunction = vertexFunction
       pipelineDescriptor.fragmentFunction = fragmentFunction
@@ -69,16 +87,14 @@ class RenderModeFillShape : RenderMode
     }
     catch
     {
-      print("Unable to compile RenderModeFillShape pipeline state: \(error)")
+      print("Unable to compile \(label) pipeline state: \(error)")
     }
-
-    super.init( renderer )
   }
 
-  override func ensureCapacity( _ n:Int )
+  override func activate()->RenderMode
   {
-    renderer.renderBuffer.ensurePositionCapacity( n*3 )
-    renderer.renderBuffer.ensureColorCapacity( n*4 )
+    firstColorIndex = renderer.renderBuffer.colorCount
+    return super.activate()
   }
 
   override func render( _ renderEncoder:MTLRenderCommandEncoder )
@@ -96,13 +112,73 @@ class RenderModeFillShape : RenderMode
       index:  ColoredBufferIndex.uniforms.rawValue
     )
 
-    renderer.renderBuffer.bindPositionBuffer( renderEncoder, ColoredBufferIndex.meshPositions.rawValue )
-    renderer.renderBuffer.bindColorBuffer( renderEncoder, ColoredBufferIndex.meshGenerics.rawValue )
+    renderer.renderBuffer.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
+    renderer.renderBuffer.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
+  }
+}
 
+//==============================================================================
+// RenderModeDrawLines
+//==============================================================================
+class RenderModeDrawLines : RenderModeColoredShapes
+{
+  let verticesPerLine = 2
+  let positionValuesPerVertex = 3
+  let colorValuesPerVertex    = 4
+
+  init( _ renderer:Renderer )
+  {
+    super.init( renderer, "DrawLines" )
+  }
+
+  override func reserveCapacity( _ n:Int )
+  {
+    renderer.renderBuffer.reservePositionCapacity( n * positionValuesPerVertex * verticesPerLine )
+    renderer.renderBuffer.reserveColorCapacity( n * colorValuesPerVertex * verticesPerLine )
+  }
+
+  override func render( _ renderEncoder:MTLRenderCommandEncoder )
+  {
+    super.render( renderEncoder )
+
+    let count = (renderer.renderBuffer.positionCount - firstPositionIndex) / positionValuesPerVertex
+    renderEncoder.drawPrimitives(
+      type:        MTLPrimitiveType.line,
+      vertexStart: 0,
+      vertexCount: count
+    )
+  }
+}
+
+//==============================================================================
+// RenderModeFillSolidTriangles
+//==============================================================================
+class RenderModeFillSolidTriangles : RenderModeColoredShapes
+{
+  let verticesPerTriangle = 3
+  let positionValuesPerVertex = 3
+  let colorValuesPerVertex    = 4
+
+  init( _ renderer:Renderer )
+  {
+    super.init( renderer, "FillSolidTriangles" )
+  }
+
+  override func reserveCapacity( _ n:Int )
+  {
+    renderer.renderBuffer.reservePositionCapacity( n * positionValuesPerVertex * verticesPerTriangle )
+    renderer.renderBuffer.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
+  }
+
+  override func render( _ renderEncoder:MTLRenderCommandEncoder )
+  {
+    super.render( renderEncoder )
+
+    let count = (renderer.renderBuffer.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
       type:          MTLPrimitiveType.triangle,
       vertexStart:   0,
-      vertexCount:   renderer.renderBuffer.positionCount
+      vertexCount:   count
     )
   }
 }
