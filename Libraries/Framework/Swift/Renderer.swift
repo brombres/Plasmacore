@@ -11,7 +11,7 @@ import Metal
 import MetalKit
 import simd
 
-let alignedUniformsSize = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
+//let alignedUniformsSize = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
 // The 256 byte aligned size of our uniform structure.
 // "Uniforms" are shader variables that remain constant for a given render batch
 // such as projectionTransform and worldTransform.
@@ -56,10 +56,10 @@ class Renderer: NSObject, MTKViewDelegate
   var renderModeDrawLines          : RenderModeDrawLines?
   var renderModeFillSolidTriangles : RenderModeFillSolidTriangles?
 
-  public var dynamicUniformBuffer : MTLBuffer
-  public var uniformBufferOffset  = 0
-  var uniformBufferIndex   = 0
-  var uniforms             : UnsafeMutablePointer<Uniforms>
+  //public var dynamicUniformBuffer : MTLBuffer
+  //public var uniformBufferOffset  = 0
+  //var uniformBufferIndex   = 0
+  //var uniforms             : UnsafeMutablePointer<Uniforms>
   // dynamicUniformBuffer
   //   Three sets of transform matrices for our max of three concurrent batches
   //
@@ -100,16 +100,16 @@ class Renderer: NSObject, MTKViewDelegate
 
     renderBuffer = RenderBuffer( device, maxBuffersInFlight )
 
-    let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
+    //let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
 
-    self.dynamicUniformBuffer = self.device.makeBuffer(
-      length:uniformBufferSize,
-      options:[MTLResourceOptions.storageModeShared]
-    )!
+    //self.dynamicUniformBuffer = self.device.makeBuffer(
+      //length:uniformBufferSize,
+      //options:[MTLResourceOptions.storageModeShared]
+    //)!
 
-    self.dynamicUniformBuffer.label = "UniformBuffer"
+    //self.dynamicUniformBuffer.label = "UniformBuffer"
 
-    uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents()).bindMemory(to:Uniforms.self, capacity:1)
+    //uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents()).bindMemory(to:Uniforms.self, capacity:1)
 
     metalKitView.depthStencilPixelFormat = MTLPixelFormat.depth32Float_stencil8
     metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
@@ -317,9 +317,6 @@ class Renderer: NSObject, MTKViewDelegate
           semaphore.signal()
       }
 
-      uniformBufferIndex  = (uniformBufferIndex + 1) % maxBuffersInFlight
-      uniformBufferOffset = alignedUniformsSize * uniformBufferIndex
-      uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents() + uniformBufferOffset).bindMemory(to:Uniforms.self, capacity:1)
       renderBuffer.advanceFrame()
 
       return commandBuffer
@@ -351,8 +348,9 @@ class Renderer: NSObject, MTKViewDelegate
       prepareDemoAssets()
     }
 
-    uniforms[0].projectionTransform = projectionTransform
-    uniforms[0].worldTransform = simd_mul(viewTransform, objectTransform)
+    renderBuffer.addUniforms()
+    renderBuffer.uniforms[0].projectionTransform = projectionTransform
+    renderBuffer.uniforms[0].worldTransform = simd_mul(viewTransform, objectTransform)
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
     ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -379,21 +377,21 @@ class Renderer: NSObject, MTKViewDelegate
         //----------------------------------------------------------------------
         // Cube
         //----------------------------------------------------------------------
-        renderEncoder.setRenderPipelineState(texturedPipeline)
-        renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
-        renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
+        //renderEncoder.setRenderPipelineState(texturedPipeline)
+        //renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
+        //renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
 
-        for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
-        {
-          guard let layout = element as? MDLVertexBufferLayout else { return }
-          if layout.stride != 0
-          {
-            let buffer = mesh!.vertexBuffers[index]
-            renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
-          }
-        }
+        //for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
+        //{
+        //  guard let layout = element as? MDLVertexBufferLayout else { return }
+        //  if layout.stride != 0
+        //  {
+        //    let buffer = mesh!.vertexBuffers[index]
+        //    renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
+        //  }
+        //}
 
-        renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
+        //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
 
         //for submesh in mesh!.submeshes
         //{

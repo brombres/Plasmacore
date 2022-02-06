@@ -1,3 +1,5 @@
+let sizeOfUniforms = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
+
 class RenderBuffer
 {
   let device               : MTLDevice
@@ -5,25 +7,42 @@ class RenderBuffer
 
   var frame                = 0         // 0..(maxFrames-1)
 
-  var positionCapacity     = 384  // must be 3 or higher
+  var positionCapacity     = 384  // must be at least 3 to start
   var positionBuffer       : MTLBuffer
   public var positionCount = 0
   public var positions     : UnsafeMutablePointer<Float>
 
-  var colorCapacity        = 256  // must be 4 or higher
+  var colorCapacity        = 256  // must be at least 4 to start
   var colorBuffer          : MTLBuffer
   var colorCount           = 0
   public var colors        : UnsafeMutablePointer<Float>
+
+  var uniformsCapacity     = 8  // must be at least 1 to start
+  var uniformsBuffer       : MTLBuffer
+  var uniformsCount        = 0
+  public var uniforms      : UnsafeMutablePointer<Uniforms>
 
   init( _ device:MTLDevice, _ maxFrames:Int  )
   {
     self.device = device
     self.maxFrames = maxFrames
 
-    positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-    colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-    positions = RenderBuffer.makeBufferPointer( positionBuffer, positionCapacity, frame )
-    colors = RenderBuffer.makeBufferPointer( colorBuffer, colorCapacity, frame )
+    positionBuffer = device.makeBuffer(
+                       length:(positionCapacity*4*maxFrames),
+                       options:[MTLResourceOptions.storageModeShared]
+                     )!
+    colorBuffer = device.makeBuffer(
+                    length:(colorCapacity*4*maxFrames),
+                    options:[MTLResourceOptions.storageModeShared]
+                  )!
+    uniformsBuffer = device.makeBuffer(
+                       length:(uniformsCapacity*sizeOfUniforms*maxFrames),
+                       options:[MTLResourceOptions.storageModeShared]
+                     )!
+
+    positions = RenderBuffer.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
+    colors = RenderBuffer.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
+    uniforms = RenderBuffer.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
   }
 
   func addColor( _ r:Float, _ g:Float, _ b:Float, _ a:Float )
@@ -54,11 +73,18 @@ class RenderBuffer
     positionCount += 3
   }
 
+  func addUniforms()
+  {
+    if (uniformsCount + 1 > uniformsCapacity) { reserveUniformsCapacity(uniformsCapacity*2) }
+    uniformsCount += 1
+  }
+
   func advanceFrame()
   {
     frame = (frame + 1) % maxFrames
     positionCount = 0
     colorCount = 0
+    uniformsCount = 0
     updateBufferPointers()
   }
 
@@ -74,6 +100,14 @@ class RenderBuffer
     renderEncoder.setVertexBuffer( positionBuffer, offset:offset, index:index )
   }
 
+  func bindUniformsBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
+  {
+    if (uniformsCount == 0) { addUniforms(); }
+    let offset = (uniformsCapacity * frame + (uniformsCount-1)) * sizeOfUniforms
+    renderEncoder.setVertexBuffer( uniformsBuffer, offset:offset, index:index )
+    renderEncoder.setFragmentBuffer( uniformsBuffer, offset:offset, index:index )
+  }
+
   func reserveColorCapacity( _ additionalCapacity:Int )
   {
     let requiredCapacity = colorCount + additionalCapacity
@@ -81,7 +115,7 @@ class RenderBuffer
     {
       colorCapacity = requiredCapacity
       colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      colors    = RenderBuffer.makeBufferPointer( colorBuffer, colorCapacity, frame )
+      colors    = RenderBuffer.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
     }
   }
 
@@ -92,23 +126,44 @@ class RenderBuffer
     {
       positionCapacity = requiredCapacity
       positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      positions = RenderBuffer.makeBufferPointer( positionBuffer, positionCapacity, frame )
+      positions = RenderBuffer.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
+    }
+  }
+
+  func reserveUniformsCapacity( _ additionalCapacity:Int )
+  {
+    let requiredCapacity = uniformsCount + additionalCapacity
+    if (requiredCapacity > uniformsCapacity)
+    {
+      uniformsCapacity = requiredCapacity
+      uniformsBuffer = device.makeBuffer(
+                         length:(uniformsCapacity*sizeOfUniforms*maxFrames),
+                         options:[MTLResourceOptions.storageModeShared]
+                       )!
+      uniforms = RenderBuffer.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
     }
   }
 
   func updateBufferPointers()
   {
-    positions = RenderBuffer.makeBufferPointer( positionBuffer, positionCapacity, frame )
-    colors    = RenderBuffer.makeBufferPointer( colorBuffer, colorCapacity, frame )
+    positions = RenderBuffer.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
+    colors    = RenderBuffer.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
+    uniforms  = RenderBuffer.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
   }
 
   //----------------------------------------------------------------------------
   // Class Functions
   //----------------------------------------------------------------------------
-  class func makeBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Float>
+  class func makeFloatBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Float>
   {
     let offset = capacity * 4 * frame
     return UnsafeMutableRawPointer( buffer.contents() + offset ).bindMemory( to:Float.self, capacity:capacity )
+  }
+
+  class func makeUniformsBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Uniforms>
+  {
+    let offset = capacity * sizeOfUniforms * frame
+    return UnsafeMutableRawPointer(buffer.contents() + offset).bindMemory(to:Uniforms.self, capacity:capacity)
   }
 }
 

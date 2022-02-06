@@ -100,19 +100,9 @@ class RenderModeColoredShapes : RenderMode
   {
     renderEncoder.setRenderPipelineState( pipeline! )
 
-    renderEncoder.setVertexBuffer(
-      renderer.dynamicUniformBuffer,
-      offset: renderer.uniformBufferOffset,
-      index:  ColoredBufferIndex.uniforms.rawValue
-    )
-    renderEncoder.setFragmentBuffer(
-      renderer.dynamicUniformBuffer,
-      offset: renderer.uniformBufferOffset,
-      index:  ColoredBufferIndex.uniforms.rawValue
-    )
-
     renderer.renderBuffer.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
     renderer.renderBuffer.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
+    renderer.renderBuffer.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
   }
 }
 
