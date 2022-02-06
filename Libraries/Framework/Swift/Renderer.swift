@@ -409,60 +409,68 @@ class Renderer: NSObject, MTKViewDelegate
         //----------------------------------------------------------------------
         // Triangle
         //----------------------------------------------------------------------
-        var renderMode = renderModeFillSolidTriangles!.activate()
-        renderMode.reserveCapacity( 2 )
+        if let renderMode = renderModeFillSolidTriangles
+        {
+          renderMode.activate()
+          renderMode.reserveCapacity( 2 )
 
-        renderBuffer.addPosition( -2.0,  0.5, 0 )
-        renderBuffer.addPosition( -2.5, -0.5, 0 )
-        renderBuffer.addPosition( -1.5, -0.5, 0 )
+          renderBuffer.addPosition( -2.0,  0.5, 0 )
+          renderBuffer.addPosition( -2.5, -0.5, 0 )
+          renderBuffer.addPosition( -1.5, -0.5, 0 )
 
-        renderBuffer.addPosition(  0.0,  0.5, 0 )
-        renderBuffer.addPosition( -0.5, -0.5, 0 )
-        renderBuffer.addPosition(  0.5, -0.5, 0 )
+          renderBuffer.addPosition(  0.0,  0.5, 0 )
+          renderBuffer.addPosition( -0.5, -0.5, 0 )
+          renderBuffer.addPosition(  0.5, -0.5, 0 )
 
-        renderBuffer.addColor( 1, 0, 0, 1 )
-        renderBuffer.addColor( 0, 1, 0, 1 )
-        renderBuffer.addColor( 0, 0, 1, 1 )
+          renderBuffer.addColor( 1, 0, 0, 1 )
+          renderBuffer.addColor( 0, 1, 0, 1 )
+          renderBuffer.addColor( 0, 0, 1, 1 )
 
-        renderBuffer.addColor( 0, 0, 1, 1 )
-        renderBuffer.addColor( 0, 0, 1, 1 )
-        renderBuffer.addColor( 0, 0, 1, 1 )
+          renderBuffer.addColor( 1, 0, 0, 1 )
+          renderBuffer.addColor( 1, 0, 0, 1 )
+          renderBuffer.addColor( 1, 0, 0, 1 )
+          //renderBuffer.addColor( 0xffFF0000 )
+          //renderBuffer.addColor( 0xffFF0000 )
+          //renderBuffer.addColor( 0xffFF0000 )
 
-        renderMode.render( renderEncoder )
+          renderMode.render( renderEncoder )
+        }
+
+        if let renderMode = renderModeDrawLines
+        {
+          renderMode.activate()
+          renderMode.reserveCapacity( 6 )
+
+          renderBuffer.addPosition( -2.0,  0.5, 0 )
+          renderBuffer.addPosition( -2.5, -0.5, 0 )
+          renderBuffer.addPosition( -2.5, -0.5, 0 )
+          renderBuffer.addPosition( -1.5, -0.5, 0 )
+          renderBuffer.addPosition( -1.5, -0.5, 0 )
+          renderBuffer.addPosition( -2.0,  0.5, 0 )
 
 
-        renderMode = renderModeDrawLines!.activate()
-        renderMode.reserveCapacity( 6 )
+          renderBuffer.addPosition(  0.0,  0.5, 0 )
+          renderBuffer.addPosition( -0.5, -0.5, 0 )
+          renderBuffer.addPosition( -0.5, -0.5, 0 )
+          renderBuffer.addPosition(  0.5, -0.5, 0 )
+          renderBuffer.addPosition(  0.5, -0.5, 0 )
+          renderBuffer.addPosition(  0.0,  0.5, 0 )
 
-        renderBuffer.addPosition( -2.0,  0.5, 0 )
-        renderBuffer.addPosition( -2.5, -0.5, 0 )
-        renderBuffer.addPosition( -2.5, -0.5, 0 )
-        renderBuffer.addPosition( -1.5, -0.5, 0 )
-        renderBuffer.addPosition( -1.5, -0.5, 0 )
-        renderBuffer.addPosition( -2.0,  0.5, 0 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
+          renderBuffer.addColor( 0xffFFFF00 )
 
-
-        renderBuffer.addPosition(  0.0,  0.5, 0 )
-        renderBuffer.addPosition( -0.5, -0.5, 0 )
-        renderBuffer.addPosition( -0.5, -0.5, 0 )
-        renderBuffer.addPosition(  0.5, -0.5, 0 )
-        renderBuffer.addPosition(  0.5, -0.5, 0 )
-        renderBuffer.addPosition(  0.0,  0.5, 0 )
-
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-        renderBuffer.addColor( 1, 1, 1, 1 )
-
-        renderMode.render( renderEncoder )
+          renderMode.render( renderEncoder )
+        }
 
         //----------------------------------------------------------------------
 

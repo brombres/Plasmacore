@@ -14,10 +14,9 @@ class RenderMode
     self.renderer = renderer
   }
 
-  func activate()->RenderMode
+  func activate()
   {
     firstPositionIndex = renderer.renderBuffer.positionCount
-    return self
   }
 
   func reserveCapacity( _ n:Int )
@@ -91,10 +90,10 @@ class RenderModeColoredShapes : RenderMode
     }
   }
 
-  override func activate()->RenderMode
+  override func activate()
   {
+    super.activate()
     firstColorIndex = renderer.renderBuffer.colorCount
-    return super.activate()
   }
 
   override func render( _ renderEncoder:MTLRenderCommandEncoder )
