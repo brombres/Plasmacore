@@ -16,7 +16,7 @@ class RenderMode
 
   func activate()
   {
-    firstPositionIndex = renderer.renderBuffer.positionCount
+    firstPositionIndex = renderer.renderData.positionCount
   }
 
   func reserveCapacity( _ n:Int )
@@ -28,24 +28,24 @@ class RenderMode
   {
     renderEncoder.setRenderPipelineState( pipeline! )
 
-    let renderBuffer = renderer.renderBuffer
+    let renderData = renderer.renderData
 
-    if let projectionTransform = renderBuffer.projectionTransformStack.last
+    if let projectionTransform = renderData.projectionTransformStack.last
     {
-      renderBuffer.uniforms[0].projectionTransform = projectionTransform
+      renderData.uniforms[0].projectionTransform = projectionTransform
     }
     else
     {
-      renderBuffer.uniforms[0].projectionTransform = Matrix.identity()
+      renderData.uniforms[0].projectionTransform = Matrix.identity()
     }
 
-    if let worldTransform = renderBuffer.worldTransformStack.last
+    if let worldTransform = renderData.worldTransformStack.last
     {
-      renderBuffer.uniforms[0].worldTransform = worldTransform
+      renderData.uniforms[0].worldTransform = worldTransform
     }
     else
     {
-      renderBuffer.uniforms[0].worldTransform = Matrix.identity()
+      renderData.uniforms[0].worldTransform = Matrix.identity()
     }
   }
 }
@@ -113,17 +113,17 @@ class RenderModeColoredShapes : RenderMode
   override func activate()
   {
     super.activate()
-    firstColorIndex = renderer.renderBuffer.colorCount
+    firstColorIndex = renderer.renderData.colorCount
   }
 
   override func render( _ renderEncoder:MTLRenderCommandEncoder )
   {
     super.render( renderEncoder )
 
-    let renderBuffer = renderer.renderBuffer
-    renderBuffer.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
-    renderBuffer.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
-    renderBuffer.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
+    let renderData = renderer.renderData
+    renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
+    renderData.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
+    renderData.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
   }
 }
 
@@ -143,15 +143,15 @@ class RenderModeDrawLines : RenderModeColoredShapes
 
   override func reserveCapacity( _ n:Int )
   {
-    renderer.renderBuffer.reservePositionCapacity( n * positionValuesPerVertex * verticesPerLine )
-    renderer.renderBuffer.reserveColorCapacity( n * colorValuesPerVertex * verticesPerLine )
+    renderer.renderData.reservePositionCapacity( n * positionValuesPerVertex * verticesPerLine )
+    renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerLine )
   }
 
   override func render( _ renderEncoder:MTLRenderCommandEncoder )
   {
     super.render( renderEncoder )
 
-    let count = (renderer.renderBuffer.positionCount - firstPositionIndex) / positionValuesPerVertex
+    let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
       type:        MTLPrimitiveType.line,
       vertexStart: 0,
@@ -176,15 +176,15 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
 
   override func reserveCapacity( _ n:Int )
   {
-    renderer.renderBuffer.reservePositionCapacity( n * positionValuesPerVertex * verticesPerTriangle )
-    renderer.renderBuffer.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
+    renderer.renderData.reservePositionCapacity( n * positionValuesPerVertex * verticesPerTriangle )
+    renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
   }
 
   override func render( _ renderEncoder:MTLRenderCommandEncoder )
   {
     super.render( renderEncoder )
 
-    let count = (renderer.renderBuffer.positionCount - firstPositionIndex) / positionValuesPerVertex
+    let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
       type:          MTLPrimitiveType.triangle,
       vertexStart:   0,

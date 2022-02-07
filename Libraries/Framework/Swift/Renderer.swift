@@ -45,7 +45,7 @@ class Renderer: NSObject, MTKViewDelegate
 
   public let shaderLibrary : MTLLibrary?
 
-  var renderBuffer                 : RenderData
+  var renderData                 : RenderData
 
   var isConfigured                 = false
   var renderModeDrawLines          : RenderModeDrawLines?
@@ -69,7 +69,7 @@ class Renderer: NSObject, MTKViewDelegate
     self.device       = metalKitView.device!
     self.commandQueue = self.device.makeCommandQueue()!
 
-    renderBuffer = RenderData( device, maxBuffersInFlight )
+    renderData = RenderData( device, maxBuffersInFlight )
 
     metalKitView.depthStencilPixelFormat = MTLPixelFormat.depth32Float_stencil8
     metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
@@ -115,7 +115,7 @@ class Renderer: NSObject, MTKViewDelegate
           semaphore.signal()
       }
 
-      renderBuffer.advanceFrame()
+      renderData.advanceFrame()
 
       return commandBuffer
     }
@@ -205,7 +205,7 @@ class Renderer: NSObject, MTKViewDelegate
       }
     }
 
-    renderBuffer.clearTransforms()
+    renderData.clearTransforms()
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
     ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -240,22 +240,22 @@ class Renderer: NSObject, MTKViewDelegate
               case .END_CANVAS:
                 break
               case .PUSH_OBJECT_TRANSFORM:
-                renderBuffer.pushObjectTransform( q.readMatrix() )
+                renderData.pushObjectTransform( q.readMatrix() )
                 continue
               case .POP_OBJECT_TRANSFORM:
-                renderBuffer.popObjectTransform()
+                renderData.popObjectTransform()
                 continue
               case .PUSH_VIEW_TRANSFORM:
-                renderBuffer.pushViewTransform( q.readMatrix() )
+                renderData.pushViewTransform( q.readMatrix() )
                 continue
               case .POP_VIEW_TRANSFORM:
-                renderBuffer.popViewTransform()
+                renderData.popViewTransform()
                 continue
               case .PUSH_PROJECTION_TRANSFORM:
-                renderBuffer.pushProjectionTransform( q.readMatrix() )
+                renderData.pushProjectionTransform( q.readMatrix() )
                 continue
               case .POP_PROJECTION_TRANSFORM:
-                renderBuffer.popProjectionTransform()
+                renderData.popProjectionTransform()
                 continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )
@@ -276,24 +276,24 @@ class Renderer: NSObject, MTKViewDelegate
           renderMode.activate()
           renderMode.reserveCapacity( 2 )
 
-          renderBuffer.addPosition( -2.0,  0.5, 0 )
-          renderBuffer.addPosition( -2.5, -0.5, 0 )
-          renderBuffer.addPosition( -1.5, -0.5, 0 )
+          renderData.addPosition( -2.0,  0.5, 0 )
+          renderData.addPosition( -2.5, -0.5, 0 )
+          renderData.addPosition( -1.5, -0.5, 0 )
 
-          renderBuffer.addPosition(  0.0,  0.5, 0 )
-          renderBuffer.addPosition( -0.5, -0.5, 0 )
-          renderBuffer.addPosition(  0.5, -0.5, 0 )
+          renderData.addPosition(  0.0,  0.5, 0 )
+          renderData.addPosition( -0.5, -0.5, 0 )
+          renderData.addPosition(  0.5, -0.5, 0 )
 
-          renderBuffer.addColor( 1, 0, 0, 1 )
-          renderBuffer.addColor( 0, 1, 0, 1 )
-          renderBuffer.addColor( 0, 0, 1, 1 )
+          renderData.addColor( 1, 0, 0, 1 )
+          renderData.addColor( 0, 1, 0, 1 )
+          renderData.addColor( 0, 0, 1, 1 )
 
-          renderBuffer.addColor( 1, 0, 0, 1 )
-          renderBuffer.addColor( 1, 0, 0, 1 )
-          renderBuffer.addColor( 1, 0, 0, 1 )
-          //renderBuffer.addColor( 0xffFF0000 )
-          //renderBuffer.addColor( 0xffFF0000 )
-          //renderBuffer.addColor( 0xffFF0000 )
+          renderData.addColor( 1, 0, 0, 1 )
+          renderData.addColor( 1, 0, 0, 1 )
+          renderData.addColor( 1, 0, 0, 1 )
+          //renderData.addColor( 0xffFF0000 )
+          //renderData.addColor( 0xffFF0000 )
+          //renderData.addColor( 0xffFF0000 )
 
           renderMode.render( renderEncoder )
         }
@@ -303,33 +303,33 @@ class Renderer: NSObject, MTKViewDelegate
           renderMode.activate()
           renderMode.reserveCapacity( 6 )
 
-          renderBuffer.addPosition( -2.0,  0.5, 0 )
-          renderBuffer.addPosition( -2.5, -0.5, 0 )
-          renderBuffer.addPosition( -2.5, -0.5, 0 )
-          renderBuffer.addPosition( -1.5, -0.5, 0 )
-          renderBuffer.addPosition( -1.5, -0.5, 0 )
-          renderBuffer.addPosition( -2.0,  0.5, 0 )
+          renderData.addPosition( -2.0,  0.5, 0 )
+          renderData.addPosition( -2.5, -0.5, 0 )
+          renderData.addPosition( -2.5, -0.5, 0 )
+          renderData.addPosition( -1.5, -0.5, 0 )
+          renderData.addPosition( -1.5, -0.5, 0 )
+          renderData.addPosition( -2.0,  0.5, 0 )
 
 
-          renderBuffer.addPosition(  0.0,  0.5, 0 )
-          renderBuffer.addPosition( -0.5, -0.5, 0 )
-          renderBuffer.addPosition( -0.5, -0.5, 0 )
-          renderBuffer.addPosition(  0.5, -0.5, 0 )
-          renderBuffer.addPosition(  0.5, -0.5, 0 )
-          renderBuffer.addPosition(  0.0,  0.5, 0 )
+          renderData.addPosition(  0.0,  0.5, 0 )
+          renderData.addPosition( -0.5, -0.5, 0 )
+          renderData.addPosition( -0.5, -0.5, 0 )
+          renderData.addPosition(  0.5, -0.5, 0 )
+          renderData.addPosition(  0.5, -0.5, 0 )
+          renderData.addPosition(  0.0,  0.5, 0 )
 
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
-          renderBuffer.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
+          renderData.addColor( 0xffFFFF00 )
 
           renderMode.render( renderEncoder )
         }
