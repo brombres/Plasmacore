@@ -215,6 +215,11 @@ class PlasmacoreMessage
     return vector_float4( x, y, z, w )
   }
 
+  func skip( _ byte_count:Int )
+  {
+    position += byte_count
+  }
+
   func writeByte( _ value:Int )
   {
     data.append( UInt8(value&255) )

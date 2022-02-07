@@ -172,3 +172,131 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
   }
 }
 
+
+// Texture stuff
+  //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].format = MTLVertexFormat.float2
+  //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].offset = 0
+  //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].bufferIndex = TexturedBufferIndex.meshGenerics.rawValue
+
+  //  texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stride = 8
+  //  texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepRate = 1
+  //  texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+
+  //class func buildTexturedPipeline( device:MTLDevice, metalKitView:MTKView,
+  //    shaderLibrary:MTLLibrary?, texturedVertexDescriptor:MTLVertexDescriptor )
+  //    throws -> MTLRenderPipelineState
+  //{
+  //  let vertexFunction = shaderLibrary?.makeFunction(name: "texturedVertexShader")
+  //  let fragmentFunction = shaderLibrary?.makeFunction(name: "texturedFragmentShader")
+
+  //  let pipelineDescriptor = MTLRenderPipelineDescriptor()
+  //  pipelineDescriptor.label = "RenderPipeline"
+  //  pipelineDescriptor.sampleCount = metalKitView.sampleCount
+  //  pipelineDescriptor.vertexFunction = vertexFunction
+  //  pipelineDescriptor.fragmentFunction = fragmentFunction
+  //  pipelineDescriptor.vertexDescriptor = texturedVertexDescriptor
+
+  //  pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
+  //  pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+  //  pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
+
+  //  return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+  //}
+
+  //func prepareDemoAssets()
+  //{
+  //  do
+  //  {
+  //    mesh = try Renderer.buildMesh(device: device, texturedVertexDescriptor: texturedVertexDescriptor)
+  //  }
+  //  catch
+  //  {
+  //    print("Unable to build MetalKit Mesh. Error info: \(error)")
+  //    return
+  //  }
+
+  //  do
+  //  {
+  //    colorMap = try Renderer.loadTexture(device: device, textureName: "ColorMap")
+  //  }
+  //  catch
+  //  {
+  //    print("Unable to load texture. Error info: \(error)")
+  //    return
+  //  }
+  //}
+
+  //class func buildMesh( device:MTLDevice, texturedVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
+  //{
+  //  /// Create and condition mesh data to feed into a pipeline using the given vertex descriptor
+  //  let metalAllocator = MTKMeshBufferAllocator(device: device)
+  //  let mdlMesh = MDLMesh.newBox(withDimensions: SIMD3<Float>(4, 4, 4),
+  //      segments: SIMD3<UInt32>(2, 2, 2),
+  //      geometryType: MDLGeometryType.triangles,
+  //      inwardNormals:false,
+  //      allocator: metalAllocator)
+
+  //  let mdlVertexDescriptor = MTKModelIOVertexDescriptorFromMetal(texturedVertexDescriptor)
+
+  //  guard let attributes = mdlVertexDescriptor.attributes as? [MDLVertexAttribute] else
+  //  {
+  //    throw RendererError.badVertexDescriptor
+  //  }
+  //  attributes[TexturedVertexAttribute.position.rawValue].name = MDLVertexAttributePosition
+  //  attributes[TexturedVertexAttribute.texcoord.rawValue].name = MDLVertexAttributeTextureCoordinate
+
+  //  mdlMesh.vertexDescriptor = mdlVertexDescriptor
+
+  //  return try MTKMesh(mesh:mdlMesh, device:device)
+  //}
+
+  //class func loadTexture(device: MTLDevice,
+  //    textureName: String) throws -> MTLTexture
+  //{
+  //  /// Load texture data with optimal parameters for sampling
+  //  let textureLoader = MTKTextureLoader(device: device)
+
+  //  let textureLoaderOptions =
+  //  [
+  //    MTKTextureLoader.Option.textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
+  //    MTKTextureLoader.Option.textureStorageMode: NSNumber(value: MTLStorageMode.`private`.rawValue)
+  //  ]
+
+  //  return try textureLoader.newTexture(
+  //    name        : textureName,
+  //    scaleFactor : 1.0,
+  //    bundle      : nil,
+  //    options     : textureLoaderOptions
+  //  )
+  //}
+
+        //----------------------------------------------------------------------
+        // Cube
+        //----------------------------------------------------------------------
+        //renderEncoder.setRenderPipelineState(texturedPipeline)
+        //renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
+        //renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
+
+        //for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
+        //{
+        //  guard let layout = element as? MDLVertexBufferLayout else { return }
+        //  if layout.stride != 0
+        //  {
+        //    let buffer = mesh!.vertexBuffers[index]
+        //    renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
+        //  }
+        //}
+
+        //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
+
+        //for submesh in mesh!.submeshes
+        //{
+        //  renderEncoder.drawIndexedPrimitives(
+        //    type: submesh.primitiveType,
+        //    indexCount: submesh.indexCount,
+        //    indexType: submesh.indexType,
+        //    indexBuffer: submesh.indexBuffer.buffer,
+        //    indexBufferOffset: submesh.indexBuffer.offset
+        //  )
+        //}
+

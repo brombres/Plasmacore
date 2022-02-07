@@ -11,11 +11,6 @@ import Metal
 import MetalKit
 import simd
 
-//let alignedUniformsSize = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
-// The 256 byte aligned size of our uniform structure.
-// "Uniforms" are shader variables that remain constant for a given render batch
-// such as projectionTransform and worldTransform.
-
 let maxBuffersInFlight = 3
 // The maximum number of MTLCommandBuffers (AKA frame renders) that can
 // be queued for rendering.
@@ -56,35 +51,11 @@ class Renderer: NSObject, MTKViewDelegate
   var renderModeDrawLines          : RenderModeDrawLines?
   var renderModeFillSolidTriangles : RenderModeFillSolidTriangles?
 
-  //public var dynamicUniformBuffer : MTLBuffer
-  //public var uniformBufferOffset  = 0
-  //var uniformBufferIndex   = 0
-  //var uniforms             : UnsafeMutablePointer<Uniforms>
-  // dynamicUniformBuffer
-  //   Three sets of transform matrices for our max of three concurrent batches
-  //
-  // uniformBufferIndex
-  //   0..2 - the index of the current batch uniform data.
-  //
-  // uniformBufferOffset
-  //   The byte offset of the current batch uniform data.
-  //
-  // uniforms
-  //   A pointer to the current batch uniforms.
-
-  var texturedVertexDescriptor : MTLVertexDescriptor
-  var texturedPipeline         : MTLRenderPipelineState
-
   var depthTestLT              : MTLDepthStencilState
 
   // Display state
   var display_width  = 0
   var display_height = 0
-  var clear_color    = 0
-
-  var projectionTransform:matrix_float4x4 = matrix_float4x4()
-  var objectTransform:matrix_float4x4 = matrix_float4x4()
-  var viewTransform:matrix_float4x4 = matrix_float4x4()
 
   // Demo-specific assets
   var mesh     : MTKMesh?
@@ -100,34 +71,11 @@ class Renderer: NSObject, MTKViewDelegate
 
     renderBuffer = RenderBuffer( device, maxBuffersInFlight )
 
-    //let uniformBufferSize = alignedUniformsSize * maxBuffersInFlight
-
-    //self.dynamicUniformBuffer = self.device.makeBuffer(
-      //length:uniformBufferSize,
-      //options:[MTLResourceOptions.storageModeShared]
-    //)!
-
-    //self.dynamicUniformBuffer.label = "UniformBuffer"
-
-    //uniforms = UnsafeMutableRawPointer(dynamicUniformBuffer.contents()).bindMemory(to:Uniforms.self, capacity:1)
-
     metalKitView.depthStencilPixelFormat = MTLPixelFormat.depth32Float_stencil8
     metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
     metalKitView.sampleCount = 1
 
-    texturedVertexDescriptor = Renderer.buildTexturedVertexDescriptor()
-
     shaderLibrary = device.makeDefaultLibrary()
-    do
-    {
-      texturedPipeline = try Renderer.buildTexturedPipeline(device:device, metalKitView:metalKitView,
-          shaderLibrary:shaderLibrary, texturedVertexDescriptor:texturedVertexDescriptor)
-    }
-    catch
-    {
-      print("Unable to compile render pipeline state.  Error info: \(error)")
-        return nil
-    }
 
     let depthStateDescriptor = MTLDepthStencilDescriptor()
     depthStateDescriptor.depthCompareFunction = MTLCompareFunction.always
@@ -145,175 +93,13 @@ class Renderer: NSObject, MTKViewDelegate
     renderModeFillSolidTriangles = RenderModeFillSolidTriangles( self )
   }
 
-  class func buildTexturedVertexDescriptor() -> MTLVertexDescriptor
-  {
-    // Create a Metal vertex descriptor specifying how vertices will by laid out for input into our render
-    //   pipeline and how we'll layout our Model IO vertices
-
-    let texturedVertexDescriptor = MTLVertexDescriptor()
-
-    texturedVertexDescriptor.attributes[TexturedVertexAttribute.position.rawValue].format = MTLVertexFormat.float3
-    texturedVertexDescriptor.attributes[TexturedVertexAttribute.position.rawValue].offset = 0
-    texturedVertexDescriptor.attributes[TexturedVertexAttribute.position.rawValue].bufferIndex = TexturedBufferIndex.meshPositions.rawValue
-
-    texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].format = MTLVertexFormat.float2
-    texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].offset = 0
-    texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].bufferIndex = TexturedBufferIndex.meshGenerics.rawValue
-
-    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshPositions.rawValue].stride = 12
-    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshPositions.rawValue].stepRate = 1
-    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
-
-    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stride = 8
-    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepRate = 1
-    texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
-
-    return texturedVertexDescriptor
-  }
-
-  class func buildTexturedPipeline( device:MTLDevice, metalKitView:MTKView,
-      shaderLibrary:MTLLibrary?, texturedVertexDescriptor:MTLVertexDescriptor )
-      throws -> MTLRenderPipelineState
-  {
-    let vertexFunction = shaderLibrary?.makeFunction(name: "texturedVertexShader")
-    let fragmentFunction = shaderLibrary?.makeFunction(name: "texturedFragmentShader")
-
-    let pipelineDescriptor = MTLRenderPipelineDescriptor()
-    pipelineDescriptor.label = "RenderPipeline"
-    pipelineDescriptor.sampleCount = metalKitView.sampleCount
-    pipelineDescriptor.vertexFunction = vertexFunction
-    pipelineDescriptor.fragmentFunction = fragmentFunction
-    pipelineDescriptor.vertexDescriptor = texturedVertexDescriptor
-
-    pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
-    pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-    pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-
-    return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-  }
-
-  func prepareDemoAssets()
-  {
-    do
-    {
-      mesh = try Renderer.buildMesh(device: device, texturedVertexDescriptor: texturedVertexDescriptor)
-    }
-    catch
-    {
-      print("Unable to build MetalKit Mesh. Error info: \(error)")
-      return
-    }
-
-    do
-    {
-      colorMap = try Renderer.loadTexture(device: device, textureName: "ColorMap")
-    }
-    catch
-    {
-      print("Unable to load texture. Error info: \(error)")
-      return
-    }
-  }
-
-  class func buildMesh( device:MTLDevice, texturedVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
-  {
-    /// Create and condition mesh data to feed into a pipeline using the given vertex descriptor
-    let metalAllocator = MTKMeshBufferAllocator(device: device)
-    let mdlMesh = MDLMesh.newBox(withDimensions: SIMD3<Float>(4, 4, 4),
-        segments: SIMD3<UInt32>(2, 2, 2),
-        geometryType: MDLGeometryType.triangles,
-        inwardNormals:false,
-        allocator: metalAllocator)
-
-    let mdlVertexDescriptor = MTKModelIOVertexDescriptorFromMetal(texturedVertexDescriptor)
-
-    guard let attributes = mdlVertexDescriptor.attributes as? [MDLVertexAttribute] else
-    {
-      throw RendererError.badVertexDescriptor
-    }
-    attributes[TexturedVertexAttribute.position.rawValue].name = MDLVertexAttributePosition
-    attributes[TexturedVertexAttribute.texcoord.rawValue].name = MDLVertexAttributeTextureCoordinate
-
-    mdlMesh.vertexDescriptor = mdlVertexDescriptor
-
-    return try MTKMesh(mesh:mdlMesh, device:device)
-  }
-
-  class func loadTexture(device: MTLDevice,
-      textureName: String) throws -> MTLTexture
-  {
-    /// Load texture data with optimal parameters for sampling
-    let textureLoader = MTKTextureLoader(device: device)
-
-    let textureLoaderOptions =
-    [
-      MTKTextureLoader.Option.textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-      MTKTextureLoader.Option.textureStorageMode: NSNumber(value: MTLStorageMode.`private`.rawValue)
-    ]
-
-    return try textureLoader.newTexture(
-      name        : textureName,
-      scaleFactor : 1.0,
-      bundle      : nil,
-      options     : textureLoaderOptions
-    )
-  }
-
-  private func rogueRender()
+  private func rogueRender()->PlasmacoreMessage?
   {
     let m = PlasmacoreMessage( "Display.render" )
     m.writeInt32X( 0 )  // display_id
     m.writeInt32X( display_width )
     m.writeInt32X( display_height )
-    if let q = m.send()
-    {
-      while (true)
-      {
-        let opcode = q.readInt32X()
-print( "\(RenderCmd(rawValue:opcode)!)" )
-        if let cmd = RenderCmd( rawValue:opcode )
-        {
-          switch (cmd)
-          {
-            case .END_RENDER:
-              break
-            case .BEGIN_CANVAS:
-              let canvas_id = q.readInt32X()
-              if (canvas_id != 0) { print( "[TODO] Render offscreen canvas" ) }
-              let size = q.readInt32()  // skip size of following command bytes
-              continue
-            case .END_CANVAS:
-              continue
-            case .HEADER_CLEAR_COLOR:
-              clear_color = q.readInt32()
-              continue
-            case .HEADER_END:
-              print( "[TODO] HEADER_END" )
-              continue
-            case .PUSH_OBJECT_TRANSFORM:
-              objectTransform = q.readMatrix()
-              continue
-            case .POP_OBJECT_TRANSFORM:
-              continue  // TODO
-            case .PUSH_VIEW_TRANSFORM:
-              viewTransform = q.readMatrix()
-              continue
-            case .POP_VIEW_TRANSFORM:
-              continue  // TODO
-            case .PUSH_PROJECTION_TRANSFORM:
-              projectionTransform = q.readMatrix()
-              continue
-            case .POP_PROJECTION_TRANSFORM:
-              continue  // TODO
-          }
-          break  // END
-        }
-        else
-        {
-          print( "[ERROR] Unhandled RenderCmd" )
-        }
-      }
-    }
+    return m.send()
   }
 
   func makeCommandBuffer()->MTLCommandBuffer?
@@ -343,26 +129,86 @@ print( "\(RenderCmd(rawValue:opcode)!)" )
   {
     configure()
 
-    rogueRender()
+    guard let q = rogueRender() else { return }
 
-    renderView( view )
+    guard let commandBuffer = makeCommandBuffer() else { return }
+
+    while (true)
+    {
+      let opcode = q.readInt32X()
+      //print( "\(RenderCmd(rawValue:opcode)!)" )
+      if let cmd = RenderCmd( rawValue:opcode )
+      {
+        switch (cmd)
+        {
+          case .END_RENDER:
+            break
+          case .BEGIN_CANVAS:
+            let canvasID = q.readInt32X()
+            let byteSize = q.readInt32()
+            if (canvasID != 0)
+            {
+              print( "[TODO] Render offscreen canvas" )
+              q.skip( byteSize )
+              continue
+            }
+            else
+            {
+              renderCanvas( view, q, canvasID, commandBuffer )
+            }
+          default:
+            print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )
+        }
+        break  // END
+      }
+      else
+      {
+        print( "[ERROR] Unhandled RenderCmd \(opcode)" )
+      }
+    }
+
+    if let drawable = view.currentDrawable
+    {
+      commandBuffer.present(drawable)
+    }
+    commandBuffer.commit()
+
     Plasmacore.singleton.collect_garbage()
   }
 
-  func renderView( _ view:MTKView )
+  func renderCanvas( _ view:MTKView, _ q:PlasmacoreMessage, _ canvasID:Int, _ commandBuffer:MTLCommandBuffer )
   {
-    guard let commandBuffer = makeCommandBuffer() else { return }
+    var clearColor = 0
 
-    if (mesh == nil)
+    // Process render queue header
+    while (true)
     {
-      // Better to check a flag and see if we've already tried to load the assets, but these
-      // demo assets will be going away soon anyhow.
-      prepareDemoAssets()
+      let opcode = q.readInt32X()
+      //print( "\(RenderCmd(rawValue:opcode)!)" )
+      if let cmd = RenderCmd( rawValue:opcode )
+      {
+        switch (cmd)
+        {
+          case .HEADER_CLEAR_COLOR:
+            clearColor = q.readInt32()
+            continue
+          case .HEADER_END:
+            break
+          default:
+            print( "[ERROR] Unexpected render queue header command \(RenderCmd(rawValue:opcode)!)" )
+        }
+        break  // END
+      }
+      else
+      {
+        print( "[ERROR] Unhandled RenderCmd \(opcode)" )
+      }
     }
 
+    var projectionTransform:matrix_float4x4 = matrix_float4x4()
+    var objectTransform:matrix_float4x4 = matrix_float4x4()
+    var viewTransform:matrix_float4x4 = matrix_float4x4()
     renderBuffer.addUniforms()
-    renderBuffer.uniforms[0].projectionTransform = projectionTransform
-    renderBuffer.uniforms[0].worldTransform = simd_mul(viewTransform, objectTransform)
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
     ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -370,7 +216,7 @@ print( "\(RenderCmd(rawValue:opcode)!)" )
 
     if let renderPass = renderPass
     {
-      let bg = UInt( clear_color )
+      let bg = UInt( clearColor )
       let bg_r = Double( (bg >> 16) & 255 ) / 255.0
       let bg_g = Double( (bg >> 8)  & 255 ) / 255.0
       let bg_b = Double(  bg        & 255 ) / 255.0
@@ -378,43 +224,52 @@ print( "\(RenderCmd(rawValue:opcode)!)" )
       renderPass.colorAttachments[0].clearColor = MTLClearColorMake( bg_r, bg_g, bg_b, bg_a )
 
       /// Final pass rendering code here
-      if let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPass)
+      if let renderEncoder = commandBuffer.makeRenderCommandEncoder( descriptor:renderPass )
       {
-        renderEncoder.label = "Primary Render Encoder"
-        renderEncoder.pushDebugGroup("Draw Box")
+        renderEncoder.label = "Canvas \(canvasID) Render Encoder"
+        //renderEncoder.pushDebugGroup("Draw Box")
         renderEncoder.setCullMode(.back)
         renderEncoder.setFrontFacing(.counterClockwise)
         renderEncoder.setDepthStencilState(depthTestLT)
 
-        //----------------------------------------------------------------------
-        // Cube
-        //----------------------------------------------------------------------
-        //renderEncoder.setRenderPipelineState(texturedPipeline)
-        //renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
-        //renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
-
-        //for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
-        //{
-        //  guard let layout = element as? MDLVertexBufferLayout else { return }
-        //  if layout.stride != 0
-        //  {
-        //    let buffer = mesh!.vertexBuffers[index]
-        //    renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
-        //  }
-        //}
-
-        //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
-
-        //for submesh in mesh!.submeshes
-        //{
-        //  renderEncoder.drawIndexedPrimitives(
-        //    type: submesh.primitiveType,
-        //    indexCount: submesh.indexCount,
-        //    indexType: submesh.indexType,
-        //    indexBuffer: submesh.indexBuffer.buffer,
-        //    indexBufferOffset: submesh.indexBuffer.offset
-        //  )
-        //}
+        while (true)
+        {
+          let opcode = q.readInt32X()
+          //print( "\(RenderCmd(rawValue:opcode)!)" )
+          if let cmd = RenderCmd( rawValue:opcode )
+          {
+            switch (cmd)
+            {
+              case .END_CANVAS:
+                break
+              case .PUSH_OBJECT_TRANSFORM:
+                objectTransform = q.readMatrix()
+                renderBuffer.uniforms[0].worldTransform = simd_mul( viewTransform, objectTransform )
+                continue
+              case .POP_OBJECT_TRANSFORM:
+                continue  // TODO
+              case .PUSH_VIEW_TRANSFORM:
+                viewTransform = q.readMatrix()
+                renderBuffer.uniforms[0].worldTransform = simd_mul( viewTransform, objectTransform )
+                continue
+              case .POP_VIEW_TRANSFORM:
+                continue  // TODO
+              case .PUSH_PROJECTION_TRANSFORM:
+                projectionTransform = q.readMatrix()
+                renderBuffer.uniforms[0].projectionTransform = projectionTransform
+                continue
+              case .POP_PROJECTION_TRANSFORM:
+                continue  // TODO
+              default:
+                print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )
+            }
+            break  // END
+          }
+          else
+          {
+            print( "[ERROR] Unhandled RenderCmd \(opcode)" )
+          }
+        }
 
         //----------------------------------------------------------------------
         // Triangle
@@ -484,16 +339,10 @@ print( "\(RenderCmd(rawValue:opcode)!)" )
 
         //----------------------------------------------------------------------
 
-        renderEncoder.popDebugGroup()
+        //renderEncoder.popDebugGroup()
         renderEncoder.endEncoding()
-
-        if let drawable = view.currentDrawable
-        {
-          commandBuffer.present(drawable)
-        }
       }
     }
-    commandBuffer.commit()
   }
 
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
