@@ -242,17 +242,50 @@ class Renderer: NSObject, MTKViewDelegate
               case .PUSH_OBJECT_TRANSFORM:
                 renderData.pushObjectTransform( q.readMatrix() )
                 continue
+              case .PUSH_ROTATE_OBJECT:
+                let radians = q.readReal32()
+                let axisX   = q.readReal32()
+                let axisY   = q.readReal32()
+                let axisZ   = q.readReal32()
+                renderData.pushObjectTransform( Matrix.rotate(radians,axisX,axisY,axisZ) )
+                continue
+              case .PUSH_TRANSLATE_OBJECT:
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let z = q.readReal32()
+                renderData.pushObjectTransform( Matrix.translate(x,y,z) )
+                continue
               case .POP_OBJECT_TRANSFORM:
                 renderData.popObjectTransform()
                 continue
               case .PUSH_VIEW_TRANSFORM:
                 renderData.pushViewTransform( q.readMatrix() )
                 continue
+              case .PUSH_ROTATE_VIEW:
+                let radians = q.readReal32()
+                let axisX   = q.readReal32()
+                let axisY   = q.readReal32()
+                let axisZ   = q.readReal32()
+                renderData.pushViewTransform( Matrix.rotate(radians,axisX,axisY,axisZ) )
+                continue
+              case .PUSH_TRANSLATE_VIEW:
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let z = q.readReal32()
+                renderData.pushViewTransform( Matrix.translate(x,y,z) )
+                continue
               case .POP_VIEW_TRANSFORM:
                 renderData.popViewTransform()
                 continue
               case .PUSH_PROJECTION_TRANSFORM:
                 renderData.pushProjectionTransform( q.readMatrix() )
+                continue
+              case .PUSH_PERSPECTIVE_PROJECTION:
+                let fovY = q.readReal32()
+                let aspectRatio = q.readReal32()
+                let zNear = q.readReal32()
+                let zFar = q.readReal32()
+                renderData.pushProjectionTransform( Matrix.perspective(fovY,aspectRatio,zNear,zFar) )
                 continue
               case .POP_PROJECTION_TRANSFORM:
                 renderData.popProjectionTransform()

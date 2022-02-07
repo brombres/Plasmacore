@@ -7,9 +7,14 @@ enum RenderCmd
   HEADER_CLEAR_COLOR         #( argb:Int32 )
   HEADER_END
   PUSH_OBJECT_TRANSFORM
+  PUSH_ROTATE_OBJECT           #( radians, axis_x, axis_y, axis_z : Real64 )
+  PUSH_TRANSLATE_OBJECT        #( x, y, z : Real32 )
   POP_OBJECT_TRANSFORM
   PUSH_VIEW_TRANSFORM
+  PUSH_ROTATE_VIEW             #( radians, axis_x, axis_y, axis_z : Real64 )
+  PUSH_TRANSLATE_VIEW          #( x, y, z : Real32 )
   POP_VIEW_TRANSFORM
   PUSH_PROJECTION_TRANSFORM
+  PUSH_PERSPECTIVE_PROJECTION  #( fov_y, aspect_ratio, z_near, z_far : Real32 )
   POP_PROJECTION_TRANSFORM
 endEnum

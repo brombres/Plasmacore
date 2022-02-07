@@ -8,5 +8,20 @@ class ObjectTransform
     method push( m:Matrix )
       Canvas.render_queue.write( RenderCmd.PUSH_OBJECT_TRANSFORM )
       Canvas.render_queue.write( m )
+
+    method push_rotate( theta:Radians, axis:XYZ )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.PUSH_ROTATE_OBJECT )
+      q.write_real32( theta.value )
+      q.write_real32( axis.x )
+      q.write_real32( axis.y )
+      q.write_real32( axis.z )
+
+    method push_translate( delta:XYZ )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.PUSH_TRANSLATE_OBJECT )
+      q.write_real32( delta.x )
+      q.write_real32( delta.y )
+      q.write_real32( delta.z )
 endClass
 

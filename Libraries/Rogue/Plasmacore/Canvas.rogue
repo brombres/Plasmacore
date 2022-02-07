@@ -20,6 +20,9 @@ class Canvas [singleton]
       id = next_canvas_id
       ++next_canvas_id
 
+    method aspect_ratio->Real64
+      return width->Real64 / height
+
     method clear( color=Color.BLACK:Color )
       render_queue.clear_color = color
 
