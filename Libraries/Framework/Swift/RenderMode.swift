@@ -26,7 +26,27 @@ class RenderMode
 
   func render( _ renderEncoder:MTLRenderCommandEncoder )
   {
-    preconditionFailure( "Override required." )
+    renderEncoder.setRenderPipelineState( pipeline! )
+
+    let renderBuffer = renderer.renderBuffer
+
+    if let projectionTransform = renderBuffer.projectionTransformStack.last
+    {
+      renderBuffer.uniforms[0].projectionTransform = projectionTransform
+    }
+    else
+    {
+      renderBuffer.uniforms[0].projectionTransform = Matrix.identity()
+    }
+
+    if let worldTransform = renderBuffer.worldTransformStack.last
+    {
+      renderBuffer.uniforms[0].worldTransform = worldTransform
+    }
+    else
+    {
+      renderBuffer.uniforms[0].worldTransform = Matrix.identity()
+    }
   }
 }
 
@@ -98,11 +118,12 @@ class RenderModeColoredShapes : RenderMode
 
   override func render( _ renderEncoder:MTLRenderCommandEncoder )
   {
-    renderEncoder.setRenderPipelineState( pipeline! )
+    super.render( renderEncoder )
 
-    renderer.renderBuffer.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
-    renderer.renderBuffer.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
-    renderer.renderBuffer.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
+    let renderBuffer = renderer.renderBuffer
+    renderBuffer.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
+    renderBuffer.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
+    renderBuffer.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
   }
 }
 

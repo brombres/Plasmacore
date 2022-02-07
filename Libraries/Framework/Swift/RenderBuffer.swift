@@ -22,6 +22,11 @@ class RenderBuffer
   var uniformsCount        = 0
   public var uniforms      : UnsafeMutablePointer<Uniforms>
 
+  var projectionTransformStack = [matrix_float4x4]()
+  var objectTransformStack     = [matrix_float4x4]()
+  var viewTransformStack       = [matrix_float4x4]()
+  var worldTransformStack      = [matrix_float4x4]()
+
   init( _ device:MTLDevice, _ maxFrames:Int  )
   {
     self.device = device
@@ -86,6 +91,7 @@ class RenderBuffer
     colorCount = 0
     uniformsCount = 0
     updateBufferPointers()
+    clearTransforms()
   }
 
   func bindColorBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ firstIndex:Int, _ index:Int )
@@ -106,6 +112,93 @@ class RenderBuffer
     let offset = (uniformsCapacity * frame + (uniformsCount-1)) * sizeOfUniforms
     renderEncoder.setVertexBuffer( uniformsBuffer, offset:offset, index:index )
     renderEncoder.setFragmentBuffer( uniformsBuffer, offset:offset, index:index )
+  }
+
+  func clearTransforms()
+  {
+    projectionTransformStack.removeAll()
+    objectTransformStack.removeAll()
+    viewTransformStack.removeAll()
+    worldTransformStack.removeAll()
+  }
+
+  func pushObjectTransform( _ transform:matrix_float4x4 )
+  {
+    let objectTransform : matrix_float4x4
+    if let existingObjectTransform = objectTransformStack.last
+    {
+      objectTransform = simd_mul( existingObjectTransform, transform )
+      objectTransformStack.append( objectTransform )
+    }
+    else
+    {
+      objectTransform = transform
+      objectTransformStack.append( transform )
+    }
+
+    if let viewTransform = viewTransformStack.last
+    {
+      worldTransformStack.append( simd_mul(viewTransform,objectTransform) )
+    }
+    else
+    {
+      worldTransformStack.append( objectTransform )
+    }
+  }
+
+  func pushProjectionTransform( _ transform:matrix_float4x4 )
+  {
+    projectionTransformStack.append( transform )
+  }
+
+  func pushViewTransform( _ transform:matrix_float4x4 )
+  {
+    let viewTransform : matrix_float4x4
+    if let existingViewTransform = viewTransformStack.last
+    {
+      viewTransform = simd_mul( existingViewTransform, transform )
+      viewTransformStack.append( viewTransform )
+    }
+    else
+    {
+      viewTransform = transform
+      viewTransformStack.append( transform )
+    }
+
+    if let objectTransform = objectTransformStack.last
+    {
+      worldTransformStack.append( simd_mul(viewTransform,objectTransform) )
+    }
+    else
+    {
+      worldTransformStack.append( viewTransform )
+    }
+  }
+
+  func popObjectTransform()
+  {
+    if (objectTransformStack.count > 0)
+    {
+      objectTransformStack.removeLast()
+      worldTransformStack.removeLast()
+    }
+  }
+
+  func popProjectionTransform()
+  {
+    if (projectionTransformStack.count > 0)
+    {
+      projectionTransformStack.removeLast()
+    }
+  }
+
+  func popViewTransform()
+  {
+    if (viewTransformStack.count > 0)
+    {
+      viewTransformStack.removeLast()
+      worldTransformStack.removeLast()
+    }
   }
 
   func reserveColorCapacity( _ additionalCapacity:Int )

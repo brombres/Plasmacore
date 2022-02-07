@@ -167,10 +167,10 @@ class PlasmacoreMessage
 
   func readMatrix()->matrix_float4x4
   {
-    let c1 = readXYZ()
-    let c2 = readXYZ()
-    let c3 = readXYZ()
-    let c4 = readXYZ()
+    let c1 = readXYZW()
+    let c2 = readXYZW()
+    let c3 = readXYZW()
+    let c4 = readXYZW()
     return matrix_float4x4.init( columns:(c1,c2,c3,c4) )
   }
 
@@ -206,7 +206,7 @@ class PlasmacoreMessage
     return String(characters)
   }
 
-  func readXYZ()->vector_float4
+  func readXYZW()->vector_float4
   {
     let x = readReal32()
     let y = readReal32()

@@ -51,7 +51,7 @@ class Renderer: NSObject, MTKViewDelegate
   var renderModeDrawLines          : RenderModeDrawLines?
   var renderModeFillSolidTriangles : RenderModeFillSolidTriangles?
 
-  var depthTestLT              : MTLDepthStencilState
+  var depthTestLT                  : MTLDepthStencilState
 
   // Display state
   var display_width  = 0
@@ -205,10 +205,7 @@ class Renderer: NSObject, MTKViewDelegate
       }
     }
 
-    var projectionTransform:matrix_float4x4 = matrix_float4x4()
-    var objectTransform:matrix_float4x4 = matrix_float4x4()
-    var viewTransform:matrix_float4x4 = matrix_float4x4()
-    renderBuffer.addUniforms()
+    renderBuffer.clearTransforms()
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
     ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -243,23 +240,23 @@ class Renderer: NSObject, MTKViewDelegate
               case .END_CANVAS:
                 break
               case .PUSH_OBJECT_TRANSFORM:
-                objectTransform = q.readMatrix()
-                renderBuffer.uniforms[0].worldTransform = simd_mul( viewTransform, objectTransform )
+                renderBuffer.pushObjectTransform( q.readMatrix() )
                 continue
               case .POP_OBJECT_TRANSFORM:
-                continue  // TODO
+                renderBuffer.popObjectTransform()
+                continue
               case .PUSH_VIEW_TRANSFORM:
-                viewTransform = q.readMatrix()
-                renderBuffer.uniforms[0].worldTransform = simd_mul( viewTransform, objectTransform )
+                renderBuffer.pushViewTransform( q.readMatrix() )
                 continue
               case .POP_VIEW_TRANSFORM:
-                continue  // TODO
+                renderBuffer.popViewTransform()
+                continue
               case .PUSH_PROJECTION_TRANSFORM:
-                projectionTransform = q.readMatrix()
-                renderBuffer.uniforms[0].projectionTransform = projectionTransform
+                renderBuffer.pushProjectionTransform( q.readMatrix() )
                 continue
               case .POP_PROJECTION_TRANSFORM:
-                continue  // TODO
+                renderBuffer.popProjectionTransform()
+                continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )
             }
