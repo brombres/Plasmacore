@@ -1,6 +1,6 @@
 let sizeOfUniforms = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
 
-class RenderBuffer
+class RenderData
 {
   let device               : MTLDevice
   let maxFrames            : Int       // AKA maxBuffersInFlight
@@ -45,9 +45,9 @@ class RenderBuffer
                        options:[MTLResourceOptions.storageModeShared]
                      )!
 
-    positions = RenderBuffer.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
-    colors = RenderBuffer.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
-    uniforms = RenderBuffer.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
+    positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
+    colors = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
+    uniforms = RenderData.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
   }
 
   func addColor( _ r:Float, _ g:Float, _ b:Float, _ a:Float )
@@ -208,7 +208,7 @@ class RenderBuffer
     {
       colorCapacity = requiredCapacity
       colorBuffer = device.makeBuffer( length:(colorCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      colors    = RenderBuffer.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
+      colors    = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
     }
   }
 
@@ -219,7 +219,7 @@ class RenderBuffer
     {
       positionCapacity = requiredCapacity
       positionBuffer = device.makeBuffer( length:(positionCapacity*4*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      positions = RenderBuffer.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
+      positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
     }
   }
 
@@ -233,15 +233,15 @@ class RenderBuffer
                          length:(uniformsCapacity*sizeOfUniforms*maxFrames),
                          options:[MTLResourceOptions.storageModeShared]
                        )!
-      uniforms = RenderBuffer.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
+      uniforms = RenderData.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
     }
   }
 
   func updateBufferPointers()
   {
-    positions = RenderBuffer.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
-    colors    = RenderBuffer.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
-    uniforms  = RenderBuffer.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
+    positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
+    colors    = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
+    uniforms  = RenderData.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
   }
 
   //----------------------------------------------------------------------------

@@ -45,7 +45,7 @@ class Renderer: NSObject, MTKViewDelegate
 
   public let shaderLibrary : MTLLibrary?
 
-  var renderBuffer                 : RenderBuffer
+  var renderBuffer                 : RenderData
 
   var isConfigured                 = false
   var renderModeDrawLines          : RenderModeDrawLines?
@@ -69,7 +69,7 @@ class Renderer: NSObject, MTKViewDelegate
     self.device       = metalKitView.device!
     self.commandQueue = self.device.makeCommandQueue()!
 
-    renderBuffer = RenderBuffer( device, maxBuffersInFlight )
+    renderBuffer = RenderData( device, maxBuffersInFlight )
 
     metalKitView.depthStencilPixelFormat = MTLPixelFormat.depth32Float_stencil8
     metalKitView.colorPixelFormat = MTLPixelFormat.bgra8Unorm_srgb
