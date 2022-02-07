@@ -3,10 +3,12 @@ module Plasmacore
 class ProjectionTransform
   GLOBAL METHODS
     method pop
-      Display.q.write_cmd( RenderCmd.POP_PROJECTION_TRANSFORM )
+      Canvas.render_queue.write( RenderCmd.POP_PROJECTION_TRANSFORM )
 
     method push( m:Matrix )
-      Display.q.write_cmd( RenderCmd.PUSH_PROJECTION_TRANSFORM )
-      Display.q.write_matrix( m )
+      Canvas.render_queue.write( RenderCmd.PUSH_PROJECTION_TRANSFORM )
+      Canvas.render_queue.write( m )
+
+      #method push_perspective( fov_y=Degrees(65):Radians, aspect_ratio=Display.aspect_ratio, z_near=0.1, z_far=100 )
 endClass
 

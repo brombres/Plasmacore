@@ -12,24 +12,12 @@ class Cube [singleton]
       rotation += 0.01
 endClass
 
-MessageListener["Cube.state"] =
-  function( m:Message )
-    Cube.update
-    local reply = m.reply
-    reply.write_real32( 1 )
-    reply.write_real32( 0 )
-    reply.write_real32( 0 )
-    reply.write_real32( Cube.rotation )
-    reply.send
-  endFunction
+Plasmacore.on_update = (() => Cube.update)
 
-MessageListener["Display.render"] = (Display => render)
-
-Plasmacore.draw_handler =
+Plasmacore.on_draw =
   function
-    Cube.update
-    Display.clear( Color.GRAY )
-    ProjectionTransform.push( Matrix.perspective(Degrees(65)->Radians,Display.aspect_ratio,0.1,100) )
+    Canvas.clear( Color.GRAY )
+    ProjectionTransform.push( Matrix.perspective(Degrees(65),Display.aspect_ratio,0.1,100) )
     ViewTransform.push( Matrix.translate(XYZ(0,0,-8)) )
     ObjectTransform.push( Matrix.rotate(Radians(Cube.rotation), XYZ(0,0,1)) )
   endFunction

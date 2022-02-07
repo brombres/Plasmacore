@@ -244,11 +244,11 @@ class Message
     method write_byte( value:Int32 )
       data.add( value )
 
-    method write_cmd( value:RenderCmd )
-      write_int32x( value->Int32 )
-
-    method write_color( color:Color )
-      write_int32( color.argb )
+    method write_bytes( bytes:Byte[] )
+      data.reserve( bytes.count + 4 )
+      write_int32( bytes.count )
+      data.data.set( data.count, bytes.data, 0, bytes.count )
+      data.count += bytes.count
 
     method write_int32( value:Int32 )
       # Writes 4 bytes in high-low order, e.g. 0x12345678 -> [12,34,56,78]
@@ -285,24 +285,6 @@ class Message
 
     method write_logical( value:Logical )
       data.add( which{value:1 || 0} )
-
-    method write_matrix( m:Matrix )
-      write_real32( m.r1c1 )
-      write_real32( m.r2c1 )
-      write_real32( m.r3c1 )
-      write_real32( m.r4c1 )
-      write_real32( m.r1c2 )
-      write_real32( m.r2c2 )
-      write_real32( m.r3c2 )
-      write_real32( m.r4c2 )
-      write_real32( m.r1c3 )
-      write_real32( m.r2c3 )
-      write_real32( m.r3c3 )
-      write_real32( m.r4c3 )
-      write_real32( m.r1c4 )
-      write_real32( m.r2c4 )
-      write_real32( m.r3c4 )
-      write_real32( m.r4c4 )
 
     method write_real32( value:Real32 )
       write_int32( value.integer_bits )

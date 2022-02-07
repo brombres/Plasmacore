@@ -3,31 +3,59 @@ uses Bitmap [export]
 uses Geometry [export]
 uses Math/Matrix [export]
 
+$include "Plasmacore/Canvas.rogue"
 $include "Plasmacore/Display.rogue"
 $include "Plasmacore/Messaging.rogue"
 $include "Plasmacore/ObjectTransform.rogue"
 $include "Plasmacore/ProjectionTransform.rogue"
 $include "Plasmacore/RenderCmd.rogue"
+$include "Plasmacore/RenderQueue.rogue"
 $include "Plasmacore/ViewTransform.rogue"
 
-class Plasmacore [singleton]
+class Plasmacore [essential singleton]
   PROPERTIES
-    draw_handler   : Function
-    update_handler : Function
+    draw_handler     : Function
+    update_handler   : Function
 
-    last_time      : Real64
+    last_update_time : Real64
+
+    displays = Table<<Int32,Display>>()
 
   METHODS
+    method init
+      MessageListener["Display.render"] =
+        function( m:Message )
+          local display_id     = m.read_int32x
+          local display_width  = m.read_int32x
+          local display_height = m.read_int32x
+          local display = Plasmacore.display( display_id )
+          local reply = m.reply
+          display.render( display_width, display_height, reply )
+          reply.write_int32x( RenderCmd.END_RENDER )
+          reply.send
+        endFunction
+
+    method display( id:Int32 )->Display
+      local result = displays[ id ]
+      if (result) return result
+      result = Display( id )
+      displays[id] = result
+      return result
+
     method draw
       if (draw_handler) draw_handler()
+
+    method set_on_draw( draw_handler )
+
+    method set_on_update( update_handler )
 
     method update
       if (update_handler) update_handler()
 
     method update_and_draw
       local cur_time = System.time
-      local update_count = ((cur_time - last_time) * 60 + 0.1)->Int32
-      last_time = cur_time
+      local update_count = ((cur_time - last_update_time) * 60 + 0.1)->Int32
+      last_update_time = cur_time
 
       if (update_count < 1 or update_count > 30) update_count = 1
       loop (update_count) update

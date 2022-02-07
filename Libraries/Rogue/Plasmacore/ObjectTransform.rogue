@@ -3,10 +3,10 @@ module Plasmacore
 class ObjectTransform
   GLOBAL METHODS
     method pop
-      Display.q.write_cmd( RenderCmd.POP_OBJECT_TRANSFORM )
+      Canvas.render_queue.write( RenderCmd.POP_OBJECT_TRANSFORM )
 
     method push( m:Matrix )
-      Display.q.write_cmd( RenderCmd.PUSH_OBJECT_TRANSFORM )
-      Display.q.write_matrix( m )
+      Canvas.render_queue.write( RenderCmd.PUSH_OBJECT_TRANSFORM )
+      Canvas.render_queue.write( m )
 endClass
 

@@ -1,0 +1,42 @@
+module Plasmacore
+
+class Canvas [singleton]
+  GLOBAL PROPERTIES
+    next_canvas_id = 1
+
+  PROPERTIES
+    id              : Int32
+    width           : Int32
+    height          : Int32
+
+    render_queue    : RenderQueue
+    original_canvas : Canvas
+
+  METHODS
+    method init
+      id = 0  # Display canvas / main buffer
+
+    method init( width, height )
+      id = next_canvas_id
+      ++next_canvas_id
+
+    method clear( color=Color.BLACK:Color )
+      render_queue.clear_color = color
+
+    method on_use->Logical
+      original_canvas = Canvas
+      Canvas = this
+      render_queue = RenderQueue()
+      return true  # dummy return value
+
+    method on_end_use
+      render_queue.commit
+      Display.render_reply.write_int32x( RenderCmd.BEGIN_CANVAS )
+      Display.render_reply.write_int32x( id )
+      Display.render_reply.write_bytes( render_queue->Byte[] )
+      Canvas = original_canvas
+
+    method size->XY
+      return XY(width,height)
+endClass
+

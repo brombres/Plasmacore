@@ -2,28 +2,30 @@ module Plasmacore
 
 class Display [singleton]
   PROPERTIES
-    q = Message("")  # RenderCmd queue
+    id           : Int32
     width        : Int32
     height       : Int32
+    canvas       = Canvas()
+    render_reply : Message
 
   METHODS
+    method init( id )
+      canvas = Canvas()
+
     method aspect_ratio->Real64
       return width->Real64 / height
 
     method clear( color=Color.BLACK:Color )
-      q.write_cmd( RenderCmd.CLEAR_COLOR )
-      q.write_color( color )
+      canvas.clear( color )
 
-    method render( info:Message )
-      width  = info.read_int32x
-      height = info.read_int32x
+    method render( width, height, render_reply )
+      Display = this  # update the Display singleton
 
-      q = info.reply
-
-      Plasmacore.update_and_draw
-
-      q.write_cmd( RenderCmd.END )
-      q.send
+      canvas.width  = width
+      canvas.height = height
+      use canvas
+        Plasmacore.update_and_draw
+      endUse
 
     method size->XY
       return XY( width, height )

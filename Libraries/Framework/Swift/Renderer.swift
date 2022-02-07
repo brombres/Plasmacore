@@ -262,6 +262,7 @@ class Renderer: NSObject, MTKViewDelegate
   private func rogueRender()
   {
     let m = PlasmacoreMessage( "Display.render" )
+    m.writeInt32X( 0 )  // display_id
     m.writeInt32X( display_width )
     m.writeInt32X( display_height )
     if let q = m.send()
@@ -269,14 +270,25 @@ class Renderer: NSObject, MTKViewDelegate
       while (true)
       {
         let opcode = q.readInt32X()
+print( "\(RenderCmd(rawValue:opcode)!)" )
         if let cmd = RenderCmd( rawValue:opcode )
         {
           switch (cmd)
           {
-            case .END:
+            case .END_RENDER:
               break
-            case .CLEAR_COLOR:
+            case .BEGIN_CANVAS:
+              let canvas_id = q.readInt32X()
+              if (canvas_id != 0) { print( "[TODO] Render offscreen canvas" ) }
+              let size = q.readInt32()  // skip size of following command bytes
+              continue
+            case .END_CANVAS:
+              continue
+            case .HEADER_CLEAR_COLOR:
               clear_color = q.readInt32()
+              continue
+            case .HEADER_END:
+              print( "[TODO] HEADER_END" )
               continue
             case .PUSH_OBJECT_TRANSFORM:
               objectTransform = q.readMatrix()

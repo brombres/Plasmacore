@@ -1,0 +1,68 @@
+module Plasmacore
+
+class RenderQueue : DataWriter
+  PROPERTIES
+    clear_color_index : Int32
+    clear_color       = Color.BLACK : Color
+    is_finalized      = false
+
+  METHODS
+    method init
+      prior.init
+
+      write( RenderCmd.HEADER_CLEAR_COLOR )
+      clear_color_index = position
+      write( clear_color )
+
+      write( RenderCmd.HEADER_END )
+
+    method commit
+      if (not is_finalized)
+        is_finalized = true
+        write( RenderCmd.END_CANVAS )
+
+        # patch header with final info
+        set_color( clear_color_index, clear_color )
+      endIf
+
+    method set_color( index:Int32, color:Color )
+      set_int32( index, color.argb )
+
+    method set_int32( index:Int32, value:Int32 )
+      # Overwrites 4 bytes starting at 'index' with a new Int32 value
+      # in high-low order, e.g. 0x12345678 -> [12,34,56,78]
+      @output_bytes[index]   = value:>>>:24
+      @output_bytes[index+1] = value:>>>:16
+      @output_bytes[index+2] = value:>>>:8
+      @output_bytes[index+3] = value
+
+    method to->Byte[]
+      commit
+      return output_bytes
+
+    method write( color:Color )
+      write_int32( color.argb )
+
+    method write( m:Matrix )
+      write_real32( m.r1c1 )
+      write_real32( m.r2c1 )
+      write_real32( m.r3c1 )
+      write_real32( m.r4c1 )
+      write_real32( m.r1c2 )
+      write_real32( m.r2c2 )
+      write_real32( m.r3c2 )
+      write_real32( m.r4c2 )
+      write_real32( m.r1c3 )
+      write_real32( m.r2c3 )
+      write_real32( m.r3c3 )
+      write_real32( m.r4c3 )
+      write_real32( m.r1c4 )
+      write_real32( m.r2c4 )
+      write_real32( m.r3c4 )
+      write_real32( m.r4c4 )
+
+    method write( cmd:RenderCmd )
+      write_int32x( cmd->Int32 )
+
+endClass
+

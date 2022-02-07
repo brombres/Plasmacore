@@ -105,6 +105,7 @@ class PlasmacoreMessage
     return (readByte() != 0)
   }
 
+  @discardableResult
   func readInt32()->Int
   {
     var result = readByte() << 24
@@ -113,6 +114,7 @@ class PlasmacoreMessage
     return result | readByte()
   }
 
+  @discardableResult
   func readInt32X()->Int
   {
     // Reads a variable-length encoded value that is stored in 1..5 bytes.

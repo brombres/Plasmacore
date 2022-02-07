@@ -1,8 +1,11 @@
 module Plasmacore
 
 enum RenderCmd
-  END
-  CLEAR_COLOR
+  END_RENDER
+  BEGIN_CANVAS               #( canvas_id:Int32X, render_queue_byte_size:Int32 )
+  END_CANVAS
+  HEADER_CLEAR_COLOR         #( argb:Int32 )
+  HEADER_END
   PUSH_OBJECT_TRANSFORM
   POP_OBJECT_TRANSFORM
   PUSH_VIEW_TRANSFORM
