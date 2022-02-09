@@ -1,0 +1,33 @@
+uses Plasmacore
+
+augment Triangle
+  METHODS
+    method fill( color:Color )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.TRIANGLE_FILL )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+      q.write_byte( 1 )
+      q.write( color )
+
+    method fill( a_color:Color, b_color:Color, c_color:Color )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.TRIANGLE_FILL )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+      q.write_byte( 3 )
+      q.write( a_color )
+      q.write( b_color )
+      q.write( c_color )
+
+      #method draw( color:Color, thickness=1:Int32 )
+      #Display.draw( this, color, thickness )
+
+      #method drawable( color:Color )->DrawableQuad
+      #return this->Quad.drawable( color )
+
+    method transformed( m:Matrix )->Triangle
+      return Triangle( m*a, m*b, m*c )
+endAugment

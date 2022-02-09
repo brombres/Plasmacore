@@ -17,14 +17,8 @@ Plasmacore.on_update = (() => Cube.update)
 Plasmacore.on_draw =
   function
     Canvas.clear( Color.GRAY )
-    #ProjectionTransform.push( Matrix.perspective(Degrees(65),Display.aspect_ratio,0.1,100) )
-    #ProjectionTransform.push_perspective( Degrees(65),Canvas.aspect_ratio, 0.1, 100 )
-
-    #ViewTransform.push( Matrix.translate(XYZ(0,0,-8)) )
-    #ViewTransform.push_translate( XYZ(0,0,-8) )
-
-    #ObjectTransform.push( Matrix.rotate(Cube.rotation, XYZ(0,0,1)) )
-    #ObjectTransform.push_rotate( Cube.rotation, XYZ(0,0,1) )
+    Canvas.bounds.cropped( Canvas.width/4, Canvas.height/4, Canvas.width/4, Canvas.height/4 ).fill( Color.YELLOW, Color.RED, Color.GREEN, Color.BLUE )
+    Triangle( Canvas.at(0.5,0.1), Canvas.at(0.75,0.9), Canvas.at(0.25,0.9) ).fill( Color.ORANGE )
   endFunction
 
 

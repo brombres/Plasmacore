@@ -3,6 +3,7 @@ uses Bitmap [export]
 uses Geometry [export]
 uses Math/Matrix [export]
 
+$include "Plasmacore/Box.rogue"
 $include "Plasmacore/Canvas.rogue"
 $include "Plasmacore/Display.rogue"
 $include "Plasmacore/Messaging.rogue"
@@ -10,6 +11,7 @@ $include "Plasmacore/ObjectTransform.rogue"
 $include "Plasmacore/ProjectionTransform.rogue"
 $include "Plasmacore/RenderCmd.rogue"
 $include "Plasmacore/RenderQueue.rogue"
+$include "Plasmacore/Triangle.rogue"
 $include "Plasmacore/ViewTransform.rogue"
 
 class Plasmacore [essential singleton]

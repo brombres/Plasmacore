@@ -16,4 +16,6 @@ enum RenderCmd : Int
   case PUSH_PROJECTION_TRANSFORM   //( transform:Real32[16], replace:Logical )
   case PUSH_PERSPECTIVE_PROJECTION //( [fov_y, aspect_ratio, z_near, z_far]:Real32, replace:Logical )
   case POP_PROJECTION_TRANSFORM
+  case BOX_FILL                    //( [x,y,w,h]:Real32, color_count=[1||4]:Byte, colors[color_count]:Int32 )
+  case TRIANGLE_FILL               //( [a,b,c]:XYReal32, color_count=[1||3]:Byte, colors[color_count]:Int32 )
 }

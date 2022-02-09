@@ -24,6 +24,16 @@ class Canvas [singleton]
     method aspect_ratio->Real64
       return width->Real64 / height
 
+    method at( u:Real64, v:Real64 )->XY
+      return bounds.at( u, v )
+
+    method at( uv:XY )->XY
+      return bounds.at( uv )
+
+
+    method bounds->Box
+      return Box( width, height )
+
     method clear( color=Color.BLACK:Color )
       render_queue.clear_color = color
 

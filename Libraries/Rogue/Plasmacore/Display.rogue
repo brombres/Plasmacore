@@ -15,6 +15,9 @@ class Display [singleton]
     method aspect_ratio->Real64
       return width->Real64 / height
 
+    method bounds->Box
+      return Box( width, height )
+
     method clear( color=Color.BLACK:Color )
       canvas.clear( color )
 

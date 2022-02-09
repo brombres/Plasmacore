@@ -64,5 +64,9 @@ class RenderQueue : DataWriter
     method write( cmd:RenderCmd )
       write_int32x( cmd->Int32 )
 
+    method write( xy:XY )
+      write_real32( xy.x )
+      write_real32( xy.y )
+
 endClass
 

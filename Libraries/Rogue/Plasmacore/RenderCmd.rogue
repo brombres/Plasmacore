@@ -17,4 +17,6 @@ enum RenderCmd
   PUSH_PROJECTION_TRANSFORM    #( transform:Real32[16] )
   PUSH_PERSPECTIVE_PROJECTION  #( fov_y, aspect_ratio, z_near, z_far : Real32 )
   POP_PROJECTION_TRANSFORM
+  BOX_FILL                     #( [x,y,w,h]:Real32, color_count=[1||4]:Byte, colors[color_count]:Int32 )
+  TRIANGLE_FILL                #( [a,b,c]:Real32, color_count=[1||3]:Byte, colors[color_count]:Int32 )
 endEnum

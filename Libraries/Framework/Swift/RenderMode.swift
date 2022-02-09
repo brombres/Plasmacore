@@ -3,10 +3,11 @@
 //==============================================================================
 class RenderMode
 {
-  let renderer : Renderer
+  let renderer           : Renderer
   var vertexDescriptor   : MTLVertexDescriptor?
   var pipeline           : MTLRenderPipelineState?
   var firstPositionIndex = 0
+  var needsRender        = false
 
 
   init( _ renderer:Renderer )
@@ -14,9 +15,12 @@ class RenderMode
     self.renderer = renderer
   }
 
-  func activate()
+  func activate( _ renderEncoder:MTLRenderCommandEncoder )
   {
+    renderer.renderMode?.render( renderEncoder )
+    renderer.renderMode = self
     firstPositionIndex = renderer.renderData.positionCount
+    needsRender = true
   }
 
   func reserveCapacity( _ n:Int )
@@ -24,8 +28,13 @@ class RenderMode
     preconditionFailure( "Override required." )
   }
 
-  func render( _ renderEncoder:MTLRenderCommandEncoder )
+  @discardableResult
+  func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
+    if ( !needsRender ) { return false }
+    if (firstPositionIndex == renderer.renderData.positionCount) { return false }
+
+    needsRender = false
     renderEncoder.setRenderPipelineState( pipeline! )
 
     let renderData = renderer.renderData
@@ -47,6 +56,8 @@ class RenderMode
     {
       renderData.uniforms[0].worldTransform = Matrix.identity()
     }
+
+    return true // it's on
   }
 }
 
@@ -110,20 +121,23 @@ class RenderModeColoredShapes : RenderMode
     }
   }
 
-  override func activate()
+  override func activate( _ renderEncoder:MTLRenderCommandEncoder )
   {
-    super.activate()
+    super.activate( renderEncoder )
     firstColorIndex = renderer.renderData.colorCount
   }
 
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )
+  @discardableResult
+  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
-    super.render( renderEncoder )
+    if ( !super.render(renderEncoder) ) { return false }
 
     let renderData = renderer.renderData
     renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
     renderData.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
     renderData.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
+
+    return true
   }
 }
 
@@ -147,9 +161,10 @@ class RenderModeDrawLines : RenderModeColoredShapes
     renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerLine )
   }
 
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )
+  @discardableResult
+  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
-    super.render( renderEncoder )
+    if ( !super.render(renderEncoder) ) { return false }
 
     let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
@@ -157,6 +172,8 @@ class RenderModeDrawLines : RenderModeColoredShapes
       vertexStart: 0,
       vertexCount: count
     )
+
+    return true
   }
 }
 
@@ -180,9 +197,10 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
     renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
   }
 
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )
+  @discardableResult
+  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
-    super.render( renderEncoder )
+    if ( !super.render(renderEncoder) ) { return false }
 
     let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
@@ -190,6 +208,8 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
       vertexStart:   0,
       vertexCount:   count
     )
+
+    return true
   }
 }
 

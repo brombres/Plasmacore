@@ -1,0 +1,41 @@
+uses Plasmacore
+
+augment Box
+  METHODS
+    method fill( color:Color )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.BOX_FILL )
+      q.write_real32( position.x )
+      q.write_real32( position.y )
+      q.write_real32( size.x )
+      q.write_real32( size.y )
+      q.write_byte( 1 )
+      q.write( color )
+
+    method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.BOX_FILL )
+      q.write_real32( position.x )
+      q.write_real32( position.y )
+      q.write_real32( size.x )
+      q.write_real32( size.y )
+      q.write_byte( 4 )
+      q.write( color_1 )
+      q.write( color_2 )
+      q.write( color_3 )
+      q.write( color_4 )
+
+      #method draw( color:Color, thickness=1:Int32 )
+      #Display.draw( this, color, thickness )
+
+      #method drawable( color:Color )->DrawableQuad
+      #return this->Quad.drawable( color )
+
+    method transformed( m:Matrix )->Quad
+      return Quad(
+        m * top_left,
+        m * top_right,
+        m * bottom_right,
+        m * bottom_left
+      )
+endAugment

@@ -48,6 +48,7 @@ class Renderer: NSObject, MTKViewDelegate
   var renderData                 : RenderData
 
   var isConfigured                 = false
+  var renderMode                   : RenderMode?
   var renderModeDrawLines          : RenderModeDrawLines?
   var renderModeFillSolidTriangles : RenderModeFillSolidTriangles?
 
@@ -302,6 +303,62 @@ class Renderer: NSObject, MTKViewDelegate
               case .POP_PROJECTION_TRANSFORM:
                 renderData.popProjectionTransform()
                 continue
+              case .BOX_FILL:
+                renderModeFillSolidTriangles?.activate( renderEncoder )
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let w = q.readReal32()
+                let h = q.readReal32()
+                renderMode?.reserveCapacity( 2 )
+                renderData.addPosition(   x,   y, 0 )
+                renderData.addPosition( x+w,   y, 0 )
+                renderData.addPosition( x+w, y+h, 0 )
+                renderData.addPosition(   x,   y, 0 )
+                renderData.addPosition( x+w, y+h, 0 )
+                renderData.addPosition(   x, y+h, 0 )
+                if (q.readByte() == 1)
+                {
+                  let color = q.readInt32()
+                  for _ in 1...6 { renderData.addColor(color) }
+                }
+                else
+                {
+                  let c1 = q.readInt32()
+                  let c2 = q.readInt32()
+                  let c3 = q.readInt32()
+                  let c4 = q.readInt32()
+                  renderData.addColor( c1 )
+                  renderData.addColor( c2 )
+                  renderData.addColor( c3 )
+                  renderData.addColor( c1 )
+                  renderData.addColor( c3 )
+                  renderData.addColor( c4 )
+                }
+                continue
+              case .TRIANGLE_FILL:
+                renderModeFillSolidTriangles?.activate( renderEncoder )
+                renderMode?.reserveCapacity( 1 )
+                for _ in 1...3
+                {
+                  let x = q.readReal32()
+                  let y = q.readReal32()
+                  renderData.addPosition( x, y, 0 )
+                }
+                if (q.readByte() == 1)
+                {
+                  let color = q.readInt32()
+                  for _ in 1...3 { renderData.addColor(color) }
+                }
+                else
+                {
+                  let c1 = q.readInt32()
+                  let c2 = q.readInt32()
+                  let c3 = q.readInt32()
+                  renderData.addColor( c1 )
+                  renderData.addColor( c2 )
+                  renderData.addColor( c3 )
+                }
+                continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )
             }
@@ -314,69 +371,7 @@ class Renderer: NSObject, MTKViewDelegate
         }
 
         //----------------------------------------------------------------------
-        // Triangle
-        //----------------------------------------------------------------------
-        if let renderMode = renderModeFillSolidTriangles
-        {
-          renderMode.activate()
-          renderMode.reserveCapacity( 2 )
-
-          renderData.addPosition(    1,    1, 0 )
-          renderData.addPosition(  799,  599, 0 )
-          renderData.addPosition(    1,  599, 0 )
-
-          renderData.addPosition(    1,    1, 0 )
-          renderData.addPosition(  799,    1, 0 )
-          renderData.addPosition(  799,  599, 0 )
-
-          renderData.addColor( 1, 0, 0, 1 )
-          renderData.addColor( 0, 1, 0, 1 )
-          renderData.addColor( 0, 0, 1, 1 )
-
-          renderData.addColor( 0xffFF0000 )
-          renderData.addColor( 0xffFF0000 )
-          renderData.addColor( 0xffFF0000 )
-
-          renderMode.render( renderEncoder )
-        }
-
-        if let renderMode = renderModeDrawLines
-        {
-          renderMode.activate()
-          renderMode.reserveCapacity( 6 )
-
-          renderData.addPosition( -2.0,  0.5, 0 )
-          renderData.addPosition( -2.5, -0.5, 0 )
-          renderData.addPosition( -2.5, -0.5, 0 )
-          renderData.addPosition( -1.5, -0.5, 0 )
-          renderData.addPosition( -1.5, -0.5, 0 )
-          renderData.addPosition( -2.0,  0.5, 0 )
-
-
-          renderData.addPosition(  0.0,  0.5, 0 )
-          renderData.addPosition( -0.5, -0.5, 0 )
-          renderData.addPosition( -0.5, -0.5, 0 )
-          renderData.addPosition(  0.5, -0.5, 0 )
-          renderData.addPosition(  0.5, -0.5, 0 )
-          renderData.addPosition(  0.0,  0.5, 0 )
-
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-          renderData.addColor( 0xffFFFF00 )
-
-          renderMode.render( renderEncoder )
-        }
-
-        //----------------------------------------------------------------------
+        renderMode?.render( renderEncoder )
 
         //renderEncoder.popDebugGroup()
         renderEncoder.endEncoding()
