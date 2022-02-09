@@ -1,27 +1,36 @@
 module Plasmacore
 
 class ViewTransform
+  # push
+  #   [default] - Multiplies existing transform by new value
+  #   &replace  - Replaces existing transform by new value
+  # pop
+  #   Restores previous transform.
   GLOBAL METHODS
     method pop
       Canvas.render_queue.write( RenderCmd.POP_VIEW_TRANSFORM )
 
-    method push( m:Matrix )
-      Canvas.render_queue.write( RenderCmd.PUSH_VIEW_TRANSFORM )
-      Canvas.render_queue.write( m )
+    method push( m:Matrix, &replace )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.PUSH_VIEW_TRANSFORM )
+      q.write( m )
+      q.write_logical( replace )
 
-    method push_rotate( theta:Radians, axis:XYZ )
+    method push_rotate( theta:Radians, axis:XYZ, &replace )
       local q = Canvas.render_queue
       q.write( RenderCmd.PUSH_ROTATE_VIEW )
       q.write_real32( theta.value )
       q.write_real32( axis.x )
       q.write_real32( axis.y )
       q.write_real32( axis.z )
+      q.write_logical( replace )
 
-    method push_translate( delta:XYZ )
+    method push_translate( delta:XYZ, &replace )
       local q = Canvas.render_queue
       q.write( RenderCmd.PUSH_TRANSLATE_VIEW )
       q.write_real32( delta.x )
       q.write_real32( delta.y )
       q.write_real32( delta.z )
+      q.write_logical( replace )
 endClass
 

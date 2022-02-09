@@ -122,19 +122,17 @@ class RenderData
     worldTransformStack.removeAll()
   }
 
-  func pushObjectTransform( _ transform:matrix_float4x4 )
+  func pushObjectTransform( _ transform:matrix_float4x4, _ replace:Bool )
   {
-    let objectTransform : matrix_float4x4
-    if let existingObjectTransform = objectTransformStack.last
+    var objectTransform = transform
+    if (!replace)
     {
-      objectTransform = simd_mul( existingObjectTransform, transform )
-      objectTransformStack.append( objectTransform )
+      if let existingObjectTransform = objectTransformStack.last
+      {
+        objectTransform = simd_mul( existingObjectTransform, transform )
+      }
     }
-    else
-    {
-      objectTransform = transform
-      objectTransformStack.append( transform )
-    }
+    objectTransformStack.append( objectTransform )
 
     if let viewTransform = viewTransformStack.last
     {
@@ -146,24 +144,31 @@ class RenderData
     }
   }
 
-  func pushProjectionTransform( _ transform:matrix_float4x4 )
+  func pushProjectionTransform( _ transform:matrix_float4x4, _ replace:Bool )
   {
-    projectionTransformStack.append( transform )
+    var projectionTransform = transform
+    if (!replace)
+    {
+      if let existingProjectionTransform = projectionTransformStack.last
+      {
+        projectionTransform = simd_mul( existingProjectionTransform, transform )
+      }
+    }
+    projectionTransformStack.append( projectionTransform )
   }
 
-  func pushViewTransform( _ transform:matrix_float4x4 )
+  func pushViewTransform( _ transform:matrix_float4x4, _ replace:Bool )
   {
-    let viewTransform : matrix_float4x4
-    if let existingViewTransform = viewTransformStack.last
+    var viewTransform = transform
+    if (!replace)
     {
-      viewTransform = simd_mul( existingViewTransform, transform )
-      viewTransformStack.append( viewTransform )
+      if let existingViewTransform = viewTransformStack.last
+      {
+        viewTransform = simd_mul( existingViewTransform, transform )
+      }
     }
-    else
-    {
-      viewTransform = transform
-      viewTransformStack.append( transform )
-    }
+    viewTransformStack.append( viewTransform )
+
 
     if let objectTransform = objectTransformStack.last
     {

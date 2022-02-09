@@ -18,13 +18,13 @@ Plasmacore.on_draw =
   function
     Canvas.clear( Color.GRAY )
     #ProjectionTransform.push( Matrix.perspective(Degrees(65),Display.aspect_ratio,0.1,100) )
-    ProjectionTransform.push_perspective( Degrees(65),Canvas.aspect_ratio, 0.1, 100 )
+    #ProjectionTransform.push_perspective( Degrees(65),Canvas.aspect_ratio, 0.1, 100 )
 
     #ViewTransform.push( Matrix.translate(XYZ(0,0,-8)) )
-    ViewTransform.push_translate( XYZ(0,0,-8) )
+    #ViewTransform.push_translate( XYZ(0,0,-8) )
 
     #ObjectTransform.push( Matrix.rotate(Cube.rotation, XYZ(0,0,1)) )
-    ObjectTransform.push_rotate( Cube.rotation, XYZ(0,0,1) )
+    #ObjectTransform.push_rotate( Cube.rotation, XYZ(0,0,1) )
   endFunction
 
 

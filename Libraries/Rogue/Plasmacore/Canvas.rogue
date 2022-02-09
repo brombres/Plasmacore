@@ -6,6 +6,7 @@ class Canvas [singleton]
 
   PROPERTIES
     id              : Int32
+
     width           : Int32
     height          : Int32
 
@@ -29,7 +30,10 @@ class Canvas [singleton]
     method on_use->Logical
       original_canvas = Canvas
       Canvas = this
+
       render_queue = RenderQueue()
+      ProjectionTransform.push_2dx()
+
       return true  # dummy return value
 
     method on_end_use

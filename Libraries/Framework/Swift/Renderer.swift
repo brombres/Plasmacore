@@ -225,7 +225,8 @@ class Renderer: NSObject, MTKViewDelegate
       {
         renderEncoder.label = "Canvas \(canvasID) Render Encoder"
         //renderEncoder.pushDebugGroup("Draw Box")
-        renderEncoder.setCullMode(.back)
+        //renderEncoder.setCullMode(.back)
+        renderEncoder.setCullMode(.none)
         renderEncoder.setFrontFacing(.counterClockwise)
         renderEncoder.setDepthStencilState(depthTestLT)
 
@@ -240,52 +241,63 @@ class Renderer: NSObject, MTKViewDelegate
               case .END_CANVAS:
                 break
               case .PUSH_OBJECT_TRANSFORM:
-                renderData.pushObjectTransform( q.readMatrix() )
+                let m = q.readMatrix()
+                let replace = q.readLogical()
+                renderData.pushObjectTransform( m, replace )
                 continue
               case .PUSH_ROTATE_OBJECT:
                 let radians = q.readReal32()
                 let axisX   = q.readReal32()
                 let axisY   = q.readReal32()
                 let axisZ   = q.readReal32()
-                renderData.pushObjectTransform( Matrix.rotate(radians,axisX,axisY,axisZ) )
+                let replace = q.readLogical()
+                renderData.pushObjectTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
                 continue
               case .PUSH_TRANSLATE_OBJECT:
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let z = q.readReal32()
-                renderData.pushObjectTransform( Matrix.translate(x,y,z) )
+                let replace = q.readLogical()
+                renderData.pushObjectTransform( Matrix.translate(x,y,z), replace )
                 continue
               case .POP_OBJECT_TRANSFORM:
                 renderData.popObjectTransform()
                 continue
               case .PUSH_VIEW_TRANSFORM:
-                renderData.pushViewTransform( q.readMatrix() )
+                let m = q.readMatrix()
+                let replace = q.readLogical()
+                renderData.pushViewTransform( m, replace )
                 continue
               case .PUSH_ROTATE_VIEW:
                 let radians = q.readReal32()
                 let axisX   = q.readReal32()
                 let axisY   = q.readReal32()
                 let axisZ   = q.readReal32()
-                renderData.pushViewTransform( Matrix.rotate(radians,axisX,axisY,axisZ) )
+                let replace = q.readLogical()
+                renderData.pushViewTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
                 continue
               case .PUSH_TRANSLATE_VIEW:
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let z = q.readReal32()
-                renderData.pushViewTransform( Matrix.translate(x,y,z) )
+                let replace = q.readLogical()
+                renderData.pushViewTransform( Matrix.translate(x,y,z), replace )
                 continue
               case .POP_VIEW_TRANSFORM:
                 renderData.popViewTransform()
                 continue
               case .PUSH_PROJECTION_TRANSFORM:
-                renderData.pushProjectionTransform( q.readMatrix() )
+                let m = q.readMatrix()
+                let replace = q.readLogical()
+                renderData.pushProjectionTransform( m, replace )
                 continue
               case .PUSH_PERSPECTIVE_PROJECTION:
                 let fovY = q.readReal32()
                 let aspectRatio = q.readReal32()
                 let zNear = q.readReal32()
                 let zFar = q.readReal32()
-                renderData.pushProjectionTransform( Matrix.perspective(fovY,aspectRatio,zNear,zFar) )
+                let replace = q.readLogical()
+                renderData.pushProjectionTransform( Matrix.perspective(fovY,aspectRatio,zNear,zFar), replace )
                 continue
               case .POP_PROJECTION_TRANSFORM:
                 renderData.popProjectionTransform()
@@ -309,24 +321,21 @@ class Renderer: NSObject, MTKViewDelegate
           renderMode.activate()
           renderMode.reserveCapacity( 2 )
 
-          renderData.addPosition( -2.0,  0.5, 0 )
-          renderData.addPosition( -2.5, -0.5, 0 )
-          renderData.addPosition( -1.5, -0.5, 0 )
+          renderData.addPosition(    1,    1, 0 )
+          renderData.addPosition(  799,  599, 0 )
+          renderData.addPosition(    1,  599, 0 )
 
-          renderData.addPosition(  0.0,  0.5, 0 )
-          renderData.addPosition( -0.5, -0.5, 0 )
-          renderData.addPosition(  0.5, -0.5, 0 )
+          renderData.addPosition(    1,    1, 0 )
+          renderData.addPosition(  799,    1, 0 )
+          renderData.addPosition(  799,  599, 0 )
 
           renderData.addColor( 1, 0, 0, 1 )
           renderData.addColor( 0, 1, 0, 1 )
           renderData.addColor( 0, 0, 1, 1 )
 
-          renderData.addColor( 1, 0, 0, 1 )
-          renderData.addColor( 1, 0, 0, 1 )
-          renderData.addColor( 1, 0, 0, 1 )
-          //renderData.addColor( 0xffFF0000 )
-          //renderData.addColor( 0xffFF0000 )
-          //renderData.addColor( 0xffFF0000 )
+          renderData.addColor( 0xffFF0000 )
+          renderData.addColor( 0xffFF0000 )
+          renderData.addColor( 0xffFF0000 )
 
           renderMode.render( renderEncoder )
         }

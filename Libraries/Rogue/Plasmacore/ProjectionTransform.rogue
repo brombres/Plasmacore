@@ -1,22 +1,50 @@
 module Plasmacore
 
 class ProjectionTransform
+  # push
+  #   [default] - Multiplies existing transform by new value
+  #   &replace  - Replaces existing transform by new value
+  # pop
+  #   Restores previous transform.
   GLOBAL METHODS
     method pop
       Canvas.render_queue.write( RenderCmd.POP_PROJECTION_TRANSFORM )
 
-    method push( m:Matrix )
-      Canvas.render_queue.write( RenderCmd.PUSH_PROJECTION_TRANSFORM )
-      Canvas.render_queue.write( m )
+    method push( m:Matrix, &replace )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.PUSH_PROJECTION_TRANSFORM )
+      q.write( m )
+      q.write_logical( replace )
+
+    method push_2dx( width=Canvas.width:Real64, height=Canvas.height:Real64,
+        z_near=0.1:Real64, z_far=100:Real64, unit_z=20:Real64,
+        vpx=0.5:Real64, vpy=0.5:Real64, delta_x=0:Real64, delta_y=0:Real64,
+        &invert, &replace )
+
+      local k = (unit_z+1) * (2 / z_near)
+      vpx = (width*vpx  + delta_x) / width
+      vpy = (height*vpy + delta_y) / height
+      local left = ((-2 * width) / k)  * vpx
+      local top  = ((-2 * height) / k) * vpy
+      local right = left + 2*width/k
+      local bottom = top + 2*height/k
+
+      if (invert) swapValues( top, bottom )
+      # Necessary to prevent offscreen buffers from appearing inverted after rendering
+
+      local project   = Matrix.perspective( left, top, right, bottom, z_near, z_far )
+      local translate = Matrix.translate( XYZ(-width*vpx+delta_x,-height*vpy+delta_y,-unit_z) )
+      push( project * translate, &=replace )
 
     method push_perspective( fov_y=Degrees(65):Radians, aspect_ratio=Canvas.aspect_ratio:Real64,
-        z_near=0.1:Real64, z_far=100:Real64 )
+        z_near=0.1:Real64, z_far=100:Real64, &replace )
       local q = Canvas.render_queue
       q.write( RenderCmd.PUSH_PERSPECTIVE_PROJECTION )
       q.write_real32( fov_y.value )
       q.write_real32( aspect_ratio )
       q.write_real32( z_near )
       q.write_real32( z_far )
+      q.write_logical( replace )
 
 endClass
 
