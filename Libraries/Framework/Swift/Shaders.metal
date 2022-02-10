@@ -16,78 +16,65 @@
 using namespace metal;
 
 //------------------------------------------------------------------------------
-// TexturedVertex
-// TransformedTexturedVertex
-//------------------------------------------------------------------------------
-//typedef struct
-//{
-//    float3 position [[attribute(TexturedVertexAttributePosition)]];
-//    float2 texCoord [[attribute(TexturedVertexAttributeTexcoord)]];
-//} TexturedVertex;
-//
-//typedef struct
-//{
-//    float4 position [[position]];
-//    float2 texCoord;
-//} TransformedTexturedVertex;
-
-
-//------------------------------------------------------------------------------
-// ColoredVertex
-// TransformedColoredVertex
+// Vertex
+// TransformedVertex
 //------------------------------------------------------------------------------
 typedef struct
 {
-    float3 position [[attribute(ColoredVertexAttributePosition)]];
-    float4 color    [[attribute(ColoredVertexAttributeColor)]];
-    float2 uv       [[attribute(ColoredVertexAttributeUV)]];
-} ColoredVertex;
+  float3 position [[attribute(VertexAttributePosition)]];
+  float4 color    [[attribute(VertexAttributeColor)]];
+  float2 uv       [[attribute(VertexAttributeUV)]];
+} Vertex;
 
 typedef struct
 {
-    float4 position [[position]];
-    float4 color;
-    float2 uv;
-} TransformedColoredVertex;
+  float4 position [[position]];
+  float4 color;
+  float2 uv;
+} TransformedVertex;
 
-vertex TransformedColoredVertex coloredVertexShader(ColoredVertex in [[stage_in]],
-                               constant Uniforms & uniforms [[ buffer(ColoredBufferIndexUniforms) ]])
+//------------------------------------------------------------------------------
+// Solid Color Shaders
+//------------------------------------------------------------------------------
+vertex TransformedVertex solidColorVertexShader( Vertex in [[stage_in]],
+    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
 {
-    TransformedColoredVertex out;
+  TransformedVertex out;
 
-    float4 position = float4(in.position, 1.0);
-    out.position = uniforms.projectionTransform * uniforms.worldTransform * position;
-    out.color = in.color;
+  float4 position = float4( in.position, 1.0 );
+  out.position = constants.projectionTransform * constants.worldTransform * position;
+  out.color = in.color;
 
-    return out;
+  return out;
 }
 
-fragment float4 coloredFragmentShader(
-    TransformedColoredVertex in [[stage_in]],
-    constant Uniforms & uniforms [[ buffer(ColoredBufferIndexUniforms) ]]
+fragment float4 solidColorFragmentShader(
+    TransformedVertex in [[stage_in]],
+    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]]
   )
 {
     return in.color;
 }
 
 //------------------------------------------------------------------------------
+// Texture Shaders
 //------------------------------------------------------------------------------
-vertex TransformedColoredVertex texturedVertexShader(ColoredVertex in [[stage_in]],
-                               constant Uniforms & uniforms [[ buffer(ColoredBufferIndexUniforms) ]])
+vertex TransformedVertex textureVertexShader(Vertex in [[stage_in]],
+                               constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
 {
-    TransformedColoredVertex out;
+    TransformedVertex out;
 
     float4 position = float4(in.position, 1.0);
-    out.position = uniforms.projectionTransform * uniforms.worldTransform * position;
+    out.position = constants.projectionTransform * constants.worldTransform * position;
     out.uv = in.uv;
 
     return out;
 }
 
-fragment float4 texturedFragmentShader(
-    TransformedColoredVertex in [[stage_in]],
-    constant Uniforms & uniforms [[ buffer(ColoredBufferIndexUniforms) ]],
-    texture2d<half> colorMap     [[ texture(TextureIndexColor) ]]
+fragment float4 textureFragmentShader(
+    TransformedVertex in [[stage_in]],
+    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
+    texture2d<half> colorMap     [[ texture(TextureStageColor) ]]
   )
 {
     constexpr sampler colorSampler(mip_filter::linear,
@@ -98,3 +85,4 @@ fragment float4 texturedFragmentShader(
 
     return float4(colorSample);
 }
+

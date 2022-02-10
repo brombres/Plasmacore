@@ -308,8 +308,7 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.popProjectionTransform()
                 continue
               case .BOX_FILL:
-                //renderModeFillSolidTriangles?.activate( renderEncoder )
-                renderModeFillTexturedTriangles?.activate( renderEncoder )
+                renderModeFillSolidTriangles?.activate( renderEncoder )
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let w = q.readReal32()
@@ -321,12 +320,6 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.addPosition(   x,   y, 0 )
                 renderData.addPosition(   x, y+h, 0 )
                 renderData.addPosition( x+w, y+h, 0 )
-                renderData.addUV( 0, 0 )
-                renderData.addUV( 1, 1 )
-                renderData.addUV( 1, 0 )
-                renderData.addUV( 0, 0 )
-                renderData.addUV( 0, 1 )
-                renderData.addUV( 1, 1 )
                 if (q.readByte() == 1)
                 {
                   let color = q.readInt32()

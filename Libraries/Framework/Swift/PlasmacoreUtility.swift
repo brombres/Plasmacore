@@ -35,10 +35,11 @@ class PlasmacoreUtility
 
     let textureLoaderOptions =
     [
+      MTKTextureLoader.Option.SRGB: true,
       MTKTextureLoader.Option.textureUsage: NSNumber( value:MTLTextureUsage.shaderRead.rawValue ),
       MTKTextureLoader.Option.textureStorageMode: NSNumber( value:MTLStorageMode.`private`.rawValue )
     ]
-      
+
       return try textureLoader.newTexture(
         URL:URL(fileURLWithPath:filename),
         options: textureLoaderOptions

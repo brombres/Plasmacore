@@ -1,5 +1,5 @@
 let sizeOfFloat    = 4
-let sizeOfUniforms = (MemoryLayout<Uniforms>.size + 0xFF) & -0x100
+let sizeOfConstants = (MemoryLayout<Constants>.size + 0xFF) & -0x100
 
 class RenderData
 {
@@ -18,10 +18,10 @@ class RenderData
   var colorCount           = 0
   public var colors        : UnsafeMutablePointer<Float>
 
-  var uniformsCapacity     = 8
-  var uniformsBuffer       : MTLBuffer
-  var uniformsCount        = 0
-  public var uniforms      : UnsafeMutablePointer<Uniforms>
+  var constantsCapacity     = 8
+  var constantsBuffer       : MTLBuffer
+  var constantsCount        = 0
+  public var constants      : UnsafeMutablePointer<Constants>
 
   var uvCapacity           = 128
   var uvBuffer             : MTLBuffer
@@ -47,8 +47,8 @@ class RenderData
       length:(colorCapacity*sizeOfFloat*maxFrames),
       options:[MTLResourceOptions.storageModeShared]
     )!
-    uniformsBuffer = device.makeBuffer(
-      length:(uniformsCapacity*sizeOfUniforms*maxFrames),
+    constantsBuffer = device.makeBuffer(
+      length:(constantsCapacity*sizeOfConstants*maxFrames),
       options:[MTLResourceOptions.storageModeShared]
     )!
     uvBuffer = device.makeBuffer(
@@ -58,7 +58,7 @@ class RenderData
 
     positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
     colors = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
-    uniforms = RenderData.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
+    constants = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, frame )
     uvs = RenderData.makeFloatBufferPointer( uvBuffer, uvCapacity, frame )
   }
 
@@ -90,10 +90,10 @@ class RenderData
     positionCount += 3
   }
 
-  func addUniforms()
+  func addConstants()
   {
-    if (uniformsCount + 1 > uniformsCapacity) { reserveUniformsCapacity(uniformsCapacity) }
-    uniformsCount += 1
+    if (constantsCount + 1 > constantsCapacity) { reserveConstantsCapacity(constantsCapacity) }
+    constantsCount += 1
   }
 
   func addUV( _ u:Float, _ v:Float )
@@ -109,7 +109,7 @@ class RenderData
     frame = (frame + 1) % maxFrames
     positionCount = 0
     colorCount = 0
-    uniformsCount = 0
+    constantsCount = 0
     uvCount = 0
     updateBufferPointers()
     clearTransforms()
@@ -127,12 +127,12 @@ class RenderData
     renderEncoder.setVertexBuffer( positionBuffer, offset:offset, index:index )
   }
 
-  func bindUniformsBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
+  func bindConstantsBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
   {
-    if (uniformsCount == 0) { addUniforms(); }
-    let offset = (uniformsCapacity * frame + (uniformsCount-1)) * sizeOfUniforms
-    renderEncoder.setVertexBuffer( uniformsBuffer, offset:offset, index:index )
-    renderEncoder.setFragmentBuffer( uniformsBuffer, offset:offset, index:index )
+    if (constantsCount == 0) { addConstants(); }
+    let offset = (constantsCapacity * frame + (constantsCount-1)) * sizeOfConstants
+    renderEncoder.setVertexBuffer( constantsBuffer, offset:offset, index:index )
+    renderEncoder.setFragmentBuffer( constantsBuffer, offset:offset, index:index )
   }
 
   func bindUVBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ firstIndex:Int, _ index:Int )
@@ -259,17 +259,17 @@ class RenderData
     }
   }
 
-  func reserveUniformsCapacity( _ additionalCapacity:Int )
+  func reserveConstantsCapacity( _ additionalCapacity:Int )
   {
-    let requiredCapacity = uniformsCount + additionalCapacity
-    if (requiredCapacity > uniformsCapacity)
+    let requiredCapacity = constantsCount + additionalCapacity
+    if (requiredCapacity > constantsCapacity)
     {
-      let byteCountPerFrame = uniformsCapacity*sizeOfUniforms
+      let byteCountPerFrame = constantsCapacity*sizeOfConstants
       let newBuffer = device.makeBuffer( length:(byteCountPerFrame*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      newBuffer.contents().copyMemory( from:uniforms, byteCount:byteCountPerFrame )
-      uniformsBuffer  = newBuffer
-      uniformsCapacity = requiredCapacity
-      uniforms        = RenderData.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
+      newBuffer.contents().copyMemory( from:constants, byteCount:byteCountPerFrame )
+      constantsBuffer  = newBuffer
+      constantsCapacity = requiredCapacity
+      constants        = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, frame )
     }
   }
 
@@ -290,7 +290,7 @@ class RenderData
   {
     positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
     colors    = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
-    uniforms  = RenderData.makeUniformsBufferPointer( uniformsBuffer, uniformsCapacity, frame )
+    constants  = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, frame )
     uvs       = RenderData.makeFloatBufferPointer( uvBuffer, uvCapacity, frame )
   }
 
@@ -303,10 +303,10 @@ class RenderData
     return UnsafeMutableRawPointer( buffer.contents() + offset ).bindMemory( to:Float.self, capacity:capacity )
   }
 
-  class func makeUniformsBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Uniforms>
+  class func makeConstantsBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Constants>
   {
-    let offset = capacity * sizeOfUniforms * frame
-    return UnsafeMutableRawPointer(buffer.contents() + offset).bindMemory(to:Uniforms.self, capacity:capacity)
+    let offset = capacity * sizeOfConstants * frame
+    return UnsafeMutableRawPointer(buffer.contents() + offset).bindMemory(to:Constants.self, capacity:capacity)
   }
 }
 

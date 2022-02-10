@@ -25,52 +25,32 @@
 //------------------------------------------------------------------------------
 typedef struct
 {
-  // Uniforms are shader constants
     matrix_float4x4 projectionTransform;
     matrix_float4x4 worldTransform;
-} Uniforms;
+} Constants;
 
-typedef NS_ENUM(NSInteger, TextureIndex)
+typedef NS_ENUM( NSInteger, TextureStage )
 {
-  // TextureIndexColor, here, is used as TextureIndex.color in Swift
-  TextureIndexColor = 0,  // Stage 0 of multi-stage textures is the texture color
-};
-
-
-//------------------------------------------------------------------------------
-// TexturedVertex
-// TransformedTexturedVertex
-//------------------------------------------------------------------------------
-typedef NS_ENUM(NSInteger, TexturedBufferIndex)
-{
-    TexturedBufferIndexMeshPositions = 0,
-    TexturedBufferIndexMeshGenerics  = 1,
-    TexturedBufferIndexUniforms      = 2,
-};
-
-typedef NS_ENUM(NSInteger, TexturedVertexAttribute)
-{
-    TexturedVertexAttributePosition = 0,
-    TexturedVertexAttributeTexcoord = 1,
+  TextureStageColor = 0,
 };
 
 //------------------------------------------------------------------------------
-// ColoredVertex
-// TransformedColoredVertex
+// Vertex
+// TransformedVertex
 //------------------------------------------------------------------------------
-typedef NS_ENUM(NSInteger, ColoredBufferIndex)
+typedef NS_ENUM( NSInteger, VertexBufferIndex )
 {
-    ColoredBufferIndexMeshPositions = 0,
-    ColoredBufferIndexMeshGenerics  = 1,
-    ColoredBufferIndexMeshUVs       = 2,
-    ColoredBufferIndexUniforms      = 3,
+    VertexBufferIndexPositions = 0,
+    VertexBufferIndexColors    = 1,
+    VertexBufferIndexMeshUVs   = 2,
+    VertexBufferIndexConstants = 3,
 };
 
-typedef NS_ENUM(NSInteger, ColoredVertexAttribute)
+typedef NS_ENUM( NSInteger, VertexAttribute )
 {
-    ColoredVertexAttributePosition = 0,
-    ColoredVertexAttributeColor    = 1,
-    ColoredVertexAttributeUV       = 2,
+    VertexAttributePosition = 0,
+    VertexAttributeColor    = 1,
+    VertexAttributeUV       = 2,
 };
 
 

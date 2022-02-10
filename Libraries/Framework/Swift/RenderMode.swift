@@ -41,20 +41,20 @@ class RenderMode
 
     if let projectionTransform = renderData.projectionTransformStack.last
     {
-      renderData.uniforms[0].projectionTransform = projectionTransform
+      renderData.constants[0].projectionTransform = projectionTransform
     }
     else
     {
-      renderData.uniforms[0].projectionTransform = Matrix.identity()
+      renderData.constants[0].projectionTransform = Matrix.identity()
     }
 
     if let worldTransform = renderData.worldTransformStack.last
     {
-      renderData.uniforms[0].worldTransform = worldTransform
+      renderData.constants[0].worldTransform = worldTransform
     }
     else
     {
-      renderData.uniforms[0].worldTransform = Matrix.identity()
+      renderData.constants[0].worldTransform = Matrix.identity()
     }
 
     return true // it's on
@@ -62,9 +62,10 @@ class RenderMode
 }
 
 //==============================================================================
-// RenderModeColoredShapes
+// StandardRenderMode
+// Base class for several different render modes.
 //==============================================================================
-class RenderModeColoredShapes : RenderMode
+class StandardRenderMode : RenderMode
 {
   var firstColorIndex = 0
   var firstUVIndex    = 0
@@ -79,29 +80,29 @@ class RenderModeColoredShapes : RenderMode
     let vertexDescriptor = MTLVertexDescriptor()
     self.vertexDescriptor = vertexDescriptor
 
-    vertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].format = MTLVertexFormat.float3
-    vertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].offset = 0
-    vertexDescriptor.attributes[ColoredVertexAttribute.position.rawValue].bufferIndex = ColoredBufferIndex.meshPositions.rawValue
+    vertexDescriptor.attributes[VertexAttribute.position.rawValue].format = MTLVertexFormat.float3
+    vertexDescriptor.attributes[VertexAttribute.position.rawValue].offset = 0
+    vertexDescriptor.attributes[VertexAttribute.position.rawValue].bufferIndex = VertexBufferIndex.positions.rawValue
 
-    vertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].format = MTLVertexFormat.float4
-    vertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].offset = 0
-    vertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].bufferIndex = ColoredBufferIndex.meshGenerics.rawValue
+    vertexDescriptor.attributes[VertexAttribute.color.rawValue].format = MTLVertexFormat.float4
+    vertexDescriptor.attributes[VertexAttribute.color.rawValue].offset = 0
+    vertexDescriptor.attributes[VertexAttribute.color.rawValue].bufferIndex = VertexBufferIndex.colors.rawValue
 
-    vertexDescriptor.attributes[ColoredVertexAttribute.UV.rawValue].format = MTLVertexFormat.float2
-    vertexDescriptor.attributes[ColoredVertexAttribute.UV.rawValue].offset = 0
-    vertexDescriptor.attributes[ColoredVertexAttribute.UV.rawValue].bufferIndex = ColoredBufferIndex.meshUVs.rawValue
+    vertexDescriptor.attributes[VertexAttribute.UV.rawValue].format = MTLVertexFormat.float2
+    vertexDescriptor.attributes[VertexAttribute.UV.rawValue].offset = 0
+    vertexDescriptor.attributes[VertexAttribute.UV.rawValue].bufferIndex = VertexBufferIndex.meshUVs.rawValue
 
-    vertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stride = 12
-    vertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepRate = 1
-    vertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+    vertexDescriptor.layouts[VertexBufferIndex.positions.rawValue].stride = 12
+    vertexDescriptor.layouts[VertexBufferIndex.positions.rawValue].stepRate = 1
+    vertexDescriptor.layouts[VertexBufferIndex.positions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-    vertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stride = 16
-    vertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepRate = 1
-    vertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+    vertexDescriptor.layouts[VertexBufferIndex.colors.rawValue].stride = 16
+    vertexDescriptor.layouts[VertexBufferIndex.colors.rawValue].stepRate = 1
+    vertexDescriptor.layouts[VertexBufferIndex.colors.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-    vertexDescriptor.layouts[ColoredBufferIndex.meshUVs.rawValue].stride = 8
-    vertexDescriptor.layouts[ColoredBufferIndex.meshUVs.rawValue].stepRate = 1
-    vertexDescriptor.layouts[ColoredBufferIndex.meshUVs.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+    vertexDescriptor.layouts[VertexBufferIndex.meshUVs.rawValue].stride = 8
+    vertexDescriptor.layouts[VertexBufferIndex.meshUVs.rawValue].stepRate = 1
+    vertexDescriptor.layouts[VertexBufferIndex.meshUVs.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
     //--------------------------------------------------------------------------
     // Pipeline
@@ -133,8 +134,8 @@ class RenderModeColoredShapes : RenderMode
     }
   }
 
-  func vertexShaderName()->String { return "coloredVertexShader" }
-  func fragmentShaderName()->String { return "coloredFragmentShader" }
+  func vertexShaderName()->String { return "solidColorVertexShader" }
+  func fragmentShaderName()->String { return "solidColorFragmentShader" }
 
   override func activate( _ renderEncoder:MTLRenderCommandEncoder )
   {
@@ -149,10 +150,10 @@ class RenderModeColoredShapes : RenderMode
     if ( !super.render(renderEncoder) ) { return false }
 
     let renderData = renderer.renderData
-    renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
-    renderData.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
-    renderData.bindUVBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshUVs.rawValue )
-    renderData.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
+    renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, VertexBufferIndex.positions.rawValue )
+    renderData.bindColorBuffer( renderEncoder, firstColorIndex, VertexBufferIndex.colors.rawValue )
+    renderData.bindUVBuffer( renderEncoder, firstColorIndex, VertexBufferIndex.meshUVs.rawValue )
+    renderData.bindConstantsBuffer( renderEncoder, VertexBufferIndex.constants.rawValue )
 
     return true
   }
@@ -161,7 +162,7 @@ class RenderModeColoredShapes : RenderMode
 //==============================================================================
 // RenderModeDrawLines
 //==============================================================================
-class RenderModeDrawLines : RenderModeColoredShapes
+class RenderModeDrawLines : StandardRenderMode
 {
   let verticesPerLine = 2
   let positionValuesPerVertex = 3
@@ -197,7 +198,7 @@ class RenderModeDrawLines : RenderModeColoredShapes
 //==============================================================================
 // RenderModeFillSolidTriangles
 //==============================================================================
-class RenderModeFillSolidTriangles : RenderModeColoredShapes
+class RenderModeFillSolidTriangles : StandardRenderMode
 {
   let verticesPerTriangle = 3
   let positionValuesPerVertex = 3
@@ -233,7 +234,7 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
 //==============================================================================
 // RenderModeFillTexturedTriangles
 //==============================================================================
-class RenderModeFillTexturedTriangles : RenderModeColoredShapes
+class RenderModeFillTexturedTriangles : StandardRenderMode
 {
   let verticesPerTriangle     = 3
   let positionValuesPerVertex = 3
@@ -259,7 +260,7 @@ class RenderModeFillTexturedTriangles : RenderModeColoredShapes
 
     guard let texture = Plasmacore.singleton.texture else { return false }
 
-    renderEncoder.setFragmentTexture( texture, index:TextureIndex.color.rawValue )
+    renderEncoder.setFragmentTexture( texture, index:TextureStage.color.rawValue )
 
     let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
@@ -271,92 +272,7 @@ class RenderModeFillTexturedTriangles : RenderModeColoredShapes
     return true
   }
 
-  override func vertexShaderName()->String { return "texturedVertexShader" }
-  override func fragmentShaderName()->String { return "texturedFragmentShader" }
+  override func vertexShaderName()->String { return "textureVertexShader" }
+  override func fragmentShaderName()->String { return "textureFragmentShader" }
 }
-
-
-// Texture stuff
-  //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].format = MTLVertexFormat.float2
-  //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].offset = 0
-  //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].bufferIndex = TexturedBufferIndex.meshGenerics.rawValue
-
-  //  texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stride = 8
-  //  texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepRate = 1
-  //  texturedVertexDescriptor.layouts[TexturedBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
-
-  //class func buildTexturedPipeline( device:MTLDevice, metalKitView:MTKView,
-  //    shaderLibrary:MTLLibrary?, texturedVertexDescriptor:MTLVertexDescriptor )
-  //    throws -> MTLRenderPipelineState
-  //{
-  //  let vertexFunction = shaderLibrary?.makeFunction(name: "texturedVertexShader")
-  //  let fragmentFunction = shaderLibrary?.makeFunction(name: "texturedFragmentShader")
-
-  //  let pipelineDescriptor = MTLRenderPipelineDescriptor()
-  //  pipelineDescriptor.label = "RenderPipeline"
-  //  pipelineDescriptor.sampleCount = metalKitView.sampleCount
-  //  pipelineDescriptor.vertexFunction = vertexFunction
-  //  pipelineDescriptor.fragmentFunction = fragmentFunction
-  //  pipelineDescriptor.vertexDescriptor = texturedVertexDescriptor
-
-  //  pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
-  //  pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-  //  pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
-
-  //  return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-  //}
-
-  //class func buildMesh( device:MTLDevice, texturedVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
-  //{
-  //  /// Create and condition mesh data to feed into a pipeline using the given vertex descriptor
-  //  let metalAllocator = MTKMeshBufferAllocator(device: device)
-  //  let mdlMesh = MDLMesh.newBox(withDimensions: SIMD3<Float>(4, 4, 4),
-  //      segments: SIMD3<UInt32>(2, 2, 2),
-  //      geometryType: MDLGeometryType.triangles,
-  //      inwardNormals:false,
-  //      allocator: metalAllocator)
-
-  //  let mdlVertexDescriptor = MTKModelIOVertexDescriptorFromMetal(texturedVertexDescriptor)
-
-  //  guard let attributes = mdlVertexDescriptor.attributes as? [MDLVertexAttribute] else
-  //  {
-  //    throw RendererError.badVertexDescriptor
-  //  }
-  //  attributes[TexturedVertexAttribute.position.rawValue].name = MDLVertexAttributePosition
-  //  attributes[TexturedVertexAttribute.texcoord.rawValue].name = MDLVertexAttributeTextureCoordinate
-
-  //  mdlMesh.vertexDescriptor = mdlVertexDescriptor
-
-  //  return try MTKMesh(mesh:mdlMesh, device:device)
-  //}
-
-        //----------------------------------------------------------------------
-        // Cube
-        //----------------------------------------------------------------------
-        //renderEncoder.setRenderPipelineState(texturedPipeline)
-        //renderEncoder.setVertexBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
-        //renderEncoder.setFragmentBuffer(dynamicUniformBuffer, offset:uniformBufferOffset, index: TexturedBufferIndex.uniforms.rawValue)
-
-        //for (index, element) in mesh!.vertexDescriptor.layouts.enumerated()
-        //{
-        //  guard let layout = element as? MDLVertexBufferLayout else { return }
-        //  if layout.stride != 0
-        //  {
-        //    let buffer = mesh!.vertexBuffers[index]
-        //    renderEncoder.setVertexBuffer(buffer.buffer, offset:buffer.offset, index: index)
-        //  }
-        //}
-
-//renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
-
-        //for submesh in mesh!.submeshes
-        //{
-        //  renderEncoder.drawIndexedPrimitives(
-        //    type: submesh.primitiveType,
-        //    indexCount: submesh.indexCount,
-        //    indexType: submesh.indexType,
-        //    indexBuffer: submesh.indexBuffer.buffer,
-        //    indexBufferOffset: submesh.indexBuffer.offset
-        //  )
-        //}
 
