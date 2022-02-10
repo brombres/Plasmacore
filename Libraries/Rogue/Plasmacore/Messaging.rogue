@@ -6,8 +6,6 @@ $essential Byte[].reserve(Int32)
 class MessageManager [singleton]
   PROPERTIES
     next_id         = 1
-    pool            = Message[]
-    recycle_queue   = Message[]
     listeners       = StringTable<<Function(Message)>>()
     reply_listeners = Table<<Int32,Function(Message)>>()
 
@@ -22,21 +20,17 @@ class MessageManager [singleton]
       )
 
     method message->Message [essential]
-      while (not recycle_queue.is_empty) recycle_queue.remove_last.recycle
-      if (pool.count) return pool.remove_last.[ init ]
       return Message()
 
     method receive_message( m:Message )->Byte[] [essential]
       if (m.type.count == 0)
         local listener = reply_listeners.remove( m.message_id )
         if (listener) listener( m )
-        m.recycle
         return null
 
       else
         local listener = listeners[ m.type ]
         if (not listener)
-          m.recycle
           return null
         endIf
 
@@ -45,14 +39,11 @@ class MessageManager [singleton]
         if (m.m_reply)
           if (m.m_reply.send_requested)
             local result = m.m_reply.data
-            MessageManager.recycle_queue.add( m.m_reply )
-            m.recycle
             return result
           else
             m.m_reply.defer_reply = false  # a later send() will actually dispatch the reply
           endIf
         endIf
-        m.recycle
         return null
 
       endIf
@@ -87,12 +78,7 @@ class Message
 
     method create( message_id:Int32 )->Message
       local m = MessageManager.message
-
-      m.message_id = message_id
-
-      m.write_int32x( m.message_id )
-      m.write_int32x( 0 )  # empty string for message type
-
+      m.init_reply( 0 )
       return m
 
     method create( data:Byte[] )->Message
@@ -118,6 +104,11 @@ class Message
       m_reply = null
       message_id = read_int32x
       type.[clear].print( read_string )
+
+    method init_reply( message_id )
+      init
+      write_int32x( message_id )
+      write_int32x( 0 )  # empty string for message type
 
     method description->String
       if (type.count == 0) return "[response]"
@@ -196,15 +187,11 @@ class Message
         builder.print( read_byte->Character )
       endLoop
 
-    method recycle
-      if (MessageManager.pool.contains( this )) return
-      data.limit_capacity( 1024 )  # Don't let occassional huge messages sit on unused memory
-      MessageManager.pool.add( this )
-
-    method reply->Message
+    method reply( reuse=null:Message )->Message
       if (not m_reply)
         if (type.count == 0) throw Error( "Message: cannot reply to a reply." )
-        m_reply = Message( message_id )
+        if (reuse)           m_reply = reuse.[ init_reply(message_id) ]
+        else                    m_reply = Message( message_id )
         m_reply.defer_reply = this.defer_reply
       endIf
       return m_reply
@@ -221,10 +208,8 @@ class Message
       native @|$has_reply = NativeInterface_send_message( $this->data );
       if (has_reply)
         init_from_data  # reply has been placed in same Byte[] buffer
-        MessageManager.recycle_queue.add( this )
         return this
       else
-        recycle
         return null
       endIf
 

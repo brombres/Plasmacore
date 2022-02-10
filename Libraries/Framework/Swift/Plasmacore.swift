@@ -15,7 +15,7 @@ class Plasmacore
     get
     {
       let result = _singleton
-      if (result.is_launched) { return result }
+      if (result.isLaunched) { return result }
       result.configure()
       result.launch()
       return result
@@ -39,8 +39,8 @@ class Plasmacore
   }
   */
 
-  var is_configured = false
-  var is_launched   = false
+  var isConfigured = false
+  var isLaunched   = false
 
 /*
   var idleUpdateFrequency = 0.5
@@ -51,8 +51,11 @@ class Plasmacore
   var is_sending = false
   */
 
-  var listeners       = [String:PlasmacoreMessageListener]()
-  var reply_listeners = [Int:PlasmacoreMessageListener]()
+  var listeners      = [String:PlasmacoreMessageListener]()
+  var replyListeners = [Int:PlasmacoreMessageListener]()
+
+  public var currentMetalDevice : MTLDevice?
+  var texture : MTLTexture?
 
   /*
   var resources = [Int:AnyObject]()
@@ -67,16 +70,47 @@ class Plasmacore
 
   func configure()
   {
-    if (is_configured) { return }
-    is_configured = true
+    if (isConfigured) { return }
+    isConfigured = true
 
     // Create an empty-string listener to dispatch replies
-    setMessageListener( type: "", listener:
+    setMessageListener( "",
       {
         (m:PlasmacoreMessage) in
-          if let info = Plasmacore.singleton.reply_listeners.removeValue( forKey:m.message_id )
+          if let info = Plasmacore.singleton.replyListeners.removeValue( forKey:m.message_id )
           {
             info.callback( m )
+          }
+      }
+    )
+
+    setMessageListener( "Data.find_asset",
+      {
+        (m:PlasmacoreMessage) in
+          let name = m.readString()
+          if let filepath = Bundle.main.path( forResource:name, ofType:nil )
+          {
+            m.reply().writeLogical(true).writeString(filepath).send()
+          }
+          else
+          {
+            m.reply().writeLogical(false).send()
+          }
+      }
+    )
+
+    setMessageListener( "Texture.load",
+      {
+        (m:PlasmacoreMessage) in
+          let filename = m.readString()
+          do
+          {
+            self.texture = try PlasmacoreUtility.loadTexture( filename )
+print( "Texture \(self.texture!.width)x\(self.texture!.height), format:\(self.texture!.pixelFormat.rawValue)" )
+          }
+          catch
+          {
+            print("Unable to load texture. Error info: \(error)")
           }
       }
     )
@@ -125,12 +159,14 @@ class Plasmacore
 
   func launch()
   {
-    if (is_launched) { return }
-    is_launched = true
+    if (isLaunched) { return }
+    isLaunched = true
 
     configure()
 
     RogueInterface_launch()
+
+    PlasmacoreMessage( "Application.on_launch" ).send()
 /*
     let m = PlasmacoreMessage( type:"Application.on_launch" )
 #if os(OSX)
@@ -168,7 +204,7 @@ class Plasmacore
   }
   */
 
-  func setMessageListener( type:String, listener:@escaping ((PlasmacoreMessage)->Void) )
+  func setMessageListener( _ type:String, _ listener:@escaping ((PlasmacoreMessage)->Void) )
   {
     objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
 
@@ -178,13 +214,13 @@ class Plasmacore
   func setReplyCallback( _ message:PlasmacoreMessage, callback:@escaping ((PlasmacoreMessage)->Void) )
   {
     objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
-    reply_listeners[ message.message_id ] = PlasmacoreMessageListener( type:"", once:true, callback:callback )
+    replyListeners[ message.message_id ] = PlasmacoreMessageListener( type:"", once:true, callback:callback )
   }
 
 /*
   func instanceStart( report:Bool )
   {
-    if ( !is_launched ) { configure().launch() }
+    if ( !isLaunched ) { configure().launch() }
 
     if (update_timer === nil)
     {

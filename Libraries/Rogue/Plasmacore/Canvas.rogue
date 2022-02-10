@@ -10,7 +10,9 @@ class Canvas [singleton]
     width           : Int32
     height          : Int32
 
-    render_queue    : RenderQueue
+    color           = Color.WHITE : Color  # current drawing color
+
+    render_queue    = RenderQueue()
     original_canvas : Canvas
 
   METHODS
@@ -41,7 +43,8 @@ class Canvas [singleton]
       original_canvas = Canvas
       Canvas = this
 
-      render_queue = RenderQueue()
+      render_queue.clear
+
       ProjectionTransform.push_2dx()
 
       return true  # dummy return value

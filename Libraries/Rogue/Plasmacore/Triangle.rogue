@@ -2,7 +2,8 @@ uses Plasmacore
 
 augment Triangle
   METHODS
-    method fill( color:Color )
+    method fill( color=Canvas.color:Color )
+      Canvas.color = color
       local q = Canvas.render_queue
       q.write( RenderCmd.TRIANGLE_FILL )
       q.write( a )

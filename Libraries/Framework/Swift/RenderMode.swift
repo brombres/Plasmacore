@@ -67,6 +67,7 @@ class RenderMode
 class RenderModeColoredShapes : RenderMode
 {
   var firstColorIndex = 0
+  var firstUVIndex    = 0
 
   init( _ renderer:Renderer, _ label:String )
   {
@@ -86,6 +87,10 @@ class RenderModeColoredShapes : RenderMode
     vertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].offset = 0
     vertexDescriptor.attributes[ColoredVertexAttribute.color.rawValue].bufferIndex = ColoredBufferIndex.meshGenerics.rawValue
 
+    vertexDescriptor.attributes[ColoredVertexAttribute.UV.rawValue].format = MTLVertexFormat.float2
+    vertexDescriptor.attributes[ColoredVertexAttribute.UV.rawValue].offset = 0
+    vertexDescriptor.attributes[ColoredVertexAttribute.UV.rawValue].bufferIndex = ColoredBufferIndex.meshUVs.rawValue
+
     vertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stride = 12
     vertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepRate = 1
     vertexDescriptor.layouts[ColoredBufferIndex.meshPositions.rawValue].stepFunction = MTLVertexStepFunction.perVertex
@@ -94,13 +99,17 @@ class RenderModeColoredShapes : RenderMode
     vertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepRate = 1
     vertexDescriptor.layouts[ColoredBufferIndex.meshGenerics.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
+    vertexDescriptor.layouts[ColoredBufferIndex.meshUVs.rawValue].stride = 8
+    vertexDescriptor.layouts[ColoredBufferIndex.meshUVs.rawValue].stepRate = 1
+    vertexDescriptor.layouts[ColoredBufferIndex.meshUVs.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+
     //--------------------------------------------------------------------------
     // Pipeline
     //--------------------------------------------------------------------------
     do
     {
-      let vertexFunction = renderer.shaderLibrary?.makeFunction(name: "coloredVertexShader")
-      let fragmentFunction = renderer.shaderLibrary?.makeFunction(name: "coloredFragmentShader")
+      let vertexFunction = renderer.shaderLibrary?.makeFunction(name:vertexShaderName())
+      let fragmentFunction = renderer.shaderLibrary?.makeFunction(name:fragmentShaderName())
       let metalKitView = renderer.metalKitView
 
       let pipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -111,6 +120,9 @@ class RenderModeColoredShapes : RenderMode
       pipelineDescriptor.vertexDescriptor = vertexDescriptor
 
       pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
+      pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
+      pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactor.sourceAlpha
+      pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactor.oneMinusSourceAlpha
       pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
       pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
       pipeline = try renderer.device.makeRenderPipelineState( descriptor:pipelineDescriptor )
@@ -121,10 +133,14 @@ class RenderModeColoredShapes : RenderMode
     }
   }
 
+  func vertexShaderName()->String { return "coloredVertexShader" }
+  func fragmentShaderName()->String { return "coloredFragmentShader" }
+
   override func activate( _ renderEncoder:MTLRenderCommandEncoder )
   {
     super.activate( renderEncoder )
     firstColorIndex = renderer.renderData.colorCount
+    firstUVIndex    = renderer.renderData.uvCount
   }
 
   @discardableResult
@@ -135,6 +151,7 @@ class RenderModeColoredShapes : RenderMode
     let renderData = renderer.renderData
     renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, ColoredBufferIndex.meshPositions.rawValue )
     renderData.bindColorBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshGenerics.rawValue )
+    renderData.bindUVBuffer( renderEncoder, firstColorIndex, ColoredBufferIndex.meshUVs.rawValue )
     renderData.bindUniformsBuffer( renderEncoder, ColoredBufferIndex.uniforms.rawValue )
 
     return true
@@ -213,6 +230,51 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
   }
 }
 
+//==============================================================================
+// RenderModeFillTexturedTriangles
+//==============================================================================
+class RenderModeFillTexturedTriangles : RenderModeColoredShapes
+{
+  let verticesPerTriangle     = 3
+  let positionValuesPerVertex = 3
+  let colorValuesPerVertex    = 4
+  let uvValuesPerVertex       = 5
+
+  init( _ renderer:Renderer )
+  {
+    super.init( renderer, "FillTexturedTriangles" )
+  }
+
+  override func reserveCapacity( _ n:Int )
+  {
+    renderer.renderData.reservePositionCapacity( n * positionValuesPerVertex * verticesPerTriangle )
+    renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
+    renderer.renderData.reserveUVCapacity( n * uvValuesPerVertex * verticesPerTriangle )
+  }
+
+  @discardableResult
+  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
+  {
+    if ( !super.render(renderEncoder) ) { return false }
+
+    guard let texture = Plasmacore.singleton.texture else { return false }
+
+    renderEncoder.setFragmentTexture( texture, index:TextureIndex.color.rawValue )
+
+    let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
+    renderEncoder.drawPrimitives(
+      type:          MTLPrimitiveType.triangle,
+      vertexStart:   0,
+      vertexCount:   count
+    )
+
+    return true
+  }
+
+  override func vertexShaderName()->String { return "texturedVertexShader" }
+  override func fragmentShaderName()->String { return "texturedFragmentShader" }
+}
+
 
 // Texture stuff
   //  texturedVertexDescriptor.attributes[TexturedVertexAttribute.texcoord.rawValue].format = MTLVertexFormat.float2
@@ -244,29 +306,6 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
   //  return try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
   //}
 
-  //func prepareDemoAssets()
-  //{
-  //  do
-  //  {
-  //    mesh = try Renderer.buildMesh(device: device, texturedVertexDescriptor: texturedVertexDescriptor)
-  //  }
-  //  catch
-  //  {
-  //    print("Unable to build MetalKit Mesh. Error info: \(error)")
-  //    return
-  //  }
-
-  //  do
-  //  {
-  //    colorMap = try Renderer.loadTexture(device: device, textureName: "ColorMap")
-  //  }
-  //  catch
-  //  {
-  //    print("Unable to load texture. Error info: \(error)")
-  //    return
-  //  }
-  //}
-
   //class func buildMesh( device:MTLDevice, texturedVertexDescriptor:MTLVertexDescriptor) throws -> MTKMesh
   //{
   //  /// Create and condition mesh data to feed into a pipeline using the given vertex descriptor
@@ -291,26 +330,6 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
   //  return try MTKMesh(mesh:mdlMesh, device:device)
   //}
 
-  //class func loadTexture(device: MTLDevice,
-  //    textureName: String) throws -> MTLTexture
-  //{
-  //  /// Load texture data with optimal parameters for sampling
-  //  let textureLoader = MTKTextureLoader(device: device)
-
-  //  let textureLoaderOptions =
-  //  [
-  //    MTKTextureLoader.Option.textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-  //    MTKTextureLoader.Option.textureStorageMode: NSNumber(value: MTLStorageMode.`private`.rawValue)
-  //  ]
-
-  //  return try textureLoader.newTexture(
-  //    name        : textureName,
-  //    scaleFactor : 1.0,
-  //    bundle      : nil,
-  //    options     : textureLoaderOptions
-  //  )
-  //}
-
         //----------------------------------------------------------------------
         // Cube
         //----------------------------------------------------------------------
@@ -328,7 +347,7 @@ class RenderModeFillSolidTriangles : RenderModeColoredShapes
         //  }
         //}
 
-        //renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
+//renderEncoder.setFragmentTexture(colorMap!, index:TextureIndex.color.rawValue)
 
         //for submesh in mesh!.submeshes
         //{

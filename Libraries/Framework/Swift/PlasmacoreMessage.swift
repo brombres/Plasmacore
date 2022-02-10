@@ -215,31 +215,40 @@ class PlasmacoreMessage
     return vector_float4( x, y, z, w )
   }
 
-  func skip( _ byte_count:Int )
+  @discardableResult
+  func skip( _ byte_count:Int )->PlasmacoreMessage
   {
     position += byte_count
+    return self
   }
 
-  func writeByte( _ value:Int )
+  @discardableResult
+  func writeByte( _ value:Int )->PlasmacoreMessage
   {
     data.append( UInt8(value&255) )
+    return self
   }
 
-  func writeLogical( _ value:Bool )
+  @discardableResult
+  func writeLogical( _ value:Bool )->PlasmacoreMessage
   {
     if (value) { writeByte(1) }
     else       { writeByte(0) }
+    return self
   }
 
-  func writeInt32( _ value:Int )
+  @discardableResult
+  func writeInt32( _ value:Int )->PlasmacoreMessage
   {
     writeByte( value >> 24 )
     writeByte( value >> 16 )
     writeByte( value >> 8  )
     writeByte( value )
+    return self
   }
 
-  func writeInt32X( _ value:Int )
+  @discardableResult
+  func writeInt32X( _ value:Int )->PlasmacoreMessage
   {
     // Writes a variable-length encoded value that is stored in 1..5 bytes.
     // See readInt32X for encoding details
@@ -279,21 +288,27 @@ class PlasmacoreMessage
       shift -= 7
       writeByte( (value>>shift) & 0b0111_1111 )
     }
+    return self
   }
 
-  func writeReal32( _ value:Float )
+  @discardableResult
+  func writeReal32( _ value:Float )->PlasmacoreMessage
   {
     writeInt32( Int(value.bitPattern) )
+    return self
   }
 
-  func writeReal64( _ value:Double )
+  @discardableResult
+  func writeReal64( _ value:Double )->PlasmacoreMessage
   {
     let bits = value.bitPattern
     writeInt32( Int((bits>>32)&0xFFFFffff) )
     writeInt32( Int(bits&0xFFFFffff) )
+    return self
   }
 
-  func writeString( _ value:String )
+  @discardableResult
+  func writeString( _ value:String )->PlasmacoreMessage
   {
     let characters = value.unicodeScalars
     writeInt32X( characters.count )
@@ -301,6 +316,7 @@ class PlasmacoreMessage
     {
       writeInt32X( Int(ch.value) )
     }
+    return self
   }
 }
 

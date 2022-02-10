@@ -21,7 +21,7 @@ class Display [singleton]
     method clear( color=Color.BLACK:Color )
       canvas.clear( color )
 
-    method render( width, height, render_reply )
+    method render( width, height )
       Display = this  # update the Display singleton
 
       canvas.width  = width

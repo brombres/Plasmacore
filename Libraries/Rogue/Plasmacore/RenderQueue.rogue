@@ -9,6 +9,11 @@ class RenderQueue : DataWriter
   METHODS
     method init
       prior.init
+      clear
+
+    method clear
+      prior.clear
+      is_finalized = false
 
       write( RenderCmd.HEADER_CLEAR_COLOR )
       clear_color_index = position

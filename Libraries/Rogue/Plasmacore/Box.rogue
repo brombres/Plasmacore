@@ -2,7 +2,8 @@ uses Plasmacore
 
 augment Box
   METHODS
-    method fill( color:Color )
+    method fill( color=Canvas.color:Color )
+      Canvas.color = color
       local q = Canvas.render_queue
       q.write( RenderCmd.BOX_FILL )
       q.write_real32( position.x )

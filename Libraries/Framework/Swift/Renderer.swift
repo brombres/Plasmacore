@@ -15,9 +15,9 @@ let maxBuffersInFlight = 3
 // The maximum number of MTLCommandBuffers (AKA frame renders) that can
 // be queued for rendering.
 
-enum RendererError : Error
+enum PlasmacoreError : Error
 {
-  case badVertexDescriptor
+  case runtimeError(String)
 }
 
 class Renderer: NSObject, MTKViewDelegate
@@ -47,10 +47,11 @@ class Renderer: NSObject, MTKViewDelegate
 
   var renderData                 : RenderData
 
-  var isConfigured                 = false
-  var renderMode                   : RenderMode?
-  var renderModeDrawLines          : RenderModeDrawLines?
-  var renderModeFillSolidTriangles : RenderModeFillSolidTriangles?
+  var isConfigured                    = false
+  var renderMode                      : RenderMode?
+  var renderModeDrawLines             : RenderModeDrawLines?
+  var renderModeFillSolidTriangles    : RenderModeFillSolidTriangles?
+  var renderModeFillTexturedTriangles : RenderModeFillTexturedTriangles?
 
   var depthTestLT                  : MTLDepthStencilState
 
@@ -92,6 +93,7 @@ class Renderer: NSObject, MTKViewDelegate
     isConfigured = true
     renderModeDrawLines          = RenderModeDrawLines( self )
     renderModeFillSolidTriangles = RenderModeFillSolidTriangles( self )
+    renderModeFillTexturedTriangles = RenderModeFillTexturedTriangles( self )
   }
 
   private func rogueRender()->PlasmacoreMessage?
@@ -128,6 +130,8 @@ class Renderer: NSObject, MTKViewDelegate
 
   func draw(in view: MTKView)
   {
+    Plasmacore.singleton.currentMetalDevice = device
+
     configure()
 
     guard let q = rogueRender() else { return }
@@ -226,8 +230,8 @@ class Renderer: NSObject, MTKViewDelegate
       {
         renderEncoder.label = "Canvas \(canvasID) Render Encoder"
         //renderEncoder.pushDebugGroup("Draw Box")
-        //renderEncoder.setCullMode(.back)
-        renderEncoder.setCullMode(.none)
+        renderEncoder.setCullMode(.back)
+        //renderEncoder.setCullMode(.none)
         renderEncoder.setFrontFacing(.counterClockwise)
         renderEncoder.setDepthStencilState(depthTestLT)
 
@@ -304,18 +308,25 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.popProjectionTransform()
                 continue
               case .BOX_FILL:
-                renderModeFillSolidTriangles?.activate( renderEncoder )
+                //renderModeFillSolidTriangles?.activate( renderEncoder )
+                renderModeFillTexturedTriangles?.activate( renderEncoder )
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let w = q.readReal32()
                 let h = q.readReal32()
                 renderMode?.reserveCapacity( 2 )
                 renderData.addPosition(   x,   y, 0 )
+                renderData.addPosition( x+w, y+h, 0 )
                 renderData.addPosition( x+w,   y, 0 )
-                renderData.addPosition( x+w, y+h, 0 )
                 renderData.addPosition(   x,   y, 0 )
-                renderData.addPosition( x+w, y+h, 0 )
                 renderData.addPosition(   x, y+h, 0 )
+                renderData.addPosition( x+w, y+h, 0 )
+                renderData.addUV( 0, 0 )
+                renderData.addUV( 1, 1 )
+                renderData.addUV( 1, 0 )
+                renderData.addUV( 0, 0 )
+                renderData.addUV( 0, 1 )
+                renderData.addUV( 1, 1 )
                 if (q.readByte() == 1)
                 {
                   let color = q.readInt32()
@@ -328,11 +339,11 @@ class Renderer: NSObject, MTKViewDelegate
                   let c3 = q.readInt32()
                   let c4 = q.readInt32()
                   renderData.addColor( c1 )
+                  renderData.addColor( c3 )
                   renderData.addColor( c2 )
-                  renderData.addColor( c3 )
                   renderData.addColor( c1 )
-                  renderData.addColor( c3 )
                   renderData.addColor( c4 )
+                  renderData.addColor( c3 )
                 }
                 continue
               case .TRIANGLE_FILL:

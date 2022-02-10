@@ -62,13 +62,15 @@ typedef NS_ENUM(NSInteger, ColoredBufferIndex)
 {
     ColoredBufferIndexMeshPositions = 0,
     ColoredBufferIndexMeshGenerics  = 1,
-    ColoredBufferIndexUniforms      = 2,
+    ColoredBufferIndexMeshUVs       = 2,
+    ColoredBufferIndexUniforms      = 3,
 };
 
 typedef NS_ENUM(NSInteger, ColoredVertexAttribute)
 {
     ColoredVertexAttributePosition = 0,
-    ColoredVertexAttributeColor = 1,
+    ColoredVertexAttributeColor    = 1,
+    ColoredVertexAttributeUV       = 2,
 };
 
 

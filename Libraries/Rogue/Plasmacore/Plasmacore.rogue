@@ -11,31 +11,43 @@ $include "Plasmacore/ObjectTransform.rogue"
 $include "Plasmacore/ProjectionTransform.rogue"
 $include "Plasmacore/RenderCmd.rogue"
 $include "Plasmacore/RenderQueue.rogue"
+$include "Plasmacore/Texture.rogue"
 $include "Plasmacore/Triangle.rogue"
 $include "Plasmacore/ViewTransform.rogue"
 
 class Plasmacore [essential singleton]
   PROPERTIES
-    draw_handler     : Function
-    update_handler   : Function
+    configure_handler : Function
+    draw_handler      : Function
+    update_handler    : Function
 
-    last_update_time : Real64
+    last_update_time  : Real64
 
     displays = Table<<Int32,Display>>()
 
   METHODS
     method init
+      MessageListener["Application.on_launch"] =
+        function( m:Message )
+          Plasmacore.configure
+        endFunction
+
       MessageListener["Display.render"] =
         function( m:Message )
           local display_id     = m.read_int32x
           local display_width  = m.read_int32x
           local display_height = m.read_int32x
           local display = Plasmacore.display( display_id )
-          local reply = m.reply
-          display.render( display_width, display_height, reply )
+          local reply = m.reply( &reuse=display.render_reply )
+          display.render_reply = reply
+          display.render( display_width, display_height )
           reply.write_int32x( RenderCmd.END_RENDER )
           reply.send
+          TextureManager.load_pending
         endFunction
+
+    method configure
+      if (configure_handler) configure_handler()
 
     method display( id:Int32 )->Display
       local result = displays[ id ]
@@ -46,6 +58,14 @@ class Plasmacore [essential singleton]
 
     method draw
       if (draw_handler) draw_handler()
+
+    method find_asset_filepath( name:String )->String
+      local reply = Message( "Data.find_asset" ).[ write_string(name) ].send
+      if (not reply) return null
+      if (not reply.read_logical) return null
+      return reply.read_string
+
+    method set_on_configure( configure_handler )
 
     method set_on_draw( draw_handler )
 

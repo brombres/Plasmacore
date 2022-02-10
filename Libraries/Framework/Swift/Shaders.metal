@@ -19,44 +19,18 @@ using namespace metal;
 // TexturedVertex
 // TransformedTexturedVertex
 //------------------------------------------------------------------------------
-typedef struct
-{
-    float3 position [[attribute(TexturedVertexAttributePosition)]];
-    float2 texCoord [[attribute(TexturedVertexAttributeTexcoord)]];
-} TexturedVertex;
+//typedef struct
+//{
+//    float3 position [[attribute(TexturedVertexAttributePosition)]];
+//    float2 texCoord [[attribute(TexturedVertexAttributeTexcoord)]];
+//} TexturedVertex;
+//
+//typedef struct
+//{
+//    float4 position [[position]];
+//    float2 texCoord;
+//} TransformedTexturedVertex;
 
-typedef struct
-{
-    float4 position [[position]];
-    float2 texCoord;
-} TransformedTexturedVertex;
-
-vertex TransformedTexturedVertex texturedVertexShader(TexturedVertex in [[stage_in]],
-                               constant Uniforms & uniforms [[ buffer(TexturedBufferIndexUniforms) ]])
-{
-    TransformedTexturedVertex out;
-
-    float4 position = float4(in.position, 1.0);
-    out.position = uniforms.projectionTransform * uniforms.worldTransform * position;
-    out.texCoord = in.texCoord;
-
-    return out;
-}
-
-fragment float4 texturedFragmentShader(
-    TransformedTexturedVertex in [[stage_in]],
-    constant Uniforms & uniforms [[ buffer(TexturedBufferIndexUniforms) ]],
-    texture2d<half> colorMap     [[ texture(TextureIndexColor) ]]
-  )
-{
-    constexpr sampler colorSampler(mip_filter::linear,
-                                   mag_filter::linear,
-                                   min_filter::linear);
-
-    half4 colorSample   = colorMap.sample(colorSampler, in.texCoord.xy);
-
-    return float4(colorSample);
-}
 
 //------------------------------------------------------------------------------
 // ColoredVertex
@@ -66,12 +40,14 @@ typedef struct
 {
     float3 position [[attribute(ColoredVertexAttributePosition)]];
     float4 color    [[attribute(ColoredVertexAttributeColor)]];
+    float2 uv       [[attribute(ColoredVertexAttributeUV)]];
 } ColoredVertex;
 
 typedef struct
 {
     float4 position [[position]];
     float4 color;
+    float2 uv;
 } TransformedColoredVertex;
 
 vertex TransformedColoredVertex coloredVertexShader(ColoredVertex in [[stage_in]],
@@ -94,3 +70,31 @@ fragment float4 coloredFragmentShader(
     return in.color;
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+vertex TransformedColoredVertex texturedVertexShader(ColoredVertex in [[stage_in]],
+                               constant Uniforms & uniforms [[ buffer(ColoredBufferIndexUniforms) ]])
+{
+    TransformedColoredVertex out;
+
+    float4 position = float4(in.position, 1.0);
+    out.position = uniforms.projectionTransform * uniforms.worldTransform * position;
+    out.uv = in.uv;
+
+    return out;
+}
+
+fragment float4 texturedFragmentShader(
+    TransformedColoredVertex in [[stage_in]],
+    constant Uniforms & uniforms [[ buffer(ColoredBufferIndexUniforms) ]],
+    texture2d<half> colorMap     [[ texture(TextureIndexColor) ]]
+  )
+{
+    constexpr sampler colorSampler(mip_filter::linear,
+                                   mag_filter::linear,
+                                   min_filter::linear);
+
+    half4 colorSample   = colorMap.sample(colorSampler, in.uv.xy);
+
+    return float4(colorSample);
+}

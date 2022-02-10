@@ -23,6 +23,7 @@
 		30C6726727A5110700B21D55 /* PlasmacoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */; };
 		30C6726E27A5110900B21D55 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726D27A5110900B21D55 /* Assets.xcassets */; };
 		30C6727127A5110900B21D55 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726F27A5110900B21D55 /* Main.storyboard */; };
+		30EC53AF27B4622E002138B1 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = 30EC53AE27B4622E002138B1 /* Images */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +49,7 @@
 		30C6726D27A5110900B21D55 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		30C6727027A5110900B21D55 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		30C6727227A5110900B21D55 /* Project_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Project_macOS.entitlements; sourceTree = "<group>"; };
+		30EC53AE27B4622E002138B1 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = ../../../Assets/Images; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 		30C6726327A5110700B21D55 /* Project-macOS */ = {
 			isa = PBXGroup;
 			children = (
+				30EC53AD27B4621C002138B1 /* Assets */,
 				30C6726427A5110700B21D55 /* AppDelegate.swift */,
 				30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */,
 				30C6726D27A5110900B21D55 /* Assets.xcassets */,
@@ -111,6 +114,14 @@
 				30C6727227A5110900B21D55 /* Project_macOS.entitlements */,
 			);
 			path = "Project-macOS";
+			sourceTree = "<group>";
+		};
+		30EC53AD27B4621C002138B1 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				30EC53AE27B4622E002138B1 /* Images */,
+			);
+			name = Assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -173,6 +184,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				30C6726E27A5110900B21D55 /* Assets.xcassets in Resources */,
+				30EC53AF27B4622E002138B1 /* Images in Resources */,
 				30C6727127A5110900B21D55 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
