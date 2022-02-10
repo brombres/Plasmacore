@@ -257,7 +257,7 @@ class RenderModeFillTexturedTriangles : StandardRenderMode
   override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
     if ( !super.render(renderEncoder) ) { return false }
-
+/*
     guard let texture = Plasmacore.singleton.texture else { return false }
 
     renderEncoder.setFragmentTexture( texture, index:TextureStage.color.rawValue )
@@ -268,6 +268,7 @@ class RenderModeFillTexturedTriangles : StandardRenderMode
       vertexStart:   0,
       vertexCount:   count
     )
+ */
 
     return true
   }

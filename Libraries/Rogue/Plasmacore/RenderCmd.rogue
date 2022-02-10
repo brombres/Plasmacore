@@ -2,9 +2,9 @@ module Plasmacore
 
 enum RenderCmd
   END_RENDER
-  BEGIN_CANVAS               #( canvas_id:Int32X, render_queue_byte_size:Int32 )
+  BEGIN_CANVAS                 #( canvas_id:Int32X, render_queue_byte_size:Int32 )
   END_CANVAS
-  HEADER_CLEAR_COLOR         #( argb:Int32 )
+  HEADER_CLEAR_COLOR           #( argb:Int32 )
   HEADER_END
   PUSH_OBJECT_TRANSFORM        #( transform:Real32[16] )
   PUSH_ROTATE_OBJECT           #( radians, axis_x, axis_y, axis_z : Real64 )

@@ -3,39 +3,45 @@ module Plasmacore
 class Texture
   PROPERTIES
     id           : Int32
-    filename     : String
+    asset        : ImageAsset
+    is_ready     = false
     texture_size : XY
 
   METHODS
-    method init( filename )
+    method init( asset )
+      id = TextureManager.next_id
+      ++TextureManager.next_id
       TextureManager.textures_pending_load.add( this )
 
-    method is_ready->Logical
-      return id?
+    method on_cleanup
+      Message( "Texture.unload" ).[ write_int32x(id) ].send
 
     method on_load( m:Message )
       if (m.read_logical)
-        id = m.read_int32x
         local w = m.read_int32x
         local h = m.read_int32x
         texture_size = XY(w,h)
-@trace id, texture_size
+        is_ready = true
       else
-        println "Error loading $"(filename)
+        println "Error loading $"(asset.filepath)
       endIf
 endClass
 
 class TextureManager [singleton]
   PROPERTIES
+    next_id               = 1
     textures_pending_load = Texture[]
 
   METHODS
     method load_pending
       if (textures_pending_load.count)
         forEach (texture in textures_pending_load)
-          local m = Message( "Texture.load" )
-          m.write_string( texture.filename )
-          m.send_rsvp( texture=>on_load )
+          if (texture.asset.confirm_exists)
+            local m = Message( "Texture.load" )
+            m.write_int32x( texture.id )
+            m.write_string( texture.asset.filepath )
+            m.send_rsvp( texture=>on_load )
+          endIf
         endForEach
         textures_pending_load.clear
       endIf

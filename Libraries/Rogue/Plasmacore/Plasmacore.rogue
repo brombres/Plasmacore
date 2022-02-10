@@ -3,6 +3,7 @@ uses Bitmap [export]
 uses Geometry [export]
 uses Math/Matrix [export]
 
+$include "Plasmacore/Asset.rogue"
 $include "Plasmacore/Box.rogue"
 $include "Plasmacore/Canvas.rogue"
 $include "Plasmacore/Display.rogue"

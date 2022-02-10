@@ -55,7 +55,7 @@ class Plasmacore
   var replyListeners = [Int:PlasmacoreMessageListener]()
 
   public var currentMetalDevice : MTLDevice?
-  var texture : MTLTexture?
+  public var textures = [Int:MTLTexture]()
 
   /*
   var resources = [Int:AnyObject]()
@@ -102,16 +102,15 @@ class Plasmacore
     setMessageListener( "Texture.load",
       {
         (m:PlasmacoreMessage) in
-          let filename = m.readString()
-          do
-          {
-            self.texture = try PlasmacoreUtility.loadTexture( filename )
-print( "Texture \(self.texture!.width)x\(self.texture!.height), format:\(self.texture!.pixelFormat.rawValue)" )
-          }
-          catch
-          {
-            print("Unable to load texture. Error info: \(error)")
-          }
+          PlasmacoreUtility.loadTexture( m )
+      }
+    )
+
+    setMessageListener( "Texture.unload",
+      {
+        (m:PlasmacoreMessage) in
+          let texture_id = m.readInt32X()
+          self.textures.removeValue( forKey:texture_id )
       }
     )
 

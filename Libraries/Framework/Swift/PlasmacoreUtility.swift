@@ -28,7 +28,38 @@ class PlasmacoreUtility
     return nil
   }
 
-  class func loadTexture( _ filename:String ) throws -> MTLTexture
+  class func loadTexture( _ m:PlasmacoreMessage )
+  {
+    let textureID = m.readInt32X()
+    let filename = m.readString()
+    do
+    {
+        try PlasmacoreUtility.loadTexture( filename,
+        {
+          (texture:MTLTexture?,err:Error?) in
+            if let texture = texture
+            {
+              Plasmacore.singleton.textures[textureID] = texture
+              let reply = m.reply()
+              reply.writeLogical( true )
+              reply.writeInt32X( texture.width )
+              reply.writeInt32X( texture.height )
+              reply.send()
+            }
+            else
+            {
+              m.reply().writeLogical(false).send()
+            }
+        }
+      )
+    }
+    catch
+    {
+      m.reply().writeLogical(false).send()
+    }
+  }
+
+  class func loadTexture( _ filename:String, _ callback:@escaping MTKTextureLoader.Callback ) throws
   {
     guard let device = Plasmacore.singleton.currentMetalDevice else { throw PlasmacoreError.runtimeError("loadTexture: no device") }
     let textureLoader = MTKTextureLoader( device:device )
@@ -40,10 +71,11 @@ class PlasmacoreUtility
       MTKTextureLoader.Option.textureStorageMode: NSNumber( value:MTLStorageMode.`private`.rawValue )
     ]
 
-      return try textureLoader.newTexture(
-        URL:URL(fileURLWithPath:filename),
-        options: textureLoaderOptions
-      )
+    textureLoader.newTexture(
+      URL:URL(fileURLWithPath:filename),
+      options: textureLoaderOptions,
+      completionHandler:callback
+    )
   }
 }
 

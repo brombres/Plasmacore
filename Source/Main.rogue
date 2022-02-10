@@ -27,4 +27,4 @@ Plasmacore.on_draw =
   #@trace Plasmacore.find_asset_filepath("Images/Max.png")
   #@trace Plasmacore.find_asset_filepath("Assets/Images/Max.png")
   #Texture( "Images/Max.png" )
-Texture( Plasmacore.find_asset_filepath("Images/Max.png") )
+Texture( ImageAsset("Max") )

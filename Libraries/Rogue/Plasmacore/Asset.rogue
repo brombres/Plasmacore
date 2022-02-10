@@ -1,0 +1,45 @@
+module Plasmacore
+
+class Asset
+  PROPERTIES
+    name     : String
+    filepath : String
+
+  METHODS
+    method init( name )
+      filepath = Plasmacore.find_asset_filepath( name )
+
+    method confirm_exists->Logical
+      if (exists) return true
+      println "[ERROR] Cannot find asset: " + name
+      return false
+
+    method exists->Logical
+      return filepath?
+
+    method to->String
+      return which{ filepath || name }
+endClass
+
+class ImageAsset : Asset
+  METHODS
+    method init( name )
+      contingent
+        filepath = Plasmacore.find_asset_filepath( name )
+        sufficient (filepath?)
+        block name
+          if (not name.contains("Images/"))
+            name = "Images/" + name
+            filepath = Plasmacore.find_asset_filepath( name )
+            sufficient (filepath?)
+          endIf
+          filepath = Plasmacore.find_asset_filepath( name + ".png" )
+          sufficient (filepath?)
+          filepath = Plasmacore.find_asset_filepath( name + ".jpg" )
+          sufficient (filepath?)
+          filepath = Plasmacore.find_asset_filepath( name + ".jpeg" )
+          sufficient (filepath?)
+        endBlock
+      endContingent
+endClass
+
