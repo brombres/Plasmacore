@@ -312,13 +312,12 @@ class Renderer: NSObject, MTKViewDelegate
               case .POP_PROJECTION_TRANSFORM:
                 renderData.popProjectionTransform()
                 continue
-              case .BOX_FILL:
+              case .FILL_BOX:
                 renderModeFillSolidTriangles?.activate( renderEncoder )
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let w = q.readReal32()
                 let h = q.readReal32()
-                renderMode?.reserveCapacity( 2 )
                 renderData.addPosition(   x,   y, 0 )
                 renderData.addPosition( x+w, y+h, 0 )
                 renderData.addPosition( x+w,   y, 0 )
@@ -344,9 +343,8 @@ class Renderer: NSObject, MTKViewDelegate
                   renderData.addColor( c3 )
                 }
                 continue
-              case .TRIANGLE_FILL:
+              case .FILL_TRIANGLE:
                 renderModeFillSolidTriangles?.activate( renderEncoder )
-                renderMode?.reserveCapacity( 1 )
                 for _ in 1...3
                 {
                   let x = q.readReal32()
@@ -367,6 +365,19 @@ class Renderer: NSObject, MTKViewDelegate
                   renderData.addColor( c2 )
                   renderData.addColor( c3 )
                 }
+                continue
+              case .DRAW_LINE:
+                renderModeDrawLines?.activate( renderEncoder )
+                for _ in 1...2
+                {
+                  let x = q.readReal32()
+                  let y = q.readReal32()
+                  renderData.addPosition( x, y, 0 )
+                }
+                let c1 = q.readInt32()
+                let c2 = q.readInt32()
+                renderData.addColor( c1 )
+                renderData.addColor( c2 )
                 continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )

@@ -90,7 +90,7 @@ class StandardRenderMode : RenderMode
 
     vertexDescriptor.attributes[VertexAttribute.UV.rawValue].format = MTLVertexFormat.float2
     vertexDescriptor.attributes[VertexAttribute.UV.rawValue].offset = 0
-    vertexDescriptor.attributes[VertexAttribute.UV.rawValue].bufferIndex = VertexBufferIndex.meshUVs.rawValue
+    vertexDescriptor.attributes[VertexAttribute.UV.rawValue].bufferIndex = VertexBufferIndex.uvs.rawValue
 
     vertexDescriptor.layouts[VertexBufferIndex.positions.rawValue].stride = 12
     vertexDescriptor.layouts[VertexBufferIndex.positions.rawValue].stepRate = 1
@@ -100,9 +100,9 @@ class StandardRenderMode : RenderMode
     vertexDescriptor.layouts[VertexBufferIndex.colors.rawValue].stepRate = 1
     vertexDescriptor.layouts[VertexBufferIndex.colors.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
-    vertexDescriptor.layouts[VertexBufferIndex.meshUVs.rawValue].stride = 8
-    vertexDescriptor.layouts[VertexBufferIndex.meshUVs.rawValue].stepRate = 1
-    vertexDescriptor.layouts[VertexBufferIndex.meshUVs.rawValue].stepFunction = MTLVertexStepFunction.perVertex
+    vertexDescriptor.layouts[VertexBufferIndex.uvs.rawValue].stride = 8
+    vertexDescriptor.layouts[VertexBufferIndex.uvs.rawValue].stepRate = 1
+    vertexDescriptor.layouts[VertexBufferIndex.uvs.rawValue].stepFunction = MTLVertexStepFunction.perVertex
 
     //--------------------------------------------------------------------------
     // Pipeline
@@ -152,7 +152,7 @@ class StandardRenderMode : RenderMode
     let renderData = renderer.renderData
     renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, VertexBufferIndex.positions.rawValue )
     renderData.bindColorBuffer( renderEncoder, firstColorIndex, VertexBufferIndex.colors.rawValue )
-    renderData.bindUVBuffer( renderEncoder, firstColorIndex, VertexBufferIndex.meshUVs.rawValue )
+    renderData.bindUVBuffer( renderEncoder, firstUVIndex, VertexBufferIndex.uvs.rawValue )
     renderData.bindConstantsBuffer( renderEncoder, VertexBufferIndex.constants.rawValue )
 
     return true

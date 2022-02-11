@@ -1,0 +1,29 @@
+uses Plasmacore
+
+augment Line<<>>
+  METHODS
+    method draw
+      draw( Canvas.color, Canvas.color )
+
+    method draw( color:Color )
+      draw( color, color )
+
+    method draw( a_color:Color, b_color:Color )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.DRAW_LINE )
+      q.write_real32( a.x )
+      q.write_real32( a.y )
+      q.write_real32( b.x )
+      q.write_real32( b.y )
+      q.write( a_color )
+      q.write( b_color )
+
+      #if (thickness == 1)
+      #  drawable( color ).draw
+      #else
+      #  drawable( color, thickness ).fill
+      #endIf
+
+      #return (Box( -half_th, -half_th, delta.magnitude+th, th ).rotated( delta.radians ) + a).drawable( color )
+endAugment
+

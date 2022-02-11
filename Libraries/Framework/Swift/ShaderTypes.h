@@ -42,7 +42,7 @@ typedef NS_ENUM( NSInteger, VertexBufferIndex )
 {
     VertexBufferIndexPositions = 0,
     VertexBufferIndexColors    = 1,
-    VertexBufferIndexMeshUVs   = 2,
+    VertexBufferIndexUVs   = 2,
     VertexBufferIndexConstants = 3,
 };
 

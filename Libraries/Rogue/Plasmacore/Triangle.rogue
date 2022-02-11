@@ -2,10 +2,12 @@ uses Plasmacore
 
 augment Triangle
   METHODS
-    method fill( color=Canvas.color:Color )
-      Canvas.color = color
+    method fill
+      fill( Canvas.color )
+
+    method fill( color:Color )
       local q = Canvas.render_queue
-      q.write( RenderCmd.TRIANGLE_FILL )
+      q.write( RenderCmd.FILL_TRIANGLE )
       q.write( a )
       q.write( b )
       q.write( c )
@@ -14,7 +16,7 @@ augment Triangle
 
     method fill( a_color:Color, b_color:Color, c_color:Color )
       local q = Canvas.render_queue
-      q.write( RenderCmd.TRIANGLE_FILL )
+      q.write( RenderCmd.FILL_TRIANGLE )
       q.write( a )
       q.write( b )
       q.write( c )
