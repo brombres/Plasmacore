@@ -13,8 +13,10 @@ augment Line<<>>
       q.write( RenderCmd.DRAW_LINE )
       q.write_real32( a.x )
       q.write_real32( a.y )
+      q.write_real32( 0 )  # a.z
       q.write_real32( b.x )
       q.write_real32( b.y )
+      q.write_real32( 0 )  # b.z
       q.write( a_color )
       q.write( b_color )
 

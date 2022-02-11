@@ -318,12 +318,13 @@ class Renderer: NSObject, MTKViewDelegate
                 let y = q.readReal32()
                 let w = q.readReal32()
                 let h = q.readReal32()
-                renderData.addPosition(   x,   y, 0 )
-                renderData.addPosition( x+w, y+h, 0 )
-                renderData.addPosition( x+w,   y, 0 )
-                renderData.addPosition(   x,   y, 0 )
-                renderData.addPosition(   x, y+h, 0 )
-                renderData.addPosition( x+w, y+h, 0 )
+                let z = q.readReal32()
+                renderData.addPosition(   x,   y, z )
+                renderData.addPosition( x+w, y+h, z )
+                renderData.addPosition( x+w,   y, z )
+                renderData.addPosition(   x,   y, z )
+                renderData.addPosition(   x, y+h, z )
+                renderData.addPosition( x+w, y+h, z )
                 if (q.readByte() == 1)
                 {
                   let color = q.readInt32()
@@ -349,7 +350,8 @@ class Renderer: NSObject, MTKViewDelegate
                 {
                   let x = q.readReal32()
                   let y = q.readReal32()
-                  renderData.addPosition( x, y, 0 )
+                  let z = q.readReal32()
+                  renderData.addPosition( x, y, z )
                 }
                 if (q.readByte() == 1)
                 {
@@ -372,7 +374,8 @@ class Renderer: NSObject, MTKViewDelegate
                 {
                   let x = q.readReal32()
                   let y = q.readReal32()
-                  renderData.addPosition( x, y, 0 )
+                  let z = q.readReal32()
+                  renderData.addPosition( x, y, z )
                 }
                 let c1 = q.readInt32()
                 let c2 = q.readInt32()

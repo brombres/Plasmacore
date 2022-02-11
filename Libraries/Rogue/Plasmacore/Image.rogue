@@ -1,0 +1,6 @@
+module Plasmacore
+
+class Image
+  PROPERTIES
+endClass
+

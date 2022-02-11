@@ -12,6 +12,7 @@ augment Box
       q.write_real32( position.y )
       q.write_real32( size.x )
       q.write_real32( size.y )
+      q.write_real32( 0 )  # z
       q.write_byte( 1 )
       q.write( color )
 
