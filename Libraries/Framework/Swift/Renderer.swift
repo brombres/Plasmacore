@@ -337,24 +337,32 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.addPosition(   x,   y, z )
                 renderData.addPosition(   x, y+h, z )
                 renderData.addPosition( x+w, y+h, z )
-                if (q.readByte() == 1)
-                {
-                  let color = q.readInt32()
-                  for _ in 1...6 { renderData.addColor(color) }
-                }
-                else
-                {
-                  let c1 = q.readInt32()
-                  let c2 = q.readInt32()
-                  let c3 = q.readInt32()
-                  let c4 = q.readInt32()
-                  renderData.addColor( c1 )
-                  renderData.addColor( c3 )
-                  renderData.addColor( c2 )
-                  renderData.addColor( c1 )
-                  renderData.addColor( c4 )
-                  renderData.addColor( c3 )
-                }
+                let color = q.readInt32()
+                for _ in 1...6 { renderData.addColor(color) }
+                continue
+              case .FILL_BOX_MULTICOLOR:
+                renderModeFillSolidTriangles?.activate( renderEncoder )
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let w = q.readReal32()
+                let h = q.readReal32()
+                let z = q.readReal32()
+                renderData.addPosition(   x,   y, z )
+                renderData.addPosition( x+w, y+h, z )
+                renderData.addPosition( x+w,   y, z )
+                renderData.addPosition(   x,   y, z )
+                renderData.addPosition(   x, y+h, z )
+                renderData.addPosition( x+w, y+h, z )
+                let c1 = q.readInt32()
+                let c2 = q.readInt32()
+                let c3 = q.readInt32()
+                let c4 = q.readInt32()
+                renderData.addColor( c1 )
+                renderData.addColor( c3 )
+                renderData.addColor( c2 )
+                renderData.addColor( c1 )
+                renderData.addColor( c4 )
+                renderData.addColor( c3 )
                 continue
               case .FILL_TRIANGLE:
                 renderModeFillSolidTriangles?.activate( renderEncoder )
@@ -365,20 +373,24 @@ class Renderer: NSObject, MTKViewDelegate
                   let z = q.readReal32()
                   renderData.addPosition( x, y, z )
                 }
-                if (q.readByte() == 1)
+                let color = q.readInt32()
+                for _ in 1...3 { renderData.addColor(color) }
+                continue
+              case .FILL_TRIANGLE_MULTICOLOR:
+                renderModeFillSolidTriangles?.activate( renderEncoder )
+                for _ in 1...3
                 {
-                  let color = q.readInt32()
-                  for _ in 1...3 { renderData.addColor(color) }
+                  let x = q.readReal32()
+                  let y = q.readReal32()
+                  let z = q.readReal32()
+                  renderData.addPosition( x, y, z )
                 }
-                else
-                {
-                  let c1 = q.readInt32()
-                  let c2 = q.readInt32()
-                  let c3 = q.readInt32()
-                  renderData.addColor( c1 )
-                  renderData.addColor( c2 )
-                  renderData.addColor( c3 )
-                }
+                let c1 = q.readInt32()
+                let c2 = q.readInt32()
+                let c3 = q.readInt32()
+                renderData.addColor( c1 )
+                renderData.addColor( c2 )
+                renderData.addColor( c3 )
                 continue
               case .DRAW_LINE:
                 renderModeDrawLines?.activate( renderEncoder )

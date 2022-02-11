@@ -14,19 +14,17 @@ augment Triangle
       q.write_real32( 0 )  # b.z
       q.write( c )
       q.write_real32( 0 )  # c.z
-      q.write_byte( 1 )
       q.write( color )
 
     method fill( a_color:Color, b_color:Color, c_color:Color )
       local q = Canvas.render_queue
-      q.write( RenderCmd.FILL_TRIANGLE )
+      q.write( RenderCmd.FILL_TRIANGLE_MULTICOLOR )
       q.write( a )
       q.write_real32( 0 )  # a.z
       q.write( b )
       q.write_real32( 0 )  # b.z
       q.write( c )
       q.write_real32( 0 )  # c.z
-      q.write_byte( 3 )
       q.write( a_color )
       q.write( b_color )
       q.write( c_color )

@@ -19,24 +19,25 @@ Plasmacore.on_update = (() => Cube.update)
 
 Plasmacore.on_draw =
   function
-  #{
     Canvas.clear( Color.GRAY )
     Canvas.bounds.cropped( Canvas.width/4, Canvas.height/4, Canvas.width/4, Canvas.height/4 ).fill( Color.YELLOW, Color.RED, Color.GREEN, Color.BLUE )
     Canvas.color = Color.MAGENTA.with_opacity( 0.25 )
     Triangle( Canvas.at(0.5,0.1), Canvas.at(0.25,0.9), Canvas.at(0.75,0.9) ).fill
-    }#
-    Canvas.clear( Color.BLACK )
+
+    #Canvas.clear( Color.BLACK )
     forEach (i in 0..100 step 10)
       local p = i / 100.0
       Line( Canvas.at(0,p), Canvas.at(p,1) ).draw( Color.GREEN )
     endForEach
 
+    #{
     if (Cube.image.is_loaded)
       Cube.image.scale = 0.5
       #Cube.image.rotation = Degrees(22.5)
       Cube.image.rotation = Cube.rotation
       Cube.image.draw( Canvas.center )
     endIf
+    }#
   endFunction
 
   #@trace Plasmacore.find_asset_filepath("Images/Max.png")

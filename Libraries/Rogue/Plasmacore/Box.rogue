@@ -13,17 +13,16 @@ augment Box
       q.write_real32( size.x )
       q.write_real32( size.y )
       q.write_real32( 0 )  # z
-      q.write_byte( 1 )
       q.write( color )
 
     method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color )
       local q = Canvas.render_queue
-      q.write( RenderCmd.FILL_BOX )
+      q.write( RenderCmd.FILL_BOX_MULTICOLOR )
       q.write_real32( position.x )
       q.write_real32( position.y )
       q.write_real32( size.x )
       q.write_real32( size.y )
-      q.write_byte( 4 )
+      q.write_real32( 0 )  # z
       q.write( color_1 )
       q.write( color_2 )
       q.write( color_3 )
