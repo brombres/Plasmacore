@@ -32,9 +32,11 @@ class Canvas [singleton]
     method at( uv:XY )->XY
       return bounds.at( uv )
 
-
     method bounds->Box
       return Box( width, height )
+
+    method center->XY [macro]
+      return size/2
 
     method clear( color=Color.BLACK:Color )
       render_queue.clear_color = color

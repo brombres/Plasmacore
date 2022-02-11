@@ -1,0 +1,78 @@
+module Plasmacore
+
+class TextureImage : Image
+  PROPERTIES
+    texture : Texture
+    uv      : Box
+
+  METHODS
+    method init( asset:ImageAsset )
+      init( Texture(asset) )
+
+    method init( texture, uv=Box(0,0) )
+
+    method draw( position:XY )
+      if (not is_loaded)
+        println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
+      endIf
+
+      localize size
+      #local handle = XYZ( (anchor.position * size), 0 )
+
+      #ObjectTransform.push( Matrix.scale(XYZ(0.5,0.5,1)) )
+      #ObjectTransform.push_translate( XYZ(position,0)-handle )
+      ObjectTransform.push_translate( XYZ(position,0) )
+      if (rotation.value) ObjectTransform.push_rotate( rotation, XYZ(0,0,1) )
+      ObjectTransform.push_translate( -XYZ(anchor.position*size,0) )
+
+      localize uv
+      local u1 = uv.position.x
+      local u2 = u1 + uv.size.x
+      local v1 = uv.position.y
+      local v2 = v1 + uv.size.y
+
+      if (hflip) swapValues( u1, u2 )
+      if (vflip) swapValues( v1, v2 )
+
+      local w = size.x
+      local h = size.y
+
+      local q = Canvas.render_queue
+      q.write( RenderCmd.DRAW_IMAGE )
+      q.write_real32( 0 )  # x
+      q.write_real32( 0 )  # y
+      q.write_real32( w )
+      q.write_real32( h )
+      q.write_real32( 0 )  # z
+      q.write( color.with_opacity(opacity) )
+      q.write_real32( u1 )
+      q.write_real32( v1 )
+      q.write_real32( u2 )
+      q.write_real32( v2 )
+      q.write_int32x( texture.id )
+
+      ObjectTransform.pop
+      if (rotation.value) ObjectTransform.pop
+      ObjectTransform.pop
+      #ObjectTransform.pop
+
+    method is_loaded->Logical
+      if (prior.is_loaded) return true
+      if (not texture.is_loaded) return false
+
+      is_loaded = true
+      if (original_size == XY.zero)
+        original_size = texture.image_size
+        size = original_size
+      endIf
+
+      if (uv.size.is_zero) uv = Box( texture.uv_max )
+
+      return true
+
+    method set_uv( new_uv:Box )
+      @uv = new_uv
+
+    method uv->Box
+      return @uv
+endClass

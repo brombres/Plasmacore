@@ -8,6 +8,8 @@ class RenderMode
   var pipeline           : MTLRenderPipelineState?
   var firstPositionIndex = 0
   var needsRender        = false
+  var renderEncoder      : MTLRenderCommandEncoder?
+  var texture            : MTLTexture?
 
 
   init( _ renderer:Renderer )
@@ -15,10 +17,26 @@ class RenderMode
     self.renderer = renderer
   }
 
-  func activate( _ renderEncoder:MTLRenderCommandEncoder )
+  @discardableResult
+  func activate( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
-    renderer.renderMode?.render( renderEncoder )
+    if (self === renderer.renderMode)
+    {
+      // Already active.
+      if ( !needsRender ) { reactivate() }
+      return false
+    }
+
+    self.renderEncoder = renderEncoder
+    renderer.renderMode?.render()  // flush the queue of the previous render mode
     renderer.renderMode = self
+    reactivate()
+    texture = nil
+    return true
+  }
+
+  func reactivate()
+  {
     firstPositionIndex = renderer.renderData.positionCount
     needsRender = true
   }
@@ -29,35 +47,25 @@ class RenderMode
   }
 
   @discardableResult
-  func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
+  func render()->Bool
   {
     if ( !needsRender ) { return false }
     if (firstPositionIndex == renderer.renderData.positionCount) { return false }
 
     needsRender = false
-    renderEncoder.setRenderPipelineState( pipeline! )
+    renderEncoder?.setRenderPipelineState( pipeline! )
 
     let renderData = renderer.renderData
-
-    if let projectionTransform = renderData.projectionTransformStack.last
-    {
-      renderData.constants[0].projectionTransform = projectionTransform
-    }
-    else
-    {
-      renderData.constants[0].projectionTransform = Matrix.identity()
-    }
-
-    if let worldTransform = renderData.worldTransformStack.last
-    {
-      renderData.constants[0].worldTransform = worldTransform
-    }
-    else
-    {
-      renderData.constants[0].worldTransform = Matrix.identity()
-    }
+    renderData.setShaderConstants()
 
     return true // it's on
+  }
+
+  func setTexture( _ newTexture:MTLTexture? )
+  {
+    if (newTexture === texture) { return }
+    render()  // flush
+    texture = newTexture
   }
 }
 
@@ -137,17 +145,19 @@ class StandardRenderMode : RenderMode
   func vertexShaderName()->String { return "solidColorVertexShader" }
   func fragmentShaderName()->String { return "solidColorFragmentShader" }
 
-  override func activate( _ renderEncoder:MTLRenderCommandEncoder )
+  override func reactivate()
   {
-    super.activate( renderEncoder )
+    super.reactivate()
     firstColorIndex = renderer.renderData.colorCount
     firstUVIndex    = renderer.renderData.uvCount
   }
 
   @discardableResult
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
+  override func render()->Bool
   {
-    if ( !super.render(renderEncoder) ) { return false }
+    if ( !super.render() ) { return false }
+
+    guard let renderEncoder = renderEncoder else { return false }
 
     let renderData = renderer.renderData
     renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, VertexBufferIndex.positions.rawValue )
@@ -180,9 +190,10 @@ class RenderModeDrawLines : StandardRenderMode
   }
 
   @discardableResult
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
+  override func render()->Bool
   {
-    if ( !super.render(renderEncoder) ) { return false }
+    if ( !super.render() ) { return false }
+    guard let renderEncoder = renderEncoder else { return false }
 
     let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
@@ -216,9 +227,10 @@ class RenderModeFillSolidTriangles : StandardRenderMode
   }
 
   @discardableResult
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
+  override func render()->Bool
   {
-    if ( !super.render(renderEncoder) ) { return false }
+    if ( !super.render() ) { return false }
+    guard let renderEncoder = renderEncoder else { return false }
 
     let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
     renderEncoder.drawPrimitives(
@@ -254,11 +266,11 @@ class RenderModeFillTexturedTriangles : StandardRenderMode
   }
 
   @discardableResult
-  override func render( _ renderEncoder:MTLRenderCommandEncoder )->Bool
+  override func render()->Bool
   {
-    if ( !super.render(renderEncoder) ) { return false }
-/*
-    guard let texture = Plasmacore.singleton.texture else { return false }
+    if ( !super.render() ) { return false }
+    guard let renderEncoder = renderEncoder else { return false }
+    guard let texture = self.texture else { return false }
 
     renderEncoder.setFragmentTexture( texture, index:TextureStage.color.rawValue )
 
@@ -268,7 +280,6 @@ class RenderModeFillTexturedTriangles : StandardRenderMode
       vertexStart:   0,
       vertexCount:   count
     )
- */
 
     return true
   }

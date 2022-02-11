@@ -211,6 +211,7 @@ class Renderer: NSObject, MTKViewDelegate
     }
 
     renderData.clearTransforms()
+    renderMode = nil
 
     /// Delay getting the currentRenderPassDescriptor until we absolutely need it to avoid
     ///   holding onto the drawable and blocking the display pipeline any longer than necessary
@@ -251,11 +252,13 @@ class Renderer: NSObject, MTKViewDelegate
                 PlasmacoreUtility.loadTexture( textureID, filepath )
                 continue
               case .PUSH_OBJECT_TRANSFORM:
+                renderMode?.render()
                 let m = q.readMatrix()
                 let replace = q.readLogical()
                 renderData.pushObjectTransform( m, replace )
                 continue
               case .PUSH_ROTATE_OBJECT:
+                renderMode?.render()
                 let radians = q.readReal32()
                 let axisX   = q.readReal32()
                 let axisY   = q.readReal32()
@@ -264,6 +267,7 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.pushObjectTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
                 continue
               case .PUSH_TRANSLATE_OBJECT:
+                renderMode?.render()
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let z = q.readReal32()
@@ -271,14 +275,17 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.pushObjectTransform( Matrix.translate(x,y,z), replace )
                 continue
               case .POP_OBJECT_TRANSFORM:
+                renderMode?.render()
                 renderData.popObjectTransform()
                 continue
               case .PUSH_VIEW_TRANSFORM:
+                renderMode?.render()
                 let m = q.readMatrix()
                 let replace = q.readLogical()
                 renderData.pushViewTransform( m, replace )
                 continue
               case .PUSH_ROTATE_VIEW:
+                renderMode?.render()
                 let radians = q.readReal32()
                 let axisX   = q.readReal32()
                 let axisY   = q.readReal32()
@@ -287,6 +294,7 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.pushViewTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
                 continue
               case .PUSH_TRANSLATE_VIEW:
+                renderMode?.render()
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let z = q.readReal32()
@@ -294,14 +302,17 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.pushViewTransform( Matrix.translate(x,y,z), replace )
                 continue
               case .POP_VIEW_TRANSFORM:
+                renderMode?.render()
                 renderData.popViewTransform()
                 continue
               case .PUSH_PROJECTION_TRANSFORM:
+                renderMode?.render()
                 let m = q.readMatrix()
                 let replace = q.readLogical()
                 renderData.pushProjectionTransform( m, replace )
                 continue
               case .PUSH_PERSPECTIVE_PROJECTION:
+                renderMode?.render()
                 let fovY = q.readReal32()
                 let aspectRatio = q.readReal32()
                 let zNear = q.readReal32()
@@ -310,6 +321,7 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.pushProjectionTransform( Matrix.perspective(fovY,aspectRatio,zNear,zFar), replace )
                 continue
               case .POP_PROJECTION_TRANSFORM:
+                renderMode?.render()
                 renderData.popProjectionTransform()
                 continue
               case .FILL_BOX:
@@ -382,6 +394,37 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.addColor( c1 )
                 renderData.addColor( c2 )
                 continue
+              case .DRAW_IMAGE:
+                renderModeFillTexturedTriangles?.activate( renderEncoder )
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let w = q.readReal32()
+                let h = q.readReal32()
+                let z = q.readReal32()
+                let color = q.readInt32()
+                let u1 = q.readReal32()
+                let v1 = q.readReal32()
+                let u2 = q.readReal32()
+                let v2 = q.readReal32()
+                let textureID = q.readInt32X()
+                if let texture = Plasmacore.singleton.textures[textureID]
+                {
+                  renderMode?.setTexture( texture )
+                }
+                renderData.addPosition(   x,   y, z )
+                renderData.addPosition( x+w, y+h, z )
+                renderData.addPosition( x+w,   y, z )
+                renderData.addPosition(   x,   y, z )
+                renderData.addPosition(   x, y+h, z )
+                renderData.addPosition( x+w, y+h, z )
+                for _ in 1...6 { renderData.addColor(color) }
+                renderData.addUV( u1, v1 )
+                renderData.addUV( u2, v2 )
+                renderData.addUV( u2, v1 )
+                renderData.addUV( u1, v1 )
+                renderData.addUV( u1, v2 )
+                renderData.addUV( u2, v2 )
+                continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )
             }
@@ -394,7 +437,7 @@ class Renderer: NSObject, MTKViewDelegate
         }
 
         //----------------------------------------------------------------------
-        renderMode?.render( renderEncoder )
+        renderMode?.render()
 
         //renderEncoder.popDebugGroup()
         renderEncoder.endEncoding()

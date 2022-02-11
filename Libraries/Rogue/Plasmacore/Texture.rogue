@@ -4,27 +4,43 @@ class Texture
   PROPERTIES
     id           : Int32
     asset        : ImageAsset
-    is_ready     = false
+    is_loaded    = false
+    image_size   : XY  # equal to or a subset of texture_size
     texture_size : XY
 
   METHODS
     method init( asset )
       id = TextureManager.next_id
       ++TextureManager.next_id
-      TextureManager.pending_textures.add( this )
+      load
+
+    method load
+      # Asynchronous load; .is_loaded set to true when complete.
+      if (not is_loaded) TextureManager.pending_textures.add( this )
 
     method on_cleanup
-      Message( "Texture.unload" ).[ write_int32x(id) ].send
+      unload
 
     method on_load( m:Message )
       if (m.read_logical)
         local w = m.read_int32x
         local h = m.read_int32x
         texture_size = XY(w,h)
-        is_ready = true
+        if (image_size.is_zero) image_size = texture_size
+        is_loaded = true
       else
         println "Error loading $"(asset.filepath)
       endIf
+
+    method unload
+      if (is_loaded)
+        Message( "Texture.unload" ).[ write_int32x(id) ].send
+        is_loaded = false
+      endIf
+
+    method uv_max->XY
+      return image_size / texture_size
+
 endClass
 
 class TextureManager [singleton]

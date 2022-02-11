@@ -6,10 +6,11 @@ println "** Rogue **"
 class Cube [singleton]
   PROPERTIES
     rotation : Real64
+    image = Image("Max")
 
   METHODS
     method update
-      rotation += 0.01
+      rotation += 0.001
 endClass
 
 Plasmacore.on_configure = (() => println("Configuring"))
@@ -29,9 +30,16 @@ Plasmacore.on_draw =
       local p = i / 100.0
       Line( Canvas.at(0,p), Canvas.at(p,1) ).draw( Color.GREEN )
     endForEach
+
+    if (Cube.image.is_loaded)
+      Cube.image.scale = 0.5
+      #Cube.image.rotation = Degrees(22.5)
+      Cube.image.rotation = Cube.rotation
+      Cube.image.draw( Canvas.center )
+    endIf
   endFunction
 
   #@trace Plasmacore.find_asset_filepath("Images/Max.png")
   #@trace Plasmacore.find_asset_filepath("Assets/Images/Max.png")
   #Texture( "Images/Max.png" )
-Texture( ImageAsset("Max") )
+Cube

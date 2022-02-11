@@ -21,4 +21,5 @@ enum RenderCmd
   FILL_BOX                     #( [x,y,w,h,z]:Real32, color_count=[1||4]:Byte, colors[color_count]:Int32 )
   FILL_TRIANGLE                #( [a,b,c]:XYZ32, color_count=[1||3]:Byte, colors[color_count]:Int32 )
   DRAW_LINE                    #( [a,b]:XYZ32, [a_color,b_color]:Color )
+  DRAW_IMAGE                   #( [x,y,w,h,z]:Real32, color:Int32, [u1,v1,u2,v2]:Real32, texture_id:Int32X )
 endEnum

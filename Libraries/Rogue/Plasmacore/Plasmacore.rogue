@@ -1,4 +1,7 @@
 module Plasmacore
+
+$include "Macros.rogue"
+
 uses Bitmap [export]
 uses Geometry [export]
 uses Math/Matrix [export]
@@ -15,6 +18,7 @@ $include "Plasmacore/ProjectionTransform.rogue"
 $include "Plasmacore/RenderCmd.rogue"
 $include "Plasmacore/RenderQueue.rogue"
 $include "Plasmacore/Texture.rogue"
+$include "Plasmacore/TextureImage.rogue"
 $include "Plasmacore/Triangle.rogue"
 $include "Plasmacore/ViewTransform.rogue"
 

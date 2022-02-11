@@ -18,10 +18,9 @@ class RenderData
   var colorCount           = 0
   public var colors        : UnsafeMutablePointer<Float>
 
-  var constantsCapacity     = 8
-  var constantsBuffer       : MTLBuffer
-  var constantsCount        = 0
-  public var constants      : UnsafeMutablePointer<Constants>
+  var constantsCapacity    = 8
+  var constantsBuffer      : MTLBuffer
+  var constantsCount       = 0
 
   var uvCapacity           = 128
   var uvBuffer             : MTLBuffer
@@ -58,7 +57,6 @@ class RenderData
 
     positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
     colors = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
-    constants = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, frame )
     uvs = RenderData.makeFloatBufferPointer( uvBuffer, uvCapacity, frame )
   }
 
@@ -90,10 +88,12 @@ class RenderData
     positionCount += 3
   }
 
-  func addConstants()
+  func addConstants()->UnsafeMutablePointer<Constants>
   {
     if (constantsCount + 1 > constantsCapacity) { reserveConstantsCapacity(constantsCapacity) }
+    let result = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, constantsCount, frame )
     constantsCount += 1
+    return result
   }
 
   func addUV( _ u:Float, _ v:Float )
@@ -129,7 +129,6 @@ class RenderData
 
   func bindConstantsBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ index:Int )
   {
-    if (constantsCount == 0) { addConstants(); }
     let offset = (constantsCapacity * frame + (constantsCount-1)) * sizeOfConstants
     renderEncoder.setVertexBuffer( constantsBuffer, offset:offset, index:index )
     renderEncoder.setFragmentBuffer( constantsBuffer, offset:offset, index:index )
@@ -264,12 +263,15 @@ class RenderData
     let requiredCapacity = constantsCount + additionalCapacity
     if (requiredCapacity > constantsCapacity)
     {
-      let byteCountPerFrame = constantsCapacity*sizeOfConstants
-      let newBuffer = device.makeBuffer( length:(byteCountPerFrame*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
-      newBuffer.contents().copyMemory( from:constants, byteCount:byteCountPerFrame )
-      constantsBuffer  = newBuffer
+      let oldByteCountPerFrame = constantsCapacity*sizeOfConstants
+      let newByteCountPerFrame = requiredCapacity*sizeOfConstants
+
+      let constants = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, 0, frame )
+      let newBuffer = device.makeBuffer( length:(newByteCountPerFrame*maxFrames), options:[MTLResourceOptions.storageModeShared] )!
+      newBuffer.contents().copyMemory( from:constants, byteCount:oldByteCountPerFrame )
+
+      constantsBuffer   = newBuffer
       constantsCapacity = requiredCapacity
-      constants        = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, frame )
     }
   }
 
@@ -286,11 +288,33 @@ class RenderData
     }
   }
 
+  func setShaderConstants()
+  {
+    let constants = addConstants()
+
+    if let projectionTransform = projectionTransformStack.last
+    {
+      constants[0].projectionTransform = projectionTransform
+    }
+    else
+    {
+      constants[0].projectionTransform = Matrix.identity()
+    }
+
+    if let worldTransform = worldTransformStack.last
+    {
+      constants[0].worldTransform = worldTransform
+    }
+    else
+    {
+      constants[0].worldTransform = Matrix.identity()
+    }
+  }
+
   func updateBufferPointers()
   {
     positions = RenderData.makeFloatBufferPointer( positionBuffer, positionCapacity, frame )
     colors    = RenderData.makeFloatBufferPointer( colorBuffer, colorCapacity, frame )
-    constants  = RenderData.makeConstantsBufferPointer( constantsBuffer, constantsCapacity, frame )
     uvs       = RenderData.makeFloatBufferPointer( uvBuffer, uvCapacity, frame )
   }
 
@@ -303,10 +327,13 @@ class RenderData
     return UnsafeMutableRawPointer( buffer.contents() + offset ).bindMemory( to:Float.self, capacity:capacity )
   }
 
-  class func makeConstantsBufferPointer( _ buffer:MTLBuffer, _ capacity:Int, _ frame:Int )->UnsafeMutablePointer<Constants>
+  class func makeConstantsBufferPointer( _ buffer:MTLBuffer, _ capacity:Int,
+    _ index:Int, _ frame:Int )->UnsafeMutablePointer<Constants>
   {
-    let offset = capacity * sizeOfConstants * frame
-    return UnsafeMutableRawPointer(buffer.contents() + offset).bindMemory(to:Constants.self, capacity:capacity)
+    // The 256-byte-aligned 'sizeOfConstants' is different than the size given by Constants.self so we have
+    // have to always set the pointer to the element we want and access it with [0].
+    let offset = (capacity*frame + index) * sizeOfConstants
+    return UnsafeMutableRawPointer(buffer.contents() + offset).bindMemory(to:Constants.self, capacity:capacity-index)
   }
 }
 

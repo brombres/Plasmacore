@@ -1,6 +1,54 @@
 module Plasmacore
 
 class Image
+  DEFINITIONS
+    ATTRIBUTE_IS_LOADED =  1
+    ATTRIBUTE_HFLIP     = (1:<<:1)
+    ATTRIBUTE_VFLIP     = (1:<<:2)
+
+    PLASMACORE_ATTRIBUTE( is_loaded, ATTRIBUTE_IS_LOADED )
+    PLASMACORE_ATTRIBUTE( hflip, ATTRIBUTE_HFLIP )
+    PLASMACORE_ATTRIBUTE( vflip, ATTRIBUTE_VFLIP )
+
   PROPERTIES
+    size          : XY
+    original_size : XY
+    rotation      = Radians(0)
+    anchor        = Anchor.CENTER : Anchor
+    opacity       = 1.0
+    color         = Color.WHITE : Color
+    attributes    : Int32
+
+  GLOBAL METHODS
+    method create( name:String )->Image
+      return TextureImage( ImageAsset(name) )
+
+    method create( texture:Texture, uv=Box(0,0):Box )->Image
+      return TextureImage( texture, uv )
+
+  METHODS
+    method draw( position:XY )
+      throw UnsupportedOperationError()
+
+    method scale->XY
+      return size / original_size
+
+    method scale_to_fill( size:XY )
+      scale = (size / original_size).max
+
+    method scale_to_fit( size:XY )
+      scale = (size / original_size).min
+
+    method set_scale( scale:XY )
+      size = scale * original_size
+
+    method set_scale( s:Real64 )
+      size = s * original_size
+
+    method set_uv( new_uv:Box )
+      throw UnsupportedOperationError()
+
+    method uv->Box
+      throw UnsupportedOperationError()
 endClass
 
