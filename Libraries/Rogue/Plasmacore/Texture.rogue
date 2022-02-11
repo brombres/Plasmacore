@@ -11,7 +11,7 @@ class Texture
     method init( asset )
       id = TextureManager.next_id
       ++TextureManager.next_id
-      TextureManager.textures_pending_load.add( this )
+      TextureManager.pending_textures.add( this )
 
     method on_cleanup
       Message( "Texture.unload" ).[ write_int32x(id) ].send
@@ -29,21 +29,34 @@ endClass
 
 class TextureManager [singleton]
   PROPERTIES
-    next_id               = 1
-    textures_pending_load = Texture[]
+    next_id          = 1
+    pending_textures = Texture[]
+    loading_textures = Table<<Int32,Texture>>()
 
   METHODS
+    method init
+      MessageListener["Texture.on_load"] =
+        function( m:Message )
+          TextureManager.on_load( m )
+        endFunction
+
     method load_pending
-      if (textures_pending_load.count)
-        forEach (texture in textures_pending_load)
+      if (pending_textures.count)
+        forEach (texture in pending_textures)
           if (texture.asset.confirm_exists)
-            local m = Message( "Texture.load" )
-            m.write_int32x( texture.id )
-            m.write_string( texture.asset.filepath )
-            m.send_rsvp( texture=>on_load )
+            local q = Canvas.render_queue
+            q.write( RenderCmd.LOAD_TEXTURE )
+            q.write_int32x( texture.id )
+            q.write_string( texture.asset.filepath )
+            loading_textures[ texture.id ] = texture
           endIf
         endForEach
-        textures_pending_load.clear
+        pending_textures.clear
       endIf
+
+    method on_load( m:Message )
+      local id = m.read_int32x
+      local texture = loading_textures.remove( id )
+      if (texture) texture.on_load( m )
 endClass
 

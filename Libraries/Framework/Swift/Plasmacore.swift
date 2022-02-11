@@ -99,13 +99,6 @@ class Plasmacore
       }
     )
 
-    setMessageListener( "Texture.load",
-      {
-        (m:PlasmacoreMessage) in
-          PlasmacoreUtility.loadTexture( m )
-      }
-    )
-
     setMessageListener( "Texture.unload",
       {
         (m:PlasmacoreMessage) in

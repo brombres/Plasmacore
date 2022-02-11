@@ -245,6 +245,11 @@ class Renderer: NSObject, MTKViewDelegate
             {
               case .END_CANVAS:
                 break
+              case .LOAD_TEXTURE:
+                let textureID = q.readInt32X()
+                let filepath  = q.readString()
+                PlasmacoreUtility.loadTexture( textureID, filepath )
+                continue
               case .PUSH_OBJECT_TRANSFORM:
                 let m = q.readMatrix()
                 let replace = q.readLogical()

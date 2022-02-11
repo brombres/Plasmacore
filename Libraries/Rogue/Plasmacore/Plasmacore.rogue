@@ -44,7 +44,6 @@ class Plasmacore [essential singleton]
           display.render( display_width, display_height )
           reply.write_int32x( RenderCmd.END_RENDER )
           reply.send
-          TextureManager.load_pending
         endFunction
 
     method configure

@@ -6,6 +6,7 @@ enum RenderCmd
   END_CANVAS
   HEADER_CLEAR_COLOR           #( argb:Int32 )
   HEADER_END
+  LOAD_TEXTURE                 #( id:Int32X, filepath:String )
   PUSH_OBJECT_TRANSFORM        #( transform:Real32[16] )
   PUSH_ROTATE_OBJECT           #( radians, axis_x, axis_y, axis_z : Real64 )
   PUSH_TRANSLATE_OBJECT        #( x, y, z : Real32 )

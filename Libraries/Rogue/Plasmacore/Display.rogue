@@ -28,6 +28,7 @@ class Display [singleton]
       canvas.height = height
       use canvas
         Plasmacore.update_and_draw
+        TextureManager.load_pending
       endUse
 
     method size->XY

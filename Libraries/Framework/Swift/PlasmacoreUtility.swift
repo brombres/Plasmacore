@@ -28,38 +28,37 @@ class PlasmacoreUtility
     return nil
   }
 
-  class func loadTexture( _ m:PlasmacoreMessage )
+  class func loadTexture( _ textureID:Int, _ filepath:String )
   {
-    let textureID = m.readInt32X()
-    let filename = m.readString()
     do
     {
-        try PlasmacoreUtility.loadTexture( filename,
-        {
-          (texture:MTLTexture?,err:Error?) in
-            if let texture = texture
-            {
-              Plasmacore.singleton.textures[textureID] = texture
-              let reply = m.reply()
-              reply.writeLogical( true )
-              reply.writeInt32X( texture.width )
-              reply.writeInt32X( texture.height )
-              reply.send()
-            }
-            else
-            {
-              m.reply().writeLogical(false).send()
-            }
-        }
-      )
+      try PlasmacoreUtility.loadTexture( filepath,
+      {
+        (texture:MTLTexture?,err:Error?) in
+          let m = PlasmacoreMessage( "Texture.on_load" ).writeInt32X( textureID )
+          if let texture = texture
+          {
+            Plasmacore.singleton.textures[textureID] = texture
+            m.writeLogical( true )
+            m.writeInt32X( texture.width )
+            m.writeInt32X( texture.height )
+          }
+          else
+          {
+            m.writeLogical(false)
+          }
+          m.send()
+      } )
     }
     catch
     {
-      m.reply().writeLogical(false).send()
+      let m = PlasmacoreMessage( "Texture.on_load" ).writeInt32X( textureID )
+      m.writeLogical(false)
+      m.send()
     }
   }
 
-  class func loadTexture( _ filename:String, _ callback:@escaping MTKTextureLoader.Callback ) throws
+  class func loadTexture( _ filepath:String, _ callback:@escaping MTKTextureLoader.Callback ) throws
   {
     guard let device = Plasmacore.singleton.currentMetalDevice else { throw PlasmacoreError.runtimeError("loadTexture: no device") }
     let textureLoader = MTKTextureLoader( device:device )
@@ -72,7 +71,7 @@ class PlasmacoreUtility
     ]
 
     textureLoader.newTexture(
-      URL:URL(fileURLWithPath:filename),
+      URL:URL(fileURLWithPath:filepath),
       options: textureLoaderOptions,
       completionHandler:callback
     )

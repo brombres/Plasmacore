@@ -5,6 +5,7 @@ enum RenderCmd : Int
   case END_CANVAS
   case HEADER_CLEAR_COLOR          //( argb:Int32 )
   case HEADER_END
+  case LOAD_TEXTURE                //( id:Int32X, filepath:String )
   case PUSH_OBJECT_TRANSFORM       //( transform:Real32[16], replace:Logical )
   case PUSH_ROTATE_OBJECT          //( [radians, axis_x, axis_y, axis_z]:Real32, replace:Logical )
   case PUSH_TRANSLATE_OBJECT       //( x, y, z : Real32, replace:Logical )
