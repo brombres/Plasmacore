@@ -206,29 +206,38 @@ class RenderData
     }
   }
 
-  func popObjectTransform()
+  func popObjectTransform( _ count:Int )
   {
-    if (objectTransformStack.count > 0)
+    for _ in 1...count
     {
-      objectTransformStack.removeLast()
-      worldTransformStack.removeLast()
+      if (objectTransformStack.count > 0)
+      {
+        objectTransformStack.removeLast()
+        worldTransformStack.removeLast()
+      }
     }
   }
 
-  func popProjectionTransform()
+  func popProjectionTransform( _ count:Int )
   {
-    if (projectionTransformStack.count > 0)
+    for _ in 1...count
     {
-      projectionTransformStack.removeLast()
+      if (projectionTransformStack.count > 0)
+      {
+        projectionTransformStack.removeLast()
+      }
     }
   }
 
-  func popViewTransform()
+  func popViewTransform( _ count:Int )
   {
-    if (viewTransformStack.count > 0)
+    for _ in 1...count
     {
-      viewTransformStack.removeLast()
-      worldTransformStack.removeLast()
+      if (viewTransformStack.count > 0)
+      {
+        viewTransformStack.removeLast()
+        worldTransformStack.removeLast()
+      }
     }
   }
 

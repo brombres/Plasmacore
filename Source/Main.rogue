@@ -30,14 +30,13 @@ Plasmacore.on_draw =
       Line( Canvas.at(0,p), Canvas.at(p,1) ).draw( Color.GREEN )
     endForEach
 
-    #{
     if (Cube.image.is_loaded)
-      Cube.image.scale = 0.5
+      Cube.image.scale = 0.25
       #Cube.image.rotation = Degrees(22.5)
       Cube.image.rotation = Cube.rotation
+      Cube.image.anchor = Anchor.RIGHT
       Cube.image.draw( Canvas.center )
     endIf
-    }#
   endFunction
 
   #@trace Plasmacore.find_asset_filepath("Images/Max.png")

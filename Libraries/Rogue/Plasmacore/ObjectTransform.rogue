@@ -7,8 +7,9 @@ class ObjectTransform
   # pop
   #   Restores previous transform.
   GLOBAL METHODS
-    method pop
+    method pop( count=1:Int32 )
       Canvas.render_queue.write( RenderCmd.POP_OBJECT_TRANSFORM )
+      Canvas.render_queue.write_int32x( count )
 
     method push( m:Matrix, &replace )
       local q = Canvas.render_queue
@@ -23,6 +24,14 @@ class ObjectTransform
       q.write_real32( axis.x )
       q.write_real32( axis.y )
       q.write_real32( axis.z )
+      q.write_logical( replace )
+
+    method push_scale( scale:XYZ, &replace )
+      local q = Canvas.render_queue
+      q.write( RenderCmd.PUSH_SCALE_OBJECT )
+      q.write_real32( scale.x )
+      q.write_real32( scale.y )
+      q.write_real32( scale.z )
       q.write_logical( replace )
 
     method push_translate( delta:XYZ, &replace )

@@ -9,19 +9,21 @@ enum RenderCmd
   LOAD_TEXTURE                 #( id:Int32X, filepath:String )
   PUSH_OBJECT_TRANSFORM        #( transform:Real32[16] )
   PUSH_ROTATE_OBJECT           #( radians, axis_x, axis_y, axis_z : Real64 )
+  PUSH_SCALE_OBJECT            #( [x,y,z]:Real32 )
   PUSH_TRANSLATE_OBJECT        #( [x,y,z]:Real32 )
-  POP_OBJECT_TRANSFORM
+  POP_OBJECT_TRANSFORM         #( count:Int32X )
   PUSH_VIEW_TRANSFORM          #( transform:Real32[16] )
   PUSH_ROTATE_VIEW             #( radians, axis_x, axis_y, axis_z : Real64 )
+  PUSH_SCALE_VIEW              #( [x,y,z]:Real32 )
   PUSH_TRANSLATE_VIEW          #( [x,y,z]:Real32 )
-  POP_VIEW_TRANSFORM
+  POP_VIEW_TRANSFORM           #( count:Int32X )
   PUSH_PROJECTION_TRANSFORM    #( transform:Real32[16] )
   PUSH_PERSPECTIVE_PROJECTION  #( fov_y, aspect_ratio, z_near, z_far : Real32 )
-  POP_PROJECTION_TRANSFORM
+  POP_PROJECTION_TRANSFORM     #( count:Int32X )
   FILL_BOX                     #( [x,y,w,h,z]:Real32, color:Int32 )
   FILL_BOX_MULTICOLOR          #( [x,y,w,h,z]:Real32, colors:Int32[4] )
   FILL_TRIANGLE                #( [a,b,c]:XYZ32, color:Int32 )
   FILL_TRIANGLE_MULTICOLOR     #( [a,b,c]:XYZ32, colors:Int32[3] )
   DRAW_LINE                    #( [a,b]:XYZ32, [a_color,b_color]:Color )
-  DRAW_IMAGE                   #( [x,y,w,h,z]:Real32, color:Int32, [u1,v1,u2,v2]:Real32, texture_id:Int32X )
+  DRAW_IMAGE                   #( color:Int32, [u1,v1,u2,v2]:Real32, texture_id:Int32X )
 endEnum

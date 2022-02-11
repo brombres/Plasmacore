@@ -7,8 +7,9 @@ class ProjectionTransform
   # pop
   #   Restores previous transform.
   GLOBAL METHODS
-    method pop
+    method pop( count=1:Int32 )
       Canvas.render_queue.write( RenderCmd.POP_PROJECTION_TRANSFORM )
+      Canvas.render_queue.write_int32x( count )
 
     method push( m:Matrix, &replace )
       local q = Canvas.render_queue

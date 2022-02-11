@@ -52,6 +52,15 @@ class Matrix
     return matrix_float4x4.init( columns:(c1,c2,c3,c4) )
   }
 
+  class func scale( _ x:Float, _ y:Float, _ z:Float )->matrix_float4x4
+  {
+    let c4 = vector_float4( 0, 0, 0, 1 )
+    let c3 = vector_float4( 0, 0, z, 0 )
+    let c2 = vector_float4( 0, y, 0, 0 )
+    let c1 = vector_float4( x, 0, 0, 0 )
+    return matrix_float4x4.init( columns:(c1,c2,c3,c4) )
+  }
+
   class func translate( _ x:Float, _ y:Float, _ z:Float )->matrix_float4x4
   {
     let c4 = vector_float4( x, y, z, 1 )

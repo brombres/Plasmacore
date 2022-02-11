@@ -266,6 +266,14 @@ class Renderer: NSObject, MTKViewDelegate
                 let replace = q.readLogical()
                 renderData.pushObjectTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
                 continue
+              case .PUSH_SCALE_OBJECT:
+                renderMode?.render()
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let z = q.readReal32()
+                let replace = q.readLogical()
+                renderData.pushObjectTransform( Matrix.scale(x,y,z), replace )
+                continue
               case .PUSH_TRANSLATE_OBJECT:
                 renderMode?.render()
                 let x = q.readReal32()
@@ -276,7 +284,7 @@ class Renderer: NSObject, MTKViewDelegate
                 continue
               case .POP_OBJECT_TRANSFORM:
                 renderMode?.render()
-                renderData.popObjectTransform()
+                renderData.popObjectTransform( q.readInt32X() )
                 continue
               case .PUSH_VIEW_TRANSFORM:
                 renderMode?.render()
@@ -293,6 +301,14 @@ class Renderer: NSObject, MTKViewDelegate
                 let replace = q.readLogical()
                 renderData.pushViewTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
                 continue
+              case .PUSH_SCALE_VIEW:
+                renderMode?.render()
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let z = q.readReal32()
+                let replace = q.readLogical()
+                renderData.pushViewTransform( Matrix.scale(x,y,z), replace )
+                continue
               case .PUSH_TRANSLATE_VIEW:
                 renderMode?.render()
                 let x = q.readReal32()
@@ -303,7 +319,7 @@ class Renderer: NSObject, MTKViewDelegate
                 continue
               case .POP_VIEW_TRANSFORM:
                 renderMode?.render()
-                renderData.popViewTransform()
+                renderData.popViewTransform( q.readInt32X() )
                 continue
               case .PUSH_PROJECTION_TRANSFORM:
                 renderMode?.render()
@@ -322,7 +338,7 @@ class Renderer: NSObject, MTKViewDelegate
                 continue
               case .POP_PROJECTION_TRANSFORM:
                 renderMode?.render()
-                renderData.popProjectionTransform()
+                renderData.popProjectionTransform( q.readInt32X() )
                 continue
               case .FILL_BOX:
                 renderModeFillSolidTriangles?.activate( renderEncoder )
@@ -408,11 +424,6 @@ class Renderer: NSObject, MTKViewDelegate
                 continue
               case .DRAW_IMAGE:
                 renderModeFillTexturedTriangles?.activate( renderEncoder )
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let w = q.readReal32()
-                let h = q.readReal32()
-                let z = q.readReal32()
                 let color = q.readInt32()
                 let u1 = q.readReal32()
                 let v1 = q.readReal32()
@@ -423,12 +434,12 @@ class Renderer: NSObject, MTKViewDelegate
                 {
                   renderMode?.setTexture( texture )
                 }
-                renderData.addPosition(   x,   y, z )
-                renderData.addPosition( x+w, y+h, z )
-                renderData.addPosition( x+w,   y, z )
-                renderData.addPosition(   x,   y, z )
-                renderData.addPosition(   x, y+h, z )
-                renderData.addPosition( x+w, y+h, z )
+                renderData.addPosition( 0, 0, 0 )
+                renderData.addPosition( 1, 1, 0 )
+                renderData.addPosition( 1, 0, 0 )
+                renderData.addPosition( 0, 0, 0 )
+                renderData.addPosition( 0, 1, 0 )
+                renderData.addPosition( 1, 1, 0 )
                 for _ in 1...6 { renderData.addColor(color) }
                 renderData.addUV( u1, v1 )
                 renderData.addUV( u2, v2 )
