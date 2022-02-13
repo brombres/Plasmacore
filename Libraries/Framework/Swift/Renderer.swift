@@ -49,19 +49,12 @@ class Renderer: NSObject, MTKViewDelegate
 
   var isConfigured                    = false
   var renderMode                      : RenderMode?
-  var renderModeDrawLines             : RenderModeDrawLines?
-  var renderModeFillSolidTriangles    : RenderModeFillSolidTriangles?
-  var renderModeFillTexturedTriangles : RenderModeFillTexturedTriangles?
 
   var depthTestLT                  : MTLDepthStencilState
 
   // Display state
   var display_width  = 0
   var display_height = 0
-
-  // Demo-specific assets
-  var mesh     : MTKMesh?
-  var colorMap : MTLTexture?
 
   init?( metalKitView:MTKView )
   {
@@ -91,9 +84,6 @@ class Renderer: NSObject, MTKViewDelegate
   {
     if (isConfigured) { return }
     isConfigured = true
-    renderModeDrawLines          = RenderModeDrawLines( self )
-    renderModeFillSolidTriangles = RenderModeFillSolidTriangles( self )
-    renderModeFillTexturedTriangles = RenderModeFillTexturedTriangles( self )
   }
 
   private func rogueRender()->PlasmacoreMessage?
@@ -340,8 +330,26 @@ class Renderer: NSObject, MTKViewDelegate
                 renderMode?.render()
                 renderData.popProjectionTransform( q.readInt32X() )
                 continue
+              case .DEFINE_RENDER_MODE:
+                //( [id,shape]:Int32X,[src_blend,dest_blend]:BlendFactor, [vertex_shader,fragment_shader]:String )
+                let renderModeID = q.readInt32X()
+                let shape = q.readInt32X()
+                let srcBlend = q.readBlendFactor()
+                let destBlend = q.readBlendFactor()
+                let vertexShader = q.readString()
+                let fragmentShader = q.readString()
+                let mode = RenderMode( self, renderModeID, shape, srcBlend, destBlend, vertexShader, fragmentShader )
+                Plasmacore.singleton.renderModes[renderModeID] = mode
+                continue
+              case .USE_RENDER_MODE:
+                //( id:Int32X )
+                let renderModeID = q.readInt32X()
+                if let mode = Plasmacore.singleton.renderModes[renderModeID]
+                {
+                  mode.activate( renderEncoder )
+                }
+                continue
               case .FILL_BOX:
-                renderModeFillSolidTriangles?.activate( renderEncoder )
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let w = q.readReal32()
@@ -357,7 +365,6 @@ class Renderer: NSObject, MTKViewDelegate
                 for _ in 1...6 { renderData.addColor(color) }
                 continue
               case .FILL_BOX_MULTICOLOR:
-                renderModeFillSolidTriangles?.activate( renderEncoder )
                 let x = q.readReal32()
                 let y = q.readReal32()
                 let w = q.readReal32()
@@ -381,7 +388,6 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.addColor( c3 )
                 continue
               case .FILL_TRIANGLE:
-                renderModeFillSolidTriangles?.activate( renderEncoder )
                 for _ in 1...3
                 {
                   let x = q.readReal32()
@@ -393,7 +399,6 @@ class Renderer: NSObject, MTKViewDelegate
                 for _ in 1...3 { renderData.addColor(color) }
                 continue
               case .FILL_TRIANGLE_MULTICOLOR:
-                renderModeFillSolidTriangles?.activate( renderEncoder )
                 for _ in 1...3
                 {
                   let x = q.readReal32()
@@ -409,7 +414,6 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.addColor( c3 )
                 continue
               case .DRAW_LINE:
-                renderModeDrawLines?.activate( renderEncoder )
                 for _ in 1...2
                 {
                   let x = q.readReal32()
@@ -423,7 +427,11 @@ class Renderer: NSObject, MTKViewDelegate
                 renderData.addColor( c2 )
                 continue
               case .DRAW_IMAGE:
-                renderModeFillTexturedTriangles?.activate( renderEncoder )
+                let x = q.readReal32()
+                let y = q.readReal32()
+                let w = q.readReal32()
+                let h = q.readReal32()
+                let z = q.readReal32()
                 let color = q.readInt32()
                 let u1 = q.readReal32()
                 let v1 = q.readReal32()
@@ -434,12 +442,12 @@ class Renderer: NSObject, MTKViewDelegate
                 {
                   renderMode?.setTexture( texture )
                 }
-                renderData.addPosition( 0, 0, 0 )
-                renderData.addPosition( 1, 1, 0 )
-                renderData.addPosition( 1, 0, 0 )
-                renderData.addPosition( 0, 0, 0 )
-                renderData.addPosition( 0, 1, 0 )
-                renderData.addPosition( 1, 1, 0 )
+                renderData.addPosition( x  , y  , z )
+                renderData.addPosition( x+w, y+h, z )
+                renderData.addPosition( x+w, y  , z )
+                renderData.addPosition( x  , y  , z )
+                renderData.addPosition( x  , y+h, z )
+                renderData.addPosition( x+w, y+h, z )
                 for _ in 1...6 { renderData.addColor(color) }
                 renderData.addUV( u1, v1 )
                 renderData.addUV( u2, v2 )

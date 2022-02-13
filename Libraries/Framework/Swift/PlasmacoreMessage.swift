@@ -92,6 +92,19 @@ class PlasmacoreMessage
     }
   }
 
+  func readBlendFactor()->MTLBlendFactor?
+  {
+    let ordinal = readInt32X()
+    switch (ordinal)
+    {
+      case 0:  return MTLBlendFactor.zero
+      case 1:  return MTLBlendFactor.one
+      case 2:  return MTLBlendFactor.sourceAlpha
+      case 3:  return MTLBlendFactor.oneMinusSourceAlpha
+      default: return nil
+    }
+  }
+
   func readByte()->Int
   {
     if (position >= data.count) { return 0 }

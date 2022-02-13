@@ -6,6 +6,8 @@ augment Triangle
       fill( Canvas.color )
 
     method fill( color:Color )
+      RenderMode.POLYGONS.activate
+
       local q = Canvas.render_queue
       q.write( RenderCmd.FILL_TRIANGLE )
       q.write( a )
@@ -17,6 +19,8 @@ augment Triangle
       q.write( color )
 
     method fill( a_color:Color, b_color:Color, c_color:Color )
+      RenderMode.POLYGONS.activate
+
       local q = Canvas.render_queue
       q.write( RenderCmd.FILL_TRIANGLE_MULTICOLOR )
       q.write( a )

@@ -56,6 +56,7 @@ class Plasmacore
 
   public var currentMetalDevice : MTLDevice?
   public var textures = [Int:MTLTexture]()
+  public var renderModes = [Int:RenderMode]()
 
   /*
   var resources = [Int:AnyObject]()
@@ -99,11 +100,19 @@ class Plasmacore
       }
     )
 
+    setMessageListener( "RenderMode.undefine",
+      {
+        (m:PlasmacoreMessage) in
+          let renderModeID = m.readInt32X()
+          self.renderModes.removeValue( forKey:renderModeID )
+      }
+    )
+
     setMessageListener( "Texture.unload",
       {
         (m:PlasmacoreMessage) in
-          let texture_id = m.readInt32X()
-          self.textures.removeValue( forKey:texture_id )
+          let textureID = m.readInt32X()
+          self.textures.removeValue( forKey:textureID )
       }
     )
 

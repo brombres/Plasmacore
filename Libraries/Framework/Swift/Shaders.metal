@@ -36,7 +36,7 @@ typedef struct
 //------------------------------------------------------------------------------
 // Solid Color Shaders
 //------------------------------------------------------------------------------
-vertex TransformedVertex solidColorVertexShader( Vertex in [[stage_in]],
+vertex TransformedVertex coloredVertexShader( Vertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
 {
   TransformedVertex out;
@@ -48,7 +48,7 @@ vertex TransformedVertex solidColorVertexShader( Vertex in [[stage_in]],
   return out;
 }
 
-fragment float4 solidColorFragmentShader(
+fragment float4 coloredFragmentShader(
     TransformedVertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]]
   )
@@ -59,7 +59,7 @@ fragment float4 solidColorFragmentShader(
 //------------------------------------------------------------------------------
 // Texture Shaders
 //------------------------------------------------------------------------------
-vertex TransformedVertex textureVertexShader(Vertex in [[stage_in]],
+vertex TransformedVertex texturedVertexShader(Vertex in [[stage_in]],
                                constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
 {
     TransformedVertex out;
@@ -71,7 +71,7 @@ vertex TransformedVertex textureVertexShader(Vertex in [[stage_in]],
     return out;
 }
 
-fragment float4 textureFragmentShader(
+fragment float4 texturedFragmentShader(
     TransformedVertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
     texture2d<half> colorMap     [[ texture(TextureStageColor) ]]

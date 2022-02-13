@@ -6,6 +6,7 @@ augment Box
       fill( Canvas.color )
 
     method fill( color:Color )
+      RenderMode.POLYGONS.activate
       local q = Canvas.render_queue
       q.write( RenderCmd.FILL_BOX )
       q.write_real32( position.x )
@@ -16,6 +17,7 @@ augment Box
       q.write( color )
 
     method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color )
+      RenderMode.POLYGONS.activate
       local q = Canvas.render_queue
       q.write( RenderCmd.FILL_BOX_MULTICOLOR )
       q.write_real32( position.x )

@@ -1,0 +1,99 @@
+module Plasmacore
+
+class RenderMode
+  DEFINITIONS
+    BLEND_NONE          = -1
+    BLEND_ZERO          =  0
+    BLEND_ONE           =  1
+    BLEND_ALPHA         =  2
+    BLEND_INVERSE_ALPHA =  3
+
+    SHAPE_LINES         =  2
+    SHAPE_TRIANGLES     =  3
+
+  GLOBAL PROPERTIES
+    LINES             : RenderMode
+    POLYGONS          : RenderMode
+    TEXTURED_POLYGONS : RenderMode
+
+  GLOBAL METHODS
+    method LINES->RenderMode
+      if (@LINES) return @LINES
+      LINES = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
+      @LINES.shape = SHAPE_LINES
+      return @LINES
+
+    method POLYGONS->RenderMode
+      if (@POLYGONS) return @POLYGONS
+      POLYGONS = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
+      return @POLYGONS
+
+    method TEXTURED_POLYGONS->RenderMode
+      if (@TEXTURED_POLYGONS) return @TEXTURED_POLYGONS
+      TEXTURED_POLYGONS = RenderMode( "texturedVertexShader", "texturedFragmentShader", RenderMode.BLEND_ONE )
+      return @TEXTURED_POLYGONS
+
+  PROPERTIES
+    id                   : Int32
+    is_modified          = false
+    source_blend         : Int32
+    destination_blend    : Int32
+    shape                = SHAPE_TRIANGLES : Int32
+    vertex_shader_name   : String
+    fragment_shader_name : String
+
+  METHODS
+    method init( vertex_shader_name, fragment_shader_name,
+        source_blend=RenderMode.BLEND_ONE, destination_blend=RenderMode.BLEND_INVERSE_ALPHA )
+      id = RenderModeManager.next_id
+      ++RenderModeManager.next_id
+      mark_modified
+
+    method on_cleanup
+      Message("RenderMode.undefine").[ write_int32x(id) ].send
+
+    method activate
+      if (this is Canvas.render_mode and not is_modified) return
+
+      local q = Canvas.render_queue
+      if (is_modified)
+        q.write( RenderCmd.DEFINE_RENDER_MODE )
+        q.write_int32x( id )
+        q.write_int32x( shape )
+        q.write_int32x( source_blend )
+        q.write_int32x( destination_blend )
+        q.write_string( vertex_shader_name )
+        q.write_string( fragment_shader_name )
+      endIf
+
+      Canvas.@render_mode = this
+      q.write( RenderCmd.USE_RENDER_MODE )
+      q.write_int32x( id )
+
+    method mark_modified
+      if (is_modified) return
+      is_modified = true
+
+    method set_source_blend( @source_blend )
+      mark_modified
+
+    method set_destination_blend( @destination_blend )
+      mark_modified
+
+    method set_shape( @shape )
+      mark_modified
+
+    method set_vertex_shader_name( @vertex_shader_name )
+      mark_modified
+
+    method set_fragment_shader_name( @fragment_shader_name )
+      mark_modified
+
+
+endClass
+
+class RenderModeManager [singleton]
+  PROPERTIES
+    next_id         = 1
+endClass
+

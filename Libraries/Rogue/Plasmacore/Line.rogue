@@ -9,6 +9,7 @@ augment Line<<>>
       draw( color, color )
 
     method draw( a_color:Color, b_color:Color )
+      RenderMode.LINES.activate
       local q = Canvas.render_queue
       q.write( RenderCmd.DRAW_LINE )
       q.write_real32( a.x )

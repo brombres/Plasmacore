@@ -3,84 +3,27 @@
 //==============================================================================
 class RenderMode
 {
+  let positionValuesPerVertex = 3
+
   let renderer           : Renderer
+  let renderModeID       : Int
+  let shape              : Int   // 1:points, 2:lines, 3:triangles
+
   var vertexDescriptor   : MTLVertexDescriptor?
   var pipeline           : MTLRenderPipelineState?
   var firstPositionIndex = 0
+  var firstColorIndex    = 0
+  var firstUVIndex       = 0
   var needsRender        = false
   var renderEncoder      : MTLRenderCommandEncoder?
   var texture            : MTLTexture?
 
-
-  init( _ renderer:Renderer )
+  init( _ renderer:Renderer, _ renderModeID:Int, _ shape:Int, _ sourceBlend:MTLBlendFactor?, _ destinationBlend:MTLBlendFactor?,
+        _ vertexShaderName:String, _ fragmentShaderName:String )
   {
+    self.renderModeID = renderModeID
     self.renderer = renderer
-  }
-
-  @discardableResult
-  func activate( _ renderEncoder:MTLRenderCommandEncoder )->Bool
-  {
-    if (self === renderer.renderMode)
-    {
-      // Already active.
-      if ( !needsRender ) { reactivate() }
-      return false
-    }
-
-    self.renderEncoder = renderEncoder
-    renderer.renderMode?.render()  // flush the queue of the previous render mode
-    renderer.renderMode = self
-    reactivate()
-    texture = nil
-    return true
-  }
-
-  func reactivate()
-  {
-    firstPositionIndex = renderer.renderData.positionCount
-    needsRender = true
-  }
-
-  func reserveCapacity( _ n:Int )
-  {
-    preconditionFailure( "Override required." )
-  }
-
-  @discardableResult
-  func render()->Bool
-  {
-    if ( !needsRender ) { return false }
-    if (firstPositionIndex == renderer.renderData.positionCount) { return false }
-
-    needsRender = false
-    renderEncoder?.setRenderPipelineState( pipeline! )
-
-    let renderData = renderer.renderData
-    renderData.setShaderConstants()
-
-    return true // it's on
-  }
-
-  func setTexture( _ newTexture:MTLTexture? )
-  {
-    if (newTexture === texture) { return }
-    render()  // flush
-    texture = newTexture
-  }
-}
-
-//==============================================================================
-// StandardRenderMode
-// Base class for several different render modes.
-//==============================================================================
-class StandardRenderMode : RenderMode
-{
-  var firstColorIndex = 0
-  var firstUVIndex    = 0
-
-  init( _ renderer:Renderer, _ label:String )
-  {
-    super.init( renderer )
+    self.shape = shape
 
     //--------------------------------------------------------------------------
     // Vertex Descriptor
@@ -117,174 +60,111 @@ class StandardRenderMode : RenderMode
     //--------------------------------------------------------------------------
     do
     {
-      let vertexFunction = renderer.shaderLibrary?.makeFunction(name:vertexShaderName())
-      let fragmentFunction = renderer.shaderLibrary?.makeFunction(name:fragmentShaderName())
+      let vertexFunction = renderer.shaderLibrary?.makeFunction(name:vertexShaderName)
+      let fragmentFunction = renderer.shaderLibrary?.makeFunction(name:fragmentShaderName)
       let metalKitView = renderer.metalKitView
 
       let pipelineDescriptor = MTLRenderPipelineDescriptor()
-      pipelineDescriptor.label = label
       pipelineDescriptor.sampleCount = metalKitView.sampleCount
       pipelineDescriptor.vertexFunction = vertexFunction
       pipelineDescriptor.fragmentFunction = fragmentFunction
       pipelineDescriptor.vertexDescriptor = vertexDescriptor
 
       pipelineDescriptor.colorAttachments[0].pixelFormat = metalKitView.colorPixelFormat
-      pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
-      pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactor.sourceAlpha
-      pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactor.oneMinusSourceAlpha
+      if (sourceBlend != nil && destinationBlend != nil)
+      {
+        pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
+        pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = sourceBlend!
+        pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = destinationBlend!
+      }
       pipelineDescriptor.depthAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
       pipelineDescriptor.stencilAttachmentPixelFormat = metalKitView.depthStencilPixelFormat
       pipeline = try renderer.device.makeRenderPipelineState( descriptor:pipelineDescriptor )
     }
     catch
     {
-      print("Unable to compile \(label) pipeline state: \(error)")
+      print("Unable to compile pipeline state: \(error)")
     }
   }
 
-  func vertexShaderName()->String { return "solidColorVertexShader" }
-  func fragmentShaderName()->String { return "solidColorFragmentShader" }
-
-  override func reactivate()
+  @discardableResult
+  func activate( _ renderEncoder:MTLRenderCommandEncoder )->Bool
   {
-    super.reactivate()
-    firstColorIndex = renderer.renderData.colorCount
-    firstUVIndex    = renderer.renderData.uvCount
+    if (self === renderer.renderMode)
+    {
+      // Already active.
+      if ( !needsRender ) { reactivate() }
+      return false
+    }
+
+    self.renderEncoder = renderEncoder
+    renderer.renderMode?.render()  // flush the queue of the previous render mode
+    renderer.renderMode = self
+    reactivate()
+    texture = nil
+    return true
+  }
+
+  func reactivate()
+  {
+    firstPositionIndex = renderer.renderData.positionCount
+    firstColorIndex    = renderer.renderData.colorCount
+    firstUVIndex       = renderer.renderData.uvCount
+
+    needsRender = true
   }
 
   @discardableResult
-  override func render()->Bool
+  func render()->Bool
   {
-    if ( !super.render() ) { return false }
-
+    if ( !needsRender ) { return false }
+    if (firstPositionIndex == renderer.renderData.positionCount) { return false }
     guard let renderEncoder = renderEncoder else { return false }
 
+    needsRender = false
+    renderEncoder.setRenderPipelineState( pipeline! )
+
     let renderData = renderer.renderData
+    renderData.setShaderConstants()
     renderData.bindPositionBuffer( renderEncoder, firstPositionIndex, VertexBufferIndex.positions.rawValue )
     renderData.bindColorBuffer( renderEncoder, firstColorIndex, VertexBufferIndex.colors.rawValue )
     renderData.bindUVBuffer( renderEncoder, firstUVIndex, VertexBufferIndex.uvs.rawValue )
     renderData.bindConstantsBuffer( renderEncoder, VertexBufferIndex.constants.rawValue )
 
-    return true
-  }
-}
+    switch (shape)
+    {
+      case 2:  // lines
+        let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
+        renderEncoder.drawPrimitives(
+          type:        MTLPrimitiveType.line,
+          vertexStart: 0,
+          vertexCount: count
+        )
 
-//==============================================================================
-// RenderModeDrawLines
-//==============================================================================
-class RenderModeDrawLines : StandardRenderMode
-{
-  let verticesPerLine = 2
-  let positionValuesPerVertex = 3
-  let colorValuesPerVertex    = 4
+      case 3:  // triangles
+        if let texture = self.texture
+        {
+          renderEncoder.setFragmentTexture( texture, index:TextureStage.color.rawValue )
+        }
+        let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
+        renderEncoder.drawPrimitives(
+          type:          MTLPrimitiveType.triangle,
+          vertexStart:   0,
+          vertexCount:   count
+        )
 
-  init( _ renderer:Renderer )
-  {
-    super.init( renderer, "DrawLines" )
-  }
-
-  override func reserveCapacity( _ n:Int )
-  {
-    renderer.renderData.reservePositionCapacity( n * positionValuesPerVertex * verticesPerLine )
-    renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerLine )
-  }
-
-  @discardableResult
-  override func render()->Bool
-  {
-    if ( !super.render() ) { return false }
-    guard let renderEncoder = renderEncoder else { return false }
-
-    let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
-    renderEncoder.drawPrimitives(
-      type:        MTLPrimitiveType.line,
-      vertexStart: 0,
-      vertexCount: count
-    )
-
-    return true
-  }
-}
-
-//==============================================================================
-// RenderModeFillSolidTriangles
-//==============================================================================
-class RenderModeFillSolidTriangles : StandardRenderMode
-{
-  let verticesPerTriangle = 3
-  let positionValuesPerVertex = 3
-  let colorValuesPerVertex    = 4
-
-  init( _ renderer:Renderer )
-  {
-    super.init( renderer, "FillSolidTriangles" )
-  }
-
-  override func reserveCapacity( _ n:Int )
-  {
-    renderer.renderData.reservePositionCapacity( n * positionValuesPerVertex * verticesPerTriangle )
-    renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
-  }
-
-  @discardableResult
-  override func render()->Bool
-  {
-    if ( !super.render() ) { return false }
-    guard let renderEncoder = renderEncoder else { return false }
-
-    let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
-    renderEncoder.drawPrimitives(
-      type:          MTLPrimitiveType.triangle,
-      vertexStart:   0,
-      vertexCount:   count
-    )
-
-    return true
-  }
-}
-
-//==============================================================================
-// RenderModeFillTexturedTriangles
-//==============================================================================
-class RenderModeFillTexturedTriangles : StandardRenderMode
-{
-  let verticesPerTriangle     = 3
-  let positionValuesPerVertex = 3
-  let colorValuesPerVertex    = 4
-  let uvValuesPerVertex       = 5
-
-  init( _ renderer:Renderer )
-  {
-    super.init( renderer, "FillTexturedTriangles" )
-  }
-
-  override func reserveCapacity( _ n:Int )
-  {
-    renderer.renderData.reservePositionCapacity( n * positionValuesPerVertex * verticesPerTriangle )
-    renderer.renderData.reserveColorCapacity( n * colorValuesPerVertex * verticesPerTriangle )
-    renderer.renderData.reserveUVCapacity( n * uvValuesPerVertex * verticesPerTriangle )
-  }
-
-  @discardableResult
-  override func render()->Bool
-  {
-    if ( !super.render() ) { return false }
-    guard let renderEncoder = renderEncoder else { return false }
-    guard let texture = self.texture else { return false }
-
-    renderEncoder.setFragmentTexture( texture, index:TextureStage.color.rawValue )
-
-    let count = (renderer.renderData.positionCount - firstPositionIndex) / positionValuesPerVertex
-    renderEncoder.drawPrimitives(
-      type:          MTLPrimitiveType.triangle,
-      vertexStart:   0,
-      vertexCount:   count
-    )
+      default:
+        return false
+    }
 
     return true
   }
 
-  override func vertexShaderName()->String { return "textureVertexShader" }
-  override func fragmentShaderName()->String { return "textureFragmentShader" }
+  func setTexture( _ newTexture:MTLTexture? )
+  {
+    if (newTexture === texture) { return }
+    render()  // flush
+    texture = newTexture
+  }
 }
 

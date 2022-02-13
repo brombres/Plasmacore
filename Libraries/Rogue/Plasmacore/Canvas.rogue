@@ -13,6 +13,7 @@ class Canvas [singleton]
     color           = Color.WHITE : Color  # current drawing color
 
     render_queue    = RenderQueue()
+    render_mode     : RenderMode
     original_canvas : Canvas
 
   METHODS
@@ -46,6 +47,7 @@ class Canvas [singleton]
       Canvas = this
 
       render_queue.clear
+      render_mode = null
 
       ProjectionTransform.push_2dx()
 
@@ -57,6 +59,10 @@ class Canvas [singleton]
       Display.render_reply.write_int32x( id )
       Display.render_reply.write_bytes( render_queue->Byte[] )
       Canvas = original_canvas
+
+    method set_render_mode( new_render_mode:RenderMode )
+      if (new_render_mode) new_render_mode.activate
+      else                 @render_mode = null
 
     method size->XY
       return XY(width,height)

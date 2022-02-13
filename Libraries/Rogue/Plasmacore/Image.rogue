@@ -13,10 +13,6 @@ class Image
   PROPERTIES
     size          : XY
     original_size : XY
-    rotation      = Radians(0)
-    anchor        = Anchor.CENTER : Anchor
-    opacity       = 1.0
-    color         = Color.WHITE : Color
     attributes    : Int32
 
   GLOBAL METHODS
