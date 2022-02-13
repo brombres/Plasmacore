@@ -1,0 +1,79 @@
+module Plasmacore
+
+class RenderQueueArgs
+  PROPERTIES
+    q         : RenderQueue
+    positions = XYZ[]
+    colors    = Color[]
+    uvs       = XY[]
+
+  METHODS
+    method init( q )
+
+    method commit
+      if (positions.count)
+        q.write( RenderCmd.PUSH_POSITIONS )
+        q.write_int32x( positions.count )
+        q.write( forEach in positions )
+        positions.clear
+      endIf
+      if (colors.count)
+        q.write( RenderCmd.PUSH_COLORS )
+        q.write_int32x( colors.count )
+        q.write( forEach in colors )
+        colors.clear
+      endIf
+      if (uvs.count)
+        q.write( RenderCmd.PUSH_UVS )
+        q.write_int32x( uvs.count )
+        q.write( forEach in uvs )
+        uvs.clear
+      endIf
+
+    method color( color:Color )
+      # Sends a vertex color to the native layer for use in rendering.
+      colors.add( color )
+
+    method colors( a:Color, b:Color )
+      # Sends vertex colors to the native layer for use in rendering.
+      colors.add( a )
+      colors.add( b )
+
+    method colors( a:Color, b:Color, c:Color )
+      # Sends vertex colors to the native layer for use in rendering.
+      colors.add( a )
+      colors.add( b )
+      colors.add( c )
+
+    method position( xyz:XYZ )
+      # Sends a vertex position to the native layer for use in rendering.
+      positions.add( xyz )
+
+    method positions( a:XYZ, b:XYZ )
+      # Sends vertex positions to the native layer for use in rendering.
+      positions.add( a )
+      positions.add( b )
+
+    method positions( a:XYZ, b:XYZ, c:XYZ )
+      # Sends vertex positions to the native layer for use in rendering.
+      positions.add( a )
+      positions.add( b )
+      positions.add( c )
+
+    method uv( uv:XY )
+      # Sends a vertex uv to the native layer for use in rendering.
+      uvs.add( uv )
+
+    method uvs( a:XY, b:XY )
+      # Sends vertex uvs to the native layer for use in rendering.
+      uvs.add( a )
+      uvs.add( b )
+
+    method uvs( a:XY, b:XY, c:XY )
+      # Sends vertex uvs to the native layer for use in rendering.
+      uvs.add( a )
+      uvs.add( b )
+      uvs.add( c )
+
+endClass
+

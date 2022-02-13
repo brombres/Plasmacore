@@ -21,10 +21,7 @@ enum RenderCmd : Int
   case POP_PROJECTION_TRANSFORM    //( count:Int32X )
   case DEFINE_RENDER_MODE          //( [id,shape]:Int32X, [src_blend,dest_blend]:BlendFactor, [vertex_shader,fragment_shader]:String )
   case USE_RENDER_MODE             //( id:Int32X )
-  case FILL_BOX                    //( [x,y,w,h,z]:Real32, color:Int32 )
-  case FILL_BOX_MULTICOLOR         //( [x,y,w,h,z]:Real32, colors:Int32[4] )
-  case FILL_TRIANGLE               //( [a,b,c]:XYZ32, color:Int32 )
-  case FILL_TRIANGLE_MULTICOLOR    //( [a,b,c]:XYZ32, colors:Int32[3] )
-  case DRAW_LINE                   //( [a,b]:XYZ32, [a_color,b_color]:Color )
-  case DRAW_IMAGE                  //( [x,y,w,h,z]:Real32, color:Int32, [u1,v1,u2,v2]:Real32, texture_id:Int32X )
+  case PUSH_POSITIONS              //( count:Int32X, positions:XYZ32[count] )
+  case PUSH_COLORS                 //( count:Int32X, colors:Int32[count] )
+  case PUSH_UVS                    //( count:Int32X, positions:XY32[count] )
 }

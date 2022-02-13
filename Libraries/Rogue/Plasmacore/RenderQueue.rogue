@@ -4,6 +4,7 @@ class RenderQueue : DataWriter
   PROPERTIES
     clear_color_index : Int32
     clear_color       = Color.BLACK : Color
+    args              = RenderQueueArgs(this)
     is_finalized      = false
 
   METHODS
@@ -72,6 +73,11 @@ class RenderQueue : DataWriter
     method write( xy:XY )
       write_real32( xy.x )
       write_real32( xy.y )
+
+    method write( xyz:XYZ )
+      write_real32( xyz.x )
+      write_real32( xyz.y )
+      write_real32( xyz.z )
 
 endClass
 

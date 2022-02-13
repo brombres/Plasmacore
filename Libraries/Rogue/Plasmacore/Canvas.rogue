@@ -60,11 +60,143 @@ class Canvas [singleton]
       Display.render_reply.write_bytes( render_queue->Byte[] )
       Canvas = original_canvas
 
+    method push_color( color:Color )
+      # Sends a vertex color to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_COLORS )
+      q.write_int32x( 1 )
+      q.write( color )
+
+    method push_colors( a:Color, b:Color )
+      # Sends vertex colors to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_COLORS )
+      q.write_int32x( 2 )
+      q.write( a )
+      q.write( b )
+
+    method push_colors( a:Color, b:Color, c:Color )
+      # Sends vertex colors to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_COLORS )
+      q.write_int32x( 3 )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+
+    method push_colors( a:Color, b:Color, c:Color, d:Color )
+      # Sends vertex colors to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_COLORS )
+      q.write_int32x( 4 )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+      q.write( d )
+
+    method push_colors( colors:Color[], offset=0:Int32, count=null:Int32? )
+      # Sends vertex colors to the native layer for use in rendering.
+      block count = which{ count || colors.count-offset }
+        local q = render_queue
+        q.write( RenderCmd.PUSH_COLORS )
+        q.write_int32x( count )
+        q.write( colors[offset+(forEach in 0..<count)] )
+      endBlock
+
+    method push_position( xyz:XYZ )
+      # Sends a vertex position to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_POSITIONS )
+      q.write_int32x( 1 )
+      q.write( xyz )
+
+    method push_positions( a:XYZ, b:XYZ )
+      # Sends vertex positions to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_POSITIONS )
+      q.write_int32x( 2 )
+      q.write( a )
+      q.write( b )
+
+    method push_positions( a:XYZ, b:XYZ, c:XYZ )
+      # Sends vertex positions to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_POSITIONS )
+      q.write_int32x( 3 )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+
+    method push_positions( a:XYZ, b:XYZ, c:XYZ, d:XYZ )
+      # Sends vertex positions to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_POSITIONS )
+      q.write_int32x( 4 )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+      q.write( d )
+
+    method push_positions( positions:XYZ[], offset=0:Int32, count=null:Int32? )
+      # Sends vertex positions to the native layer for use in rendering.
+      block count = which{ count || positions.count-offset }
+        local q = render_queue
+        q.write( RenderCmd.PUSH_POSITIONS )
+        q.write_int32x( count )
+        q.write( positions[offset+(forEach in 0..<count)] )
+      endBlock
+
+    method push_uv( uv:XY )
+      # Sends a vertex uv to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_UVS )
+      q.write_int32x( 1 )
+      q.write( XY )
+
+    method push_uvs( a:XY, b:XY )
+      # Sends vertex uvs to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_UVS )
+      q.write_int32x( 2 )
+      q.write( a )
+      q.write( b )
+
+    method push_uvs( a:XY, b:XY, c:XY )
+      # Sends vertex uvs to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_UVS )
+      q.write_int32x( 3 )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+
+    method push_uvs( a:XY, b:XY, c:XY, d:XY )
+      # Sends vertex uvs to the native layer for use in rendering.
+      local q = render_queue
+      q.write( RenderCmd.PUSH_UVS )
+      q.write_int32x( 4 )
+      q.write( a )
+      q.write( b )
+      q.write( c )
+      q.write( d )
+
+    method push_uvs( uvs:XY[], offset=0:Int32, count=null:Int32? )
+      # Sends vertex uvs to the native layer for use in rendering.
+      block count = which{ count || uvs.count-offset }
+        local q = render_queue
+        q.write( RenderCmd.PUSH_UVS )
+        q.write_int32x( count )
+        q.write( uvs[offset+(forEach in 0..<count)] )
+      endBlock
+
     method set_render_mode( new_render_mode:RenderMode )
       if (new_render_mode) new_render_mode.activate
       else                 @render_mode = null
 
     method size->XY
       return XY(width,height)
+
+    method use_render_mode( mode:RenderMode )->RenderQueueArgs
+      # TODO
 endClass
 

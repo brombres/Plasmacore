@@ -6,29 +6,15 @@ augment Box
       fill( Canvas.color )
 
     method fill( color:Color )
-      RenderMode.POLYGONS.activate
-      local q = Canvas.render_queue
-      q.write( RenderCmd.FILL_BOX )
-      q.write_real32( position.x )
-      q.write_real32( position.y )
-      q.write_real32( size.x )
-      q.write_real32( size.y )
-      q.write_real32( 0 )  # z
-      q.write( color )
+      fill( color, color, color, color )
 
     method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color )
-      RenderMode.POLYGONS.activate
-      local q = Canvas.render_queue
-      q.write( RenderCmd.FILL_BOX_MULTICOLOR )
-      q.write_real32( position.x )
-      q.write_real32( position.y )
-      q.write_real32( size.x )
-      q.write_real32( size.y )
-      q.write_real32( 0 )  # z
-      q.write( color_1 )
-      q.write( color_2 )
-      q.write( color_3 )
-      q.write( color_4 )
+      use args = RenderMode.POLYGONS
+        args.positions( position, position+size, position+size.xv )
+        args.positions( position, position+size.yv, position+size )
+        args.colors( color_1, color_3, color_2 )
+        args.colors( color_1, color_4, color_3 )
+      endUse
 
       #method draw( color:Color, thickness=1:Int32 )
       #Display.draw( this, color, thickness )

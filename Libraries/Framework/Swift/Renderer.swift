@@ -349,112 +349,41 @@ class Renderer: NSObject, MTKViewDelegate
                   mode.activate( renderEncoder )
                 }
                 continue
-              case .FILL_BOX:
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let w = q.readReal32()
-                let h = q.readReal32()
-                let z = q.readReal32()
-                renderData.addPosition(   x,   y, z )
-                renderData.addPosition( x+w, y+h, z )
-                renderData.addPosition( x+w,   y, z )
-                renderData.addPosition(   x,   y, z )
-                renderData.addPosition(   x, y+h, z )
-                renderData.addPosition( x+w, y+h, z )
-                let color = q.readInt32()
-                for _ in 1...6 { renderData.addColor(color) }
-                continue
-              case .FILL_BOX_MULTICOLOR:
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let w = q.readReal32()
-                let h = q.readReal32()
-                let z = q.readReal32()
-                renderData.addPosition(   x,   y, z )
-                renderData.addPosition( x+w, y+h, z )
-                renderData.addPosition( x+w,   y, z )
-                renderData.addPosition(   x,   y, z )
-                renderData.addPosition(   x, y+h, z )
-                renderData.addPosition( x+w, y+h, z )
-                let c1 = q.readInt32()
-                let c2 = q.readInt32()
-                let c3 = q.readInt32()
-                let c4 = q.readInt32()
-                renderData.addColor( c1 )
-                renderData.addColor( c3 )
-                renderData.addColor( c2 )
-                renderData.addColor( c1 )
-                renderData.addColor( c4 )
-                renderData.addColor( c3 )
-                continue
-              case .FILL_TRIANGLE:
-                for _ in 1...3
+              case .PUSH_POSITIONS:
+                // ( count:Int32X, positions:XYZ32[count] )
+                let count = q.readInt32X()
+                renderData.reservePositionCapacity( count*3 )
+                for _ in 1...count
                 {
                   let x = q.readReal32()
                   let y = q.readReal32()
                   let z = q.readReal32()
                   renderData.addPosition( x, y, z )
                 }
-                let color = q.readInt32()
-                for _ in 1...3 { renderData.addColor(color) }
                 continue
-              case .FILL_TRIANGLE_MULTICOLOR:
-                for _ in 1...3
-                {
-                  let x = q.readReal32()
-                  let y = q.readReal32()
-                  let z = q.readReal32()
-                  renderData.addPosition( x, y, z )
-                }
-                let c1 = q.readInt32()
-                let c2 = q.readInt32()
-                let c3 = q.readInt32()
-                renderData.addColor( c1 )
-                renderData.addColor( c2 )
-                renderData.addColor( c3 )
+              case .PUSH_COLORS:
+                //( count:Int32X, colors:Int32[count] )
+                let count = q.readInt32X()
+                renderData.reserveColorCapacity( count*4 )
+                for _ in 1...count { renderData.addColor(q.readInt32()) }
                 continue
-              case .DRAW_LINE:
-                for _ in 1...2
+              case .PUSH_UVS:
+                //( count:Int32X, positions:XY32[count] )
+                let count = q.readInt32X()
+                renderData.reserveUVCapacity( count*2 )
+                for _ in 1...count
                 {
-                  let x = q.readReal32()
-                  let y = q.readReal32()
-                  let z = q.readReal32()
-                  renderData.addPosition( x, y, z )
+                  let u = q.readReal32()
+                  let v = q.readReal32()
+                  renderData.addUV( u, v )
                 }
-                let c1 = q.readInt32()
-                let c2 = q.readInt32()
-                renderData.addColor( c1 )
-                renderData.addColor( c2 )
                 continue
-              case .DRAW_IMAGE:
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let w = q.readReal32()
-                let h = q.readReal32()
-                let z = q.readReal32()
-                let color = q.readInt32()
-                let u1 = q.readReal32()
-                let v1 = q.readReal32()
-                let u2 = q.readReal32()
-                let v2 = q.readReal32()
-                let textureID = q.readInt32X()
-                if let texture = Plasmacore.singleton.textures[textureID]
-                {
-                  renderMode?.setTexture( texture )
-                }
-                renderData.addPosition( x  , y  , z )
-                renderData.addPosition( x+w, y+h, z )
-                renderData.addPosition( x+w, y  , z )
-                renderData.addPosition( x  , y  , z )
-                renderData.addPosition( x  , y+h, z )
-                renderData.addPosition( x+w, y+h, z )
-                for _ in 1...6 { renderData.addColor(color) }
-                renderData.addUV( u1, v1 )
-                renderData.addUV( u2, v2 )
-                renderData.addUV( u2, v1 )
-                renderData.addUV( u1, v1 )
-                renderData.addUV( u1, v2 )
-                renderData.addUV( u2, v2 )
+              //case .DRAW_IMAGE:
+                //let textureID = q.readInt32X()
+                //if let texture = Plasmacore.singleton.textures[textureID]
+                //{
+                  //renderMode?.setTexture( texture )
+                //}
                 continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )

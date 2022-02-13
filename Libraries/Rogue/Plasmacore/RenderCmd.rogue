@@ -22,10 +22,7 @@ enum RenderCmd
   POP_PROJECTION_TRANSFORM         #( count:Int32X )
   DEFINE_RENDER_MODE               #( [id,shape]:Int32X, [src_blend,dest_blend]:BlendFactor, [vertex_shader,fragment_shader]:String )
   USE_RENDER_MODE                  #( id:Int32X )
-  FILL_BOX                         #( [x,y,w,h,z]:Real32, color:Int32 )
-  FILL_BOX_MULTICOLOR              #( [x,y,w,h,z]:Real32, colors:Int32[4] )
-  FILL_TRIANGLE                    #( [a,b,c]:XYZ32, color:Int32 )
-  FILL_TRIANGLE_MULTICOLOR         #( [a,b,c]:XYZ32, colors:Int32[3] )
-  DRAW_LINE                        #( [a,b]:XYZ32, [a_color,b_color]:Color )
-  DRAW_IMAGE                       #( [x,y,w,h,z]:Real32, color:Int32, [u1,v1,u2,v2]:Real32, texture_id:Int32X )
+  PUSH_POSITIONS                   #( count:Int32X, positions:XYZ32[count] )
+  PUSH_COLORS                      #( count:Int32X, colors:Int32[count] )
+  PUSH_UVS                         #( count:Int32X, positions:XY32[count] )
 endEnum

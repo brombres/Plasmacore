@@ -74,6 +74,13 @@ class RenderMode
       if (is_modified) return
       is_modified = true
 
+    method on_use->RenderQueueArgs
+      activate
+      return Canvas.render_queue.args
+
+    method on_end_use( args:RenderQueueArgs )
+      args.commit
+
     method set_source_blend( @source_blend )
       mark_modified
 
