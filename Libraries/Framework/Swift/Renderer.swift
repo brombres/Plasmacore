@@ -247,31 +247,6 @@ class Renderer: NSObject, MTKViewDelegate
                 let replace = q.readLogical()
                 renderData.pushObjectTransform( m, replace )
                 continue
-              case .PUSH_ROTATE_OBJECT:
-                renderMode?.render()
-                let radians = q.readReal32()
-                let axisX   = q.readReal32()
-                let axisY   = q.readReal32()
-                let axisZ   = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushObjectTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
-                continue
-              case .PUSH_SCALE_OBJECT:
-                renderMode?.render()
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let z = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushObjectTransform( Matrix.scale(x,y,z), replace )
-                continue
-              case .PUSH_TRANSLATE_OBJECT:
-                renderMode?.render()
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let z = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushObjectTransform( Matrix.translate(x,y,z), replace )
-                continue
               case .POP_OBJECT_TRANSFORM:
                 renderMode?.render()
                 renderData.popObjectTransform( q.readInt32X() )
@@ -281,31 +256,6 @@ class Renderer: NSObject, MTKViewDelegate
                 let m = q.readMatrix()
                 let replace = q.readLogical()
                 renderData.pushViewTransform( m, replace )
-                continue
-              case .PUSH_ROTATE_VIEW:
-                renderMode?.render()
-                let radians = q.readReal32()
-                let axisX   = q.readReal32()
-                let axisY   = q.readReal32()
-                let axisZ   = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushViewTransform( Matrix.rotate(radians,axisX,axisY,axisZ), replace )
-                continue
-              case .PUSH_SCALE_VIEW:
-                renderMode?.render()
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let z = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushViewTransform( Matrix.scale(x,y,z), replace )
-                continue
-              case .PUSH_TRANSLATE_VIEW:
-                renderMode?.render()
-                let x = q.readReal32()
-                let y = q.readReal32()
-                let z = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushViewTransform( Matrix.translate(x,y,z), replace )
                 continue
               case .POP_VIEW_TRANSFORM:
                 renderMode?.render()
