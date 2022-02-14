@@ -24,4 +24,5 @@ enum RenderCmd : Int
   case PUSH_POSITIONS              //( count:Int32X, positions:XYZ32[count] )
   case PUSH_COLORS                 //( count:Int32X, colors:Int32[count] )
   case PUSH_UVS                    //( count:Int32X, positions:XY32[count] )
+  case USE_TEXTURE                 //( id:Int32X )
 }

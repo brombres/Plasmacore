@@ -378,12 +378,12 @@ class Renderer: NSObject, MTKViewDelegate
                   renderData.addUV( u, v )
                 }
                 continue
-              //case .DRAW_IMAGE:
-                //let textureID = q.readInt32X()
-                //if let texture = Plasmacore.singleton.textures[textureID]
-                //{
-                  //renderMode?.setTexture( texture )
-                //}
+              case .USE_TEXTURE:
+                let textureID = q.readInt32X()
+                if let texture = Plasmacore.singleton.textures[textureID]
+                {
+                  renderMode?.setTexture( texture )
+                }
                 continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )

@@ -3,51 +3,99 @@ module Plasmacore
 class TextureImage : Image
   PROPERTIES
     texture : Texture
-    uv      : Box
+    uv      : Quad?
 
   METHODS
     method init( asset:ImageAsset )
       init( Texture(asset) )
 
-    method init( texture, uv=Box(0,0) )
+    method init( texture, uv=null )
 
-    method draw( position:XY )
+    method draw( position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
       if (not is_loaded)
         println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
       endIf
+      if (not @uv)
+        println "[Plasmacore] Image uv coordinates are undefined."
+      endIf
 
-      #{
-      #ObjectTransform.push( Matrix.transform(XYZ(position,0), size, anchor, rotation) )
       localize size
-      #if (rotation.value)
-
-      position -= size * anchor.position
+      if (rotation)
+        ObjectTransform.push( Matrix.transform(XYZ(position,0), size, anchor, rotation.value) )
+      else
+        position -= size * anchor.position
+      endIf
 
       localize uv
-      local u1 = uv.position.x
-      local u2 = u1 + uv.size.x
-      local v1 = uv.position.y
-      local v2 = v1 + uv.size.y
+      local uva = uv.a
+      local uvb = uv.b
+      local uvc = uv.c
+      local uvd = uv.d
 
-      if (hflip) swapValues( u1, u2 )
-      if (vflip) swapValues( v1, v2 )
+      if (hflip)
+        swapValues( uva, uvb )
+        swapValues( uvc, uvd )
+      endIf
+      if (vflip)
+        swapValues( uva, uvc )
+        swapValues( uvb, uvd )
+      endIf
 
-      local q = Canvas.render_queue
-      q.write( RenderCmd.DRAW_IMAGE )
-      q.write_real32( position.x )  # x
-      q.write_real32( position.y )  # y
-      q.write_real32( size.x )      # w
-      q.write_real32( size.y )      # h
-      q.write_real32( 0 )           # z
-      q.write( color.with_opacity(opacity) )
-      q.write_real32( u1 )
-      q.write_real32( v1 )
-      q.write_real32( u2 )
-      q.write_real32( v2 )
-      q.write_int32x( texture.id )
+      if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
+      use args = RenderMode.TEXTURED_POLYGONS
+        args.texture = texture
+        if (rotation)
+          # Position & size are incorporated in ObjectTransform
+          args.positions( XY(0,0), XY(1,1), XY(1,0) )
+          args.positions( XY(0,0), XY(0,1), XY(1,1) )
+        else
+          args.positions( position, position+size, position+size.xv )
+          args.positions( position, position+size.yv, position+size )
+        endIf
+        args.uvs( uva, uvc, uvb )
+        args.uvs( uva, uvd, uvc )
+      endUse
 
-      #ObjectTransform.pop
-      }#
+      if (rotation) ObjectTransform.pop
+
+    method draw( position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
+      if (not is_loaded)
+        println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
+      endIf
+      if (not @uv)
+        println "[Plasmacore] Image uv coordinates are undefined."
+      endIf
+
+      local m = Matrix.translate( position )
+      m *= rotation
+      m *= Matrix.transform( XYZ(size,1), anchor )
+      ObjectTransform.push( m )
+
+      localize uv
+      local uva = uv.a
+      local uvb = uv.b
+      local uvc = uv.c
+      local uvd = uv.d
+
+      if (hflip)
+        swapValues( uva, uvb )
+        swapValues( uvc, uvd )
+      endIf
+      if (vflip)
+        swapValues( uva, uvc )
+        swapValues( uvb, uvd )
+      endIf
+
+      if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
+      use args = RenderMode.TEXTURED_POLYGONS
+        args.texture = texture
+        args.positions( XY(0,0), XY(1,1), XY(1,0) )
+        args.positions( XY(0,0), XY(0,1), XY(1,1) )
+        args.uvs( uva, uvc, uvb )
+        args.uvs( uva, uvd, uvc )
+      endUse
+
+      ObjectTransform.pop
 
     method is_loaded->Logical
       if (prior.is_loaded) return true
@@ -59,13 +107,12 @@ class TextureImage : Image
         size = original_size
       endIf
 
-      if (uv.size.is_zero) uv = Box( texture.uv_max )
+      if (not @uv) @uv = Box(texture.uv_max)->Quad
 
       return true
 
-    method set_uv( new_uv:Box )
-      @uv = new_uv
+    method set_uv( @uv )
 
-    method uv->Box
-      return @uv
+    method uv->Quad
+      return @uv.value
 endClass

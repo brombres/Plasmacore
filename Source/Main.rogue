@@ -10,7 +10,7 @@ class Cube [singleton]
 
   METHODS
     method update
-      rotation += 0.001
+      rotation += 0.005
 endClass
 
 Plasmacore.on_configure = (() => println("Configuring"))
@@ -33,9 +33,9 @@ Plasmacore.on_draw =
     if (Cube.image.is_loaded)
       Cube.image.scale = 0.25
       #Cube.image.rotation = Degrees(22.5)
-      #Cube.image.rotation = Cube.rotation
       #Cube.image.anchor = Anchor.RIGHT
-      #Cube.image.draw( Canvas.center )
+      Cube.image.draw( Canvas.center, Matrix.rotate( Cube.rotation, XYZ(1,0,0) ), Anchor.RIGHT )
+      Cube.image.draw( Canvas.center, Matrix.rotate( Cube.rotation+pi, XYZ(1,0,0) ), Anchor.RIGHT )
     endIf
   endFunction
 

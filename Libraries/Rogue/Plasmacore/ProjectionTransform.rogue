@@ -18,9 +18,13 @@ class ProjectionTransform
       q.write_logical( replace )
 
     method push_2dx( width=Canvas.width:Real64, height=Canvas.height:Real64,
-        z_near=0.1:Real64, z_far=100:Real64, unit_z=20:Real64,
+        z_near=0.1:Real64, z_far=0:Real64, unit_z=0:Real64,
         vpx=0.5:Real64, vpy=0.5:Real64, delta_x=0:Real64, delta_y=0:Real64,
         &invert, &replace )
+
+      local m = XY(width,height).magnitude
+      if (not z_far) z_far = m
+      if (not unit_z) unit_z = m/2
 
       local k = (unit_z+1) * (2 / z_near)
       vpx = (width*vpx  + delta_x) / width

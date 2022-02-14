@@ -23,30 +23,36 @@ class MessageManager [singleton]
       return Message()
 
     method receive_message( m:Message )->Byte[] [essential]
-      if (m.type.count == 0)
-        local listener = reply_listeners.remove( m.message_id )
-        if (listener) listener( m )
-        return null
-
-      else
-        local listener = listeners[ m.type ]
-        if (not listener)
+      try
+        if (m.type.count == 0)
+          local listener = reply_listeners.remove( m.message_id )
+          if (listener) listener( m )
           return null
-        endIf
 
-        listener( m )
-
-        if (m.m_reply)
-          if (m.m_reply.send_requested)
-            local result = m.m_reply.data
-            return result
-          else
-            m.m_reply.defer_reply = false  # a later send() will actually dispatch the reply
+        else
+          local listener = listeners[ m.type ]
+          if (not listener)
+            return null
           endIf
-        endIf
-        return null
 
-      endIf
+          listener( m )
+
+          if (m.m_reply)
+            if (m.m_reply.send_requested)
+              local result = m.m_reply.data
+              return result
+            else
+              m.m_reply.defer_reply = false  # a later send() will actually dispatch the reply
+            endIf
+          endIf
+          return null
+
+        endIf
+
+      catch (err:Error)
+        println err
+        return null
+      endTry
 
     method set_listener( type:String, listener:Function(Message) )
       listeners[ type ] = listener

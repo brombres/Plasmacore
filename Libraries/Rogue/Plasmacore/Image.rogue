@@ -19,11 +19,14 @@ class Image
     method create( name:String )->Image
       return TextureImage( ImageAsset(name) )
 
-    method create( texture:Texture, uv=Box(0,0):Box )->Image
+    method create( texture:Texture, uv=null:Quad? )->Image
       return TextureImage( texture, uv )
 
   METHODS
-    method draw( position:XY )
+    method draw( position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
+      throw UnsupportedOperationError()
+
+    method draw( position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
       throw UnsupportedOperationError()
 
     method scale->XY
@@ -41,10 +44,10 @@ class Image
     method set_scale( s:Real64 )
       size = s * original_size
 
-    method set_uv( new_uv:Box )
+    method set_uv( new_uv:Quad )
       throw UnsupportedOperationError()
 
-    method uv->Box
+    method uv->Quad
       throw UnsupportedOperationError()
 endClass
 
