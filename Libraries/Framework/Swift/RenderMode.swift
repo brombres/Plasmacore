@@ -17,6 +17,7 @@ class RenderMode
   var needsRender        = false
   var renderEncoder      : MTLRenderCommandEncoder?
   var texture            : MTLTexture?
+  var sampler            : MTLSamplerState?
 
   init( _ renderer:Renderer, _ renderModeID:Int, _ shape:Int, _ sourceBlend:MTLBlendFactor?, _ destinationBlend:MTLBlendFactor?,
         _ vertexShaderName:String, _ fragmentShaderName:String )
@@ -85,6 +86,14 @@ class RenderMode
     {
       print("Unable to compile pipeline state: \(error)")
     }
+
+    //--------------------------------------------------------------------------
+    // Sampler
+    //--------------------------------------------------------------------------
+    let samplerDescriptor = MTLSamplerDescriptor()
+    samplerDescriptor.minFilter = MTLSamplerMinMagFilter.linear // 'nearest' for pixellated
+    samplerDescriptor.magFilter = MTLSamplerMinMagFilter.linear // 'nearest' for pixellated
+    sampler = renderer.device.makeSamplerState( descriptor:samplerDescriptor )
   }
 
   @discardableResult
@@ -123,6 +132,10 @@ class RenderMode
 
     needsRender = false
     renderEncoder.setRenderPipelineState( pipeline! )
+    if let sampler = sampler
+    {
+      renderEncoder.setFragmentSamplerState( sampler, index:0 )
+    }
 
     let renderData = renderer.renderData
     renderData.setShaderConstants()

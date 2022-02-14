@@ -11,7 +11,6 @@ enum RenderCmd : Int
   case PUSH_VIEW_TRANSFORM         //( transform:Real32[16], replace:Logical )
   case POP_VIEW_TRANSFORM          //( count:Int32X )
   case PUSH_PROJECTION_TRANSFORM   //( transform:Real32[16], replace:Logical )
-  case PUSH_PERSPECTIVE_PROJECTION //( [fov_y, aspect_ratio, z_near, z_far]:Real32, replace:Logical )
   case POP_PROJECTION_TRANSFORM    //( count:Int32X )
   case DEFINE_RENDER_MODE          //( [id,shape]:Int32X, [src_blend,dest_blend]:BlendFactor, [vertex_shader,fragment_shader]:String )
   case USE_RENDER_MODE             //( id:Int32X )

@@ -41,15 +41,5 @@ class ProjectionTransform
       local translate = Matrix.translate( XYZ(-width*vpx+delta_x,-height*vpy+delta_y,-unit_z) )
       push( project * translate, &=replace )
 
-    method push_perspective( fov_y=Degrees(65):Radians, aspect_ratio=Canvas.aspect_ratio:Real64,
-        z_near=0.1:Real64, z_far=100:Real64, &replace )
-      local q = Canvas.render_queue
-      q.write( RenderCmd.PUSH_PERSPECTIVE_PROJECTION )
-      q.write_real32( fov_y.value )
-      q.write_real32( aspect_ratio )
-      q.write_real32( z_near )
-      q.write_real32( z_far )
-      q.write_logical( replace )
-
 endClass
 

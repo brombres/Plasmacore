@@ -37,7 +37,7 @@ typedef struct
 // Solid Color Shaders
 //------------------------------------------------------------------------------
 vertex TransformedVertex coloredVertexShader( Vertex in [[stage_in]],
-    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
+    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]] )
 {
   TransformedVertex out;
 
@@ -50,7 +50,8 @@ vertex TransformedVertex coloredVertexShader( Vertex in [[stage_in]],
 
 fragment float4 coloredFragmentShader(
     TransformedVertex in [[stage_in]],
-    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]]
+    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
+    sampler samplr [[sampler(0)]]
   )
 {
     return in.color;
@@ -74,14 +75,11 @@ vertex TransformedVertex texturedVertexShader(Vertex in [[stage_in]],
 fragment float4 texturedFragmentShader(
     TransformedVertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
-    texture2d<half> colorMap     [[ texture(TextureStageColor) ]]
+    texture2d<half> colorMap     [[ texture(TextureStageColor) ]],
+    sampler samplr [[sampler(0)]]
   )
 {
-    constexpr sampler colorSampler(mip_filter::linear,
-                                   mag_filter::linear,
-                                   min_filter::linear);
-
-    half4 colorSample   = colorMap.sample(colorSampler, in.uv.xy);
+    half4 colorSample   = colorMap.sample(samplr, in.uv.xy);
 
     return float4(colorSample);
 }

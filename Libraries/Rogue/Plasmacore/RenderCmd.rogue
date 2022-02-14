@@ -12,7 +12,6 @@ enum RenderCmd
   PUSH_VIEW_TRANSFORM              #( transform:Real32[16] )
   POP_VIEW_TRANSFORM               #( count:Int32X )
   PUSH_PROJECTION_TRANSFORM        #( transform:Real32[16] )
-  PUSH_PERSPECTIVE_PROJECTION      #( fov_y, aspect_ratio, z_near, z_far : Real32 )
   POP_PROJECTION_TRANSFORM         #( count:Int32X )
   DEFINE_RENDER_MODE               #( [id,shape]:Int32X, [src_blend,dest_blend]:BlendFactor, [vertex_shader,fragment_shader]:String )
   USE_RENDER_MODE                  #( id:Int32X )

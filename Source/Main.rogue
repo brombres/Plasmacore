@@ -31,7 +31,7 @@ Plasmacore.on_draw =
     endForEach
 
     if (Cube.image.is_loaded)
-      Cube.image.scale = 2
+      Cube.image.scale = 0.1
       #Cube.image.rotation = Degrees(22.5)
       #Cube.image.anchor = Anchor.RIGHT
       Cube.image.draw( Canvas.center, Matrix.rotate( Cube.rotation, XYZ(1,0,0) ), Anchor.RIGHT )

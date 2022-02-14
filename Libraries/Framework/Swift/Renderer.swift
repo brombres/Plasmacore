@@ -267,15 +267,6 @@ class Renderer: NSObject, MTKViewDelegate
                 let replace = q.readLogical()
                 renderData.pushProjectionTransform( m, replace )
                 continue
-              case .PUSH_PERSPECTIVE_PROJECTION:
-                renderMode?.render()
-                let fovY = q.readReal32()
-                let aspectRatio = q.readReal32()
-                let zNear = q.readReal32()
-                let zFar = q.readReal32()
-                let replace = q.readLogical()
-                renderData.pushProjectionTransform( Matrix.perspective(fovY,aspectRatio,zNear,zFar), replace )
-                continue
               case .POP_PROJECTION_TRANSFORM:
                 renderMode?.render()
                 renderData.popProjectionTransform( q.readInt32X() )
