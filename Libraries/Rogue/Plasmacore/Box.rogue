@@ -2,18 +2,15 @@ uses Plasmacore
 
 augment Box
   METHODS
-    method fill
-      fill( Canvas.color )
+    method fill( color:Color, render_mode=RenderMode.POLYGONS:RenderMode )
+      fill( color, color, color, color, render_mode )
 
-    method fill( color:Color )
-      fill( color, color, color, color )
-
-    method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color )
-      use args = RenderMode.POLYGONS
-        args.positions( position, position+size, position+size.xv )
-        args.positions( position, position+size.yv, position+size )
-        args.colors( color_1, color_3, color_2 )
-        args.colors( color_1, color_4, color_3 )
+    method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color, render_mode=RenderMode.POLYGONS:RenderMode )
+      use mode = render_mode
+        mode.add_positions( position, position+size, position+size.xv )
+        mode.add_positions( position, position+size.yv, position+size )
+        mode.add_colors( color_1, color_3, color_2 )
+        mode.add_colors( color_1, color_4, color_3 )
       endUse
 
       #method draw( color:Color, thickness=1:Int32 )

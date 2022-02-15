@@ -84,3 +84,31 @@ fragment float4 texturedFragmentShader(
     return float4(colorSample);
 }
 
+//------------------------------------------------------------------------------
+// Color Multiplied Textured Shaders
+//------------------------------------------------------------------------------
+vertex TransformedVertex colorMultipliedTexturedVertexShader(Vertex in [[stage_in]],
+                               constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
+{
+    TransformedVertex out;
+
+    float4 position = float4(in.position, 1.0);
+    out.position = constants.projectionTransform * constants.worldTransform * position;
+    out.uv = in.uv;
+    out.color = in.color;
+
+    return out;
+}
+
+fragment float4 colorMultipliedTexturedFragmentShader(
+    TransformedVertex in [[stage_in]],
+    constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
+    texture2d<half> colorMap     [[ texture(TextureStageColor) ]],
+    sampler samplr [[sampler(0)]]
+  )
+{
+    half4 colorSample   = colorMap.sample(samplr, in.uv.xy);
+
+    return float4(colorSample) * in.color;
+}
+

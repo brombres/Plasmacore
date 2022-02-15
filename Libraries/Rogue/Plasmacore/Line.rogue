@@ -2,21 +2,13 @@ uses Plasmacore
 
 augment Line<<>>
   METHODS
-    method draw
-      draw( Canvas.color, Canvas.color )
-
-    method draw( color:Color )
+    method draw( color:Color, render_mode=RenderMode.LINES:RenderMode )
       draw( color, color )
 
-    method draw( a_color:Color, b_color:Color )
-      #RenderMode.LINES.activate
-      #local q = Canvas.render_queue
-      #q.push_positions( a, b )
-      #q.push_colors( a_color, b_color )
-
-      use args = RenderMode.LINES
-        args.positions( a, b )
-        args.colors( a_color, b_color )
+    method draw( a_color:Color, b_color:Color, render_mode=RenderMode.LINES:RenderMode )
+      use mode = render_mode
+        mode.add_positions( a, b )
+        mode.add_colors( a_color, b_color )
       endUse
 
       #if (thickness == 1)

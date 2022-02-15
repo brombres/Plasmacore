@@ -4,7 +4,6 @@ class RenderQueue : DataWriter
   PROPERTIES
     clear_color_index : Int32
     clear_color       = Color.BLACK : Color
-    args              = RenderQueueArgs(this)
     is_finalized      = false
 
   METHODS

@@ -42,18 +42,22 @@ class TextureImage : Image
       endIf
 
       if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
-      use args = RenderMode.TEXTURED_POLYGONS
-        args.texture = texture
+      use mode = render_mode
+        mode.texture = texture
         if (rotation)
           # Position & size are incorporated in ObjectTransform
-          args.positions( XY(0,0), XY(1,1), XY(1,0) )
-          args.positions( XY(0,0), XY(0,1), XY(1,1) )
+          mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
+          mode.add_positions( XY(0,0), XY(0,1), XY(1,1) )
         else
-          args.positions( position, position+size, position+size.xv )
-          args.positions( position, position+size.yv, position+size )
+          mode.add_positions( position, position+size, position+size.xv )
+          mode.add_positions( position, position+size.yv, position+size )
         endIf
-        args.uvs( uva, uvc, uvb )
-        args.uvs( uva, uvd, uvc )
+        mode.add_uvs( uva, uvc, uvb )
+        mode.add_uvs( uva, uvd, uvc )
+        mode.colors.add( Color.RED )
+        mode.colors.add( Color.RED )
+        mode.colors.add( Color.RED )
+        mode.colors.add( Color.RED )
       endUse
 
       if (rotation) ObjectTransform.pop
@@ -87,12 +91,12 @@ class TextureImage : Image
       endIf
 
       if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
-      use args = RenderMode.TEXTURED_POLYGONS
-        args.texture = texture
-        args.positions( XY(0,0), XY(1,1), XY(1,0) )
-        args.positions( XY(0,0), XY(0,1), XY(1,1) )
-        args.uvs( uva, uvc, uvb )
-        args.uvs( uva, uvd, uvc )
+      use mode = render_mode
+        mode.texture = texture
+        mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
+        mode.add_positions( XY(0,0), XY(0,1), XY(1,1) )
+        mode.add_uvs( uva, uvc, uvb )
+        mode.add_uvs( uva, uvd, uvc )
       endUse
 
       ObjectTransform.pop

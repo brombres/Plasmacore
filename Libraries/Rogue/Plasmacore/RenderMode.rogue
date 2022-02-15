@@ -15,8 +15,15 @@ class RenderMode
     LINES             : RenderMode
     POLYGONS          : RenderMode
     TEXTURED_POLYGONS : RenderMode
+    COLOR_MULTIPLIED_TEXTURED_POLYGONS : RenderMode
 
   GLOBAL METHODS
+    method COLOR_MULTIPLIED_TEXTURED_POLYGONS->RenderMode
+      if (@COLOR_MULTIPLIED_TEXTURED_POLYGONS) return @COLOR_MULTIPLIED_TEXTURED_POLYGONS
+      COLOR_MULTIPLIED_TEXTURED_POLYGONS = RenderMode( "colorMultipliedTexturedVertexShader",
+          "colorMultipliedTexturedFragmentShader", RenderMode.BLEND_ONE )
+      return @COLOR_MULTIPLIED_TEXTURED_POLYGONS
+
     method LINES->RenderMode
       if (@LINES) return @LINES
       LINES = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
@@ -41,6 +48,11 @@ class RenderMode
     shape                = SHAPE_TRIANGLES : Int32
     vertex_shader_name   : String
     fragment_shader_name : String
+
+    texture     : Texture
+    positions   = XYZ[]
+    colors      = Color[]
+    uvs         = XY[]
 
   METHODS
     method init( vertex_shader_name, fragment_shader_name,
@@ -70,16 +82,120 @@ class RenderMode
       q.write( RenderCmd.USE_RENDER_MODE )
       q.write_int32x( id )
 
+    method add_color( color:Color )
+      colors.add( color )
+
+    method add_colors( a:Color, b:Color )
+      colors.add( a )
+      colors.add( b )
+
+    method add_colors( a:Color, b:Color, c:Color )
+      colors.add( a )
+      colors.add( b )
+      colors.add( c )
+
+    method add_position( xyz:XYZ )
+      positions.add( xyz )
+
+    method add_positions( a:XYZ, b:XYZ )
+      positions.add( a )
+      positions.add( b )
+
+    method add_positions( a:XYZ, b:XYZ, c:XYZ )
+      positions.add( a )
+      positions.add( b )
+      positions.add( c )
+
+    method add_uv( uv:XY )
+      uvs.add( uv )
+
+    method add_uvs( a:XY, b:XY )
+      uvs.add( a )
+      uvs.add( b )
+
+    method add_uvs( a:XY, b:XY, c:XY )
+      uvs.add( a )
+      uvs.add( b )
+      uvs.add( c )
+
+    method color->Color
+      if (colors.is_empty) return Color.WHITE
+      return colors.first
+
+    method commit
+      local q = Canvas.render_queue
+
+      if (texture)
+        # Texture must be changed before sending other data because it may
+        # flush any queued data
+        q.write( RenderCmd.USE_TEXTURE )
+        q.write_int32x( texture.id )
+        texture = null
+      endIf
+
+      if (positions.count)
+        q.write( RenderCmd.PUSH_POSITIONS )
+        q.write_int32x( positions.count )
+        q.write( forEach in positions )
+        positions.clear
+      endIf
+
+      if (colors.count)
+        q.write( RenderCmd.PUSH_COLORS )
+        q.write_int32x( colors.count )
+        q.write( forEach in colors )
+        colors.clear
+      endIf
+
+      if (uvs.count)
+        q.write( RenderCmd.PUSH_UVS )
+        q.write_int32x( uvs.count )
+        q.write( forEach in uvs )
+        uvs.clear
+      endIf
+
+    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, color:Color )
+      loop (6) colors.add( color )
+      image.draw( position, rotation, anchor, this )
+
+    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, colors:Quad<<Color>> )
+      this.colors.add( colors.a )
+      this.colors.add( colors.c )
+      this.colors.add( colors.b )
+      this.colors.add( colors.a )
+      this.colors.add( colors.d )
+      this.colors.add( colors.c )
+      image.draw( position, rotation, anchor, this )
+
+    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, color:Color )
+      loop (6) colors.add( color )
+      image.draw( position, rotation, anchor, this )
+
+    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, colors:Quad<<Color>> )
+      this.colors.add( colors.a )
+      this.colors.add( colors.c )
+      this.colors.add( colors.b )
+      this.colors.add( colors.a )
+      this.colors.add( colors.d )
+      this.colors.add( colors.c )
+      image.draw( position, rotation, anchor, this )
+
     method mark_modified
       if (is_modified) return
       is_modified = true
 
-    method on_use->RenderQueueArgs
+    method on_use->this
       activate
-      return Canvas.render_queue.args
+      return this
 
-    method on_end_use( args:RenderQueueArgs )
-      args.commit
+    method on_end_use
+      commit
+
+    method set_color( color:Color )
+      colors.clear
+      colors.add( color )
+      # Note: does not need to mark_modified; colors are part of vertex definitions,
+      # not the render mode definition.
 
     method set_source_blend( @source_blend )
       mark_modified

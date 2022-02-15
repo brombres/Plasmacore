@@ -23,6 +23,9 @@ class Image
       return TextureImage( texture, uv )
 
   METHODS
+    method draw( position:XY, anchor=Anchor.CENTER:Anchor )
+      draw( position, &rotation=null, &=anchor, null )
+
     method draw( position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
       throw UnsupportedOperationError()
 

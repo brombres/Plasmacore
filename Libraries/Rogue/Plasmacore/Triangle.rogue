@@ -2,20 +2,13 @@ uses Plasmacore
 
 augment Triangle
   METHODS
-    method fill
-      fill( Canvas.color )
+    method fill( color:Color, render_mode=RenderMode.POLYGONS:RenderMode )
+      fill( color, color, color, render_mode )
 
-    method fill( color:Color )
-      use args = RenderMode.POLYGONS
-        args.positions( a, b, c )
-        args.colors( color, color, color )
-      endUse
-
-
-    method fill( a_color:Color, b_color:Color, c_color:Color )
-      use args = RenderMode.POLYGONS
-        args.positions( a, b, c )
-        args.colors( a_color, b_color, c_color )
+    method fill( a_color:Color, b_color:Color, c_color:Color, render_mode=RenderMode.POLYGONS:RenderMode )
+      use mode = render_mode
+        mode.add_positions( a, b, c )
+        mode.add_colors( a_color, b_color, c_color )
       endUse
 
       #method draw( color:Color, thickness=1:Int32 )
