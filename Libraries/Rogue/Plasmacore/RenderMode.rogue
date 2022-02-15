@@ -154,30 +154,38 @@ class RenderMode
         uvs.clear
       endIf
 
-    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, color:Color )
-      loop (6) colors.add( color )
+    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, color=null:Color? )
+      if (color)
+        loop (6) colors.add( color.value )
+      endIf
       image.draw( position, rotation, anchor, this )
 
-    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, colors:Quad<<Color>> )
-      this.colors.add( colors.a )
-      this.colors.add( colors.c )
-      this.colors.add( colors.b )
-      this.colors.add( colors.a )
-      this.colors.add( colors.d )
-      this.colors.add( colors.c )
+    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, colors=null:Quad<<Color>>? )
+      if (colors)
+        this.colors.add( colors.value.a )
+        this.colors.add( colors.value.c )
+        this.colors.add( colors.value.b )
+        this.colors.add( colors.value.a )
+        this.colors.add( colors.value.d )
+        this.colors.add( colors.value.c )
+      endIf
       image.draw( position, rotation, anchor, this )
 
-    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, color:Color )
-      loop (6) colors.add( color )
+    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, color=null:Color? )
+      if (color)
+        loop (6) colors.add( color.value )
+      endIf
       image.draw( position, rotation, anchor, this )
 
-    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, colors:Quad<<Color>> )
-      this.colors.add( colors.a )
-      this.colors.add( colors.c )
-      this.colors.add( colors.b )
-      this.colors.add( colors.a )
-      this.colors.add( colors.d )
-      this.colors.add( colors.c )
+    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, colors=null:Quad<<Color>>? )
+      if (colors)
+        this.colors.add( colors.value.a )
+        this.colors.add( colors.value.c )
+        this.colors.add( colors.value.b )
+        this.colors.add( colors.value.a )
+        this.colors.add( colors.value.d )
+        this.colors.add( colors.value.c )
+      endIf
       image.draw( position, rotation, anchor, this )
 
     method mark_modified
@@ -196,6 +204,15 @@ class RenderMode
       colors.add( color )
       # Note: does not need to mark_modified; colors are part of vertex definitions,
       # not the render mode definition.
+
+    method set_opacity( p:Real64 )
+      if (colors.is_empty)
+        colors.add( ((p*255)->Int32 :<<: 24) | 0xFFffFF )
+      else
+        forEach (color at i in colors)
+          colors[i] = color.with_opacity(p)
+        endForEach
+      endIf
 
     method set_source_blend( @source_blend )
       mark_modified

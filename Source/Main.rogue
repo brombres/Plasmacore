@@ -20,7 +20,8 @@ Plasmacore.on_update = (() => Cube.update)
 Plasmacore.on_draw =
   function
     Canvas.clear( Color.GRAY )
-    Canvas.bounds.cropped( Canvas.width/4, Canvas.height/4, Canvas.width/4, Canvas.height/4 ).fill( Color.YELLOW, Color.RED, Color.GREEN, Color.BLUE )
+    Canvas.bounds.cropped( Canvas.width/4, Canvas.height/4, Canvas.width/4, Canvas.height/4 ).fill(
+      Quad<<Color>>(Color.YELLOW, Color.RED, Color.GREEN, Color.BLUE) )
     local color = Color.MAGENTA.with_opacity( 0.25 )
     Triangle( Canvas.at(0.5,0.1), Canvas.at(0.25,0.9), Canvas.at(0.75,0.9) ).fill( color )
 
@@ -35,8 +36,7 @@ Plasmacore.on_draw =
       #Cube.image.rotation = Degrees(22.5)
       #Cube.image.anchor = Anchor.RIGHT
       local render_mode = RenderMode.COLOR_MULTIPLIED_TEXTURED_POLYGONS
-      render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation,XYZ(1,0,0)), Anchor.RIGHT,
-        Quad<<Color>>(Color.RED,Color.ORANGE,Color.YELLOW,Color.BLACK) )
+      render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation,XYZ(1,0,0)), Anchor.RIGHT, Color.WHITE.with_opacity(0.25))
       render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation+pi,XYZ(1,0,0)), Anchor.RIGHT, Color.BLUE )
     endIf
   endFunction

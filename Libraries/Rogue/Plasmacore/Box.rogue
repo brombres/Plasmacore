@@ -3,14 +3,14 @@ uses Plasmacore
 augment Box
   METHODS
     method fill( color:Color, render_mode=RenderMode.POLYGONS:RenderMode )
-      fill( color, color, color, color, render_mode )
+      fill( Quad<<Color>>(color,color,color,color),render_mode )
 
-    method fill( color_1:Color, color_2:Color, color_3:Color, color_4:Color, render_mode=RenderMode.POLYGONS:RenderMode )
+    method fill( colors:Quad<<Color>>, render_mode=RenderMode.POLYGONS:RenderMode )
       use mode = render_mode
         mode.add_positions( position, position+size, position+size.xv )
         mode.add_positions( position, position+size.yv, position+size )
-        mode.add_colors( color_1, color_3, color_2 )
-        mode.add_colors( color_1, color_4, color_3 )
+        mode.add_colors( colors.a, colors.c, colors.b )
+        mode.add_colors( colors.a, colors.d, colors.c )
       endUse
 
       #method draw( color:Color, thickness=1:Int32 )
