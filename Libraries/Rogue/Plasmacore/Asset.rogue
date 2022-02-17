@@ -14,11 +14,14 @@ class Asset
       println "[ERROR] Cannot find asset: " + name
       return false
 
+    method description->String
+      return which{ filepath || name }
+
     method exists->Logical
       return filepath?
 
-    method to->String
-      return which{ filepath || name }
+    method to->File
+      return File( this->String )
 endClass
 
 class ImageAsset : Asset

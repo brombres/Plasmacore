@@ -80,16 +80,6 @@ class Renderer: NSObject, MTKViewDelegate
     super.init()
   }
 
-  func configure()
-  {
-    if (isConfigured) { return }
-    //if let plasmacoreView = metalKitView as? PlasmacoreView
-    //{
-      //plasmacoreView.configure()
-    //}
-    //isConfigured = metalKitView.becomeFirstResponder()
-  }
-
   private func rogueRender()->PlasmacoreMessage?
   {
     let m = PlasmacoreMessage( "Display.render" )
@@ -126,10 +116,7 @@ class Renderer: NSObject, MTKViewDelegate
   {
     Plasmacore.singleton.currentMetalDevice = device
 
-    configure()
-
     guard let q = rogueRender() else { return }
-
     guard let commandBuffer = makeCommandBuffer() else { return }
 
     while (true)
