@@ -5,13 +5,16 @@ $include "Macros.rogue"
 uses Bitmap [export]
 uses Geometry [export]
 uses Math/Matrix [export]
+uses UI [export]  # for Events
 
 $include "Plasmacore/Asset.rogue"
 $include "Plasmacore/Box.rogue"
 $include "Plasmacore/Canvas.rogue"
 $include "Plasmacore/Display.rogue"
 $include "Plasmacore/Image.rogue"
+$include "Plasmacore/iOS.rogue"
 $include "Plasmacore/Line.rogue"
+$include "Plasmacore/macOS.rogue"
 $include "Plasmacore/Messaging.rogue"
 $include "Plasmacore/ObjectTransform.rogue"
 $include "Plasmacore/ProjectionTransform.rogue"
@@ -25,13 +28,19 @@ $include "Plasmacore/ViewTransform.rogue"
 
 class Plasmacore [essential singleton]
   PROPERTIES
-    configure_handler : Function
-    draw_handler      : Function
-    update_handler    : Function
+    configure_handler     : Function
+    draw_handler          : Function
+    key_event_handler     : Function(KeyEvent)
+    pointer_event_handler : Function(PointerEvent)
+    scroll_event_handler  : Function(ScrollEvent)
+    text_event_handler    : Function(TextEvent)
+    update_handler        : Function
 
-    last_update_time  : Real64
+    last_update_time   : Real64
+    has_focused_scroll : Logical
 
     displays = Table<<Int32,Display>>()
+
 
   METHODS
     method init
@@ -39,6 +48,57 @@ class Plasmacore [essential singleton]
         function( m:Message )
           Plasmacore.configure
         endFunction
+
+      MessageManager.set_listener( "Display.on_focus_gained",
+        (m) => Keyboard.clear_pressed_keys )
+
+      MessageListener["Display.on_pointer_event"] =
+        function( m:Message )
+          m.read_int32x   # display ID
+          local type  = m.read_int32x
+          local x     = m.read_int32x
+          local y     = m.read_int32x
+          local index = m.read_int32x
+          local e = PointerEvent( type, XY(x,y), XY.zero, index )
+          if (Plasmacore.pointer_event_handler) Plasmacore.pointer_event_handler( e )
+        endFunction
+
+      MessageListener["Display.on_key_event"] =
+        function( m:Message )
+          m.read_int32x   # display ID
+          local is_press  = m.read_logical
+          local keycode   = m.read_int32x
+          local syscode   = m.read_int32x
+          local is_repeat = m.read_logical
+          if (not is_repeat) Keyboard.key_pressed[ keycode & 255 ] = is_press
+          local e = KeyEvent( keycode, syscode, is_press, is_repeat, Keyboard.modifier_key_state )
+          if (Plasmacore.key_event_handler) Plasmacore.key_event_handler( e )
+        endFunction
+
+      MessageManager.set_listener( "Display.on_scroll_event",
+        function(m:Message)
+          m.read_int32x   # display ID
+          local x = m.read_real64
+          local y = m.read_real64
+          local delta = XY( x, y )
+          local is_precise  = m.read_logical
+          local in_progress = m.read_logical
+          local is_momentum = m.read_logical
+
+          Plasmacore.has_focused_scroll = in_progress and not is_momentum
+
+          local e = ScrollEvent( delta, &=is_precise, &=in_progress, &=is_momentum, &density=Display.density )
+          if (Plasmacore.scroll_event_handler) Plasmacore.scroll_event_handler( e )
+        endFunction )
+
+      MessageManager.set_listener( "Display.on_text_event",
+        function(m:Message)
+          m.read_int32x   # display ID
+          local ch   = m.read_int32x->Character
+          local text = m.read_string
+          local e = TextEvent( ch, text )
+          if (Plasmacore.text_event_handler) Plasmacore.text_event_handler(e)
+        endFunction )
 
       MessageListener["Display.render"] =
         function( m:Message )
@@ -75,6 +135,14 @@ class Plasmacore [essential singleton]
     method set_on_configure( configure_handler )
 
     method set_on_draw( draw_handler )
+
+    method set_on_key_event( @key_event_handler )
+
+    method set_on_pointer_event( @pointer_event_handler )
+
+    method set_on_scroll_event( @scroll_event_handler )
+
+    method set_on_text_event( @text_event_handler )
 
     method set_on_update( update_handler )
 

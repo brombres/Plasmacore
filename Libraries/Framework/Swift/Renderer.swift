@@ -45,12 +45,12 @@ class Renderer: NSObject, MTKViewDelegate
 
   public let shaderLibrary : MTLLibrary?
 
-  var renderData                 : RenderData
+  var renderData     : RenderData
 
-  var isConfigured                    = false
-  var renderMode                      : RenderMode?
+  var isConfigured   = false
+  var renderMode     : RenderMode?
 
-  var depthTestLT                  : MTLDepthStencilState
+  var depthTestLT    : MTLDepthStencilState
 
   // Display state
   var display_width  = 0
@@ -83,7 +83,11 @@ class Renderer: NSObject, MTKViewDelegate
   func configure()
   {
     if (isConfigured) { return }
-    isConfigured = true
+    //if let plasmacoreView = metalKitView as? PlasmacoreView
+    //{
+      //plasmacoreView.configure()
+    //}
+    //isConfigured = metalKitView.becomeFirstResponder()
   }
 
   private func rogueRender()->PlasmacoreMessage?

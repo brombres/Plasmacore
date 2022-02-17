@@ -21,6 +21,19 @@ class Display [singleton]
     method clear( color=Color.BLACK:Color )
       canvas.clear( color )
 
+    method density->Real64
+      if (System.is_ios)
+        return iOS.display_density
+      elseIf (System.is_macos)
+        return macOS.display_density
+      else
+        local result = Message( "Display.density" ).send
+        if (not result) return 1
+        local d = result.read_real64
+        if (d == 0) d = 1
+        return d
+      endIf
+
     method render( width, height )
       Display = this  # update the Display singleton
 

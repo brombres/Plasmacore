@@ -23,6 +23,8 @@
 		30C6726727A5110700B21D55 /* PlasmacoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C6726627A5110700B21D55 /* PlasmacoreViewController.swift */; };
 		30C6726E27A5110900B21D55 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726D27A5110900B21D55 /* Assets.xcassets */; };
 		30C6727127A5110900B21D55 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 30C6726F27A5110900B21D55 /* Main.storyboard */; };
+		30E1A5B627BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30E1A5B527BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift */; };
+		30E1A5B827BD923D00C4FB7F /* Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30E1A5B727BD923D00C4FB7F /* Keyboard.swift */; };
 		30EC53AF27B4622E002138B1 /* Images in Resources */ = {isa = PBXBuildFile; fileRef = 30EC53AE27B4622E002138B1 /* Images */; };
 /* End PBXBuildFile section */
 
@@ -49,6 +51,8 @@
 		30C6726D27A5110900B21D55 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		30C6727027A5110900B21D55 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		30C6727227A5110900B21D55 /* Project_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Project_macOS.entitlements; sourceTree = "<group>"; };
+		30E1A5B527BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "PlasmacoreView-macOS.swift"; path = "../../../Libraries/Framework/Swift/PlasmacoreView-macOS.swift"; sourceTree = "<group>"; };
+		30E1A5B727BD923D00C4FB7F /* Keyboard.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Keyboard.swift; path = ../../../Libraries/Framework/Swift/Keyboard.swift; sourceTree = "<group>"; };
 		30EC53AE27B4622E002138B1 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = ../../../Assets/Images; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -66,6 +70,8 @@
 		30B494FE27A8E52000BCB47D /* Plasmacore */ = {
 			isa = PBXGroup;
 			children = (
+				30E1A5B727BD923D00C4FB7F /* Keyboard.swift */,
+				30E1A5B527BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift */,
 				309BF32C27B0CD7B00A6738B /* Matrix.swift */,
 				309BF32627AE677C00A6738B /* RenderData.swift */,
 				309BF32727AE677C00A6738B /* RenderMode.swift */,
@@ -224,9 +230,11 @@
 				30B4950727A8E57A00BCB47D /* RogueInterface.mm in Sources */,
 				30B4950927A8E57A00BCB47D /* PlasmacoreUtility.swift in Sources */,
 				309BF32427AE36F200A6738B /* Shaders.metal in Sources */,
+				30E1A5B627BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift in Sources */,
 				30C6726527A5110700B21D55 /* AppDelegate.swift in Sources */,
 				30B4950D27A8E59000BCB47D /* RogueProgram.mm in Sources */,
 				30B4950A27A8E57A00BCB47D /* PlasmacoreMessage.swift in Sources */,
+				30E1A5B827BD923D00C4FB7F /* Keyboard.swift in Sources */,
 				309BF32527AE36F200A6738B /* RenderCmd.swift in Sources */,
 				309BF32327AE36F200A6738B /* Renderer.swift in Sources */,
 				30B4950827A8E57A00BCB47D /* NativeInterface.swift in Sources */,

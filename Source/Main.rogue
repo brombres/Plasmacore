@@ -45,3 +45,5 @@ Plasmacore.on_draw =
   #@trace Plasmacore.find_asset_filepath("Assets/Images/Max.png")
   #Texture( "Images/Max.png" )
 Cube
+
+Plasmacore.on_key_event = (e)=>println e
