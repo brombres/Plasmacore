@@ -6,9 +6,12 @@ println "** Rogue **"
 class Cube [singleton]
   PROPERTIES
     rotation : Real64
-    image = Image("Max")
+    image    : Image
 
   METHODS
+    method init
+      image = Image( Bitmap(ImageAsset("Max.png")) )
+
     method update
       rotation += 0.005
 endClass
@@ -32,12 +35,13 @@ Plasmacore.on_draw =
     endForEach
 
     if (Cube.image.is_loaded)
-      Cube.image.scale = 0.1
+      Cube.image.scale = 0.25
       #Cube.image.rotation = Degrees(22.5)
       #Cube.image.anchor = Anchor.RIGHT
-      local render_mode = RenderMode.COLOR_MULTIPLIED_TEXTURED_POLYGONS
-      render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation,XYZ(1,0,0)), Anchor.RIGHT, Color.WHITE.with_opacity(0.25))
-      render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation+pi,XYZ(1,0,0)), Anchor.RIGHT, Color.BLUE )
+      Cube.image.draw( Canvas.center, Anchor.CENTER )
+      #local render_mode = RenderMode.COLOR_MULTIPLIED_TEXTURED_POLYGONS
+      #render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation,XYZ(1,0,0)), Anchor.RIGHT, Color.WHITE.with_opacity(0.25))
+      #render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation+pi,XYZ(1,0,0)), Anchor.RIGHT, Color.BLUE )
     endIf
   endFunction
 
@@ -45,14 +49,6 @@ Plasmacore.on_draw =
   #@trace Plasmacore.find_asset_filepath("Assets/Images/Max.png")
   #Texture( "Images/Max.png" )
 Cube
-
-try
-  local bitmap = Bitmap( ImageAsset("Max.png") )
-  trace bitmap.size
-catch (err:Error)
-  @trace err
-endTry
-
 
 routine abs( filepath:String )->String
   if (not filepath) return null

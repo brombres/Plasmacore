@@ -58,6 +58,18 @@ class PlasmacoreUtility
     }
   }
 
+  //class func loadBitmap( _ filepath:String )->CGImage?
+  //{
+  //  if let nsImage = NSImage( byReferencingFile:filepath )
+  //  {
+  //    if let cgImage = nsImage.cgImage( forProposedRect:nil, context:nil, hints:nil )
+  //    {
+  //      return cgImage
+  //    }
+  //  }
+  //  return nil
+  //}
+
   class func loadTexture( _ filepath:String, _ callback:@escaping MTKTextureLoader.Callback ) throws
   {
     guard let device = Plasmacore.singleton.currentMetalDevice else { throw PlasmacoreError.runtimeError("loadTexture: no device") }

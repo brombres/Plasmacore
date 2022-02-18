@@ -16,6 +16,9 @@ class Image
     attributes    : Int32
 
   GLOBAL METHODS
+    method create( bitmap:Bitmap )->Image
+      return Image( Texture(bitmap) )
+
     method create( name:String )->Image
       return TextureImage( ImageAsset(name) )
 

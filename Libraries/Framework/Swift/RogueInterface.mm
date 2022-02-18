@@ -58,8 +58,9 @@ extern "C" RogueString* Plasmacore_find_asset( RogueString* filepath )
   if (ns_filepath == nil) return 0;
   return Plasmacore_ns_string_to_rogue_string( ns_filepath );
 }
+*/
 
-RogueClassBitmap__Bitmap* Plasmacore_decode_image( RogueByte* bytes, RogueInt32 count )
+RogueClassBitmap__Bitmap* Bitmap_decode_image( RogueByte* bytes, RogueInt32 count )
 {
   NSData* data = [NSData dataWithBytesNoCopy:bytes length:count freeWhenDone:NO];
 #if defined(ROGUE_PLATFORM_IOS)
@@ -76,19 +77,26 @@ RogueClassBitmap__Bitmap* Plasmacore_decode_image( RogueByte* bytes, RogueInt32 
     RogueClassBitmap__Bitmap* bitmap = RogueBitmap__Bitmap__create__Int32_Int32( width, height );
 
     // Uses the bitmap creation function provided by the Core Graphics framework.
-    CGContextRef gc = CGBitmapContextCreate((GLubyte*)bitmap->pixels->data->as_int32s, width, height, 8, width * 4,
-                                            CGColorSpaceCreateDeviceRGB(), kCGImageAlphaPremultipliedLast );
-    CGContextDrawImage(gc, CGRectMake(0.0, 0.0, (CGFloat)width, (CGFloat)height), bitmap_image);
-    CGContextRelease(gc);
+    CGContextRef gc = CGBitmapContextCreate(
+                        (void*)bitmap->pixels->data->as_int32s, width, height, 8, width*4,
+                        CGColorSpaceCreateDeviceRGB(), kCGImageAlphaPremultipliedLast
+                      );
+    CGContextDrawImage( gc, CGRectMake(0, 0, (CGFloat)width, (CGFloat)height), bitmap_image );
+    CGContextRelease( gc );
     return bitmap;
   }
   else
   {
     return NULL;
   }
-
 }
 
+void Plasmacore_create_texture_from_bitmap( RogueInt32 texture_id, RogueByte* bytes, RogueInt32 width, RogueInt32 height )
+{
+  [NativeInterface createTextureFromBitmap:texture_id :bytes :width :height];
+}
+
+/*
 void* PlasmacoreSound_create( RogueString* filepath, bool is_music )
 {
   NSString* ns_filepath = Plasmacore_rogue_string_to_ns_string( filepath );
@@ -175,28 +183,6 @@ void PlasmacoreSound_set_volume( void* sound, double volume )
   {
     AVAudioPlayer* player = (__bridge AVAudioPlayer*) sound;
     player.volume = (float) volume;
-  }
-}
-
-
-//-----------------------------------------------------------------------------
-// Message
-//-----------------------------------------------------------------------------
-bool PlasmacoreMessage_send( RogueByte_List* bytes )
-{
-  NSData* result = [NativeInterface receiveMessage:bytes->data->as_bytes count:bytes->count];
-  if (result)
-  {
-    RogueInt32 count = (RogueInt32) result.length;
-    RogueByte_List__clear( bytes );
-    RogueByte_List__reserve__Int32( bytes, count );
-    bytes->count = count;
-    [result getBytes:bytes->data->as_bytes length:count];
-    return true;
-  }
-  else
-  {
-    return false;
   }
 }
 */

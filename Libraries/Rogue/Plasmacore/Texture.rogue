@@ -4,12 +4,18 @@ class Texture
   PROPERTIES
     id           : Int32
     asset        : ImageAsset
+    bitmap       : Bitmap
     is_loaded    = false
     image_size   : XY  # equal to or a subset of texture_size
     texture_size : XY
 
   METHODS
     method init( asset )
+      id = TextureManager.next_id
+      ++TextureManager.next_id
+      load
+
+    method init( bitmap )
       id = TextureManager.next_id
       ++TextureManager.next_id
       load
@@ -28,8 +34,10 @@ class Texture
         texture_size = XY(w,h)
         if (image_size.is_zero) image_size = texture_size
         is_loaded = true
-      else
+      elseIf (asset)
         println "Error loading $"(asset.filepath)
+      else
+        println "Error converting bitmap to texture."
       endIf
 
     method unload
@@ -59,12 +67,31 @@ class TextureManager [singleton]
     method load_pending
       if (pending_textures.count)
         forEach (texture in pending_textures)
-          if (texture.asset.confirm_exists)
-            local q = Canvas.render_queue
-            q.write( RenderCmd.LOAD_TEXTURE )
-            q.write_int32x( texture.id )
-            q.write_string( texture.asset.filepath )
-            loading_textures[ texture.id ] = texture
+          if (texture.asset)
+            if (texture.asset.confirm_exists)
+              local q = Canvas.render_queue
+              q.write( RenderCmd.LOAD_TEXTURE )
+              q.write_int32x( texture.id )
+              q.write_string( texture.asset.filepath )
+              loading_textures[ texture.id ] = texture
+            endIf
+          else
+            local id     = texture.id
+            local pixels = texture.bitmap.pixels
+            local width  = texture.bitmap.width
+            local height = texture.bitmap.height
+
+            texture.bitmap.swap_red_and_blue
+            nativeHeader
+              void Plasmacore_create_texture_from_bitmap( RogueInt32 texture_id, RogueByte* bytes,
+                  RogueInt32 width, RogueInt32 height );
+            endNativeHeader
+            native @|Plasmacore_create_texture_from_bitmap( $id, $pixels->data->as_bytes, $width, $height );
+            texture.bitmap.swap_red_and_blue
+
+            texture.texture_size = XY(width,height)
+            if (texture.image_size.is_zero) texture.image_size = texture.texture_size
+            texture.is_loaded = true
           endIf
         endForEach
         pending_textures.clear

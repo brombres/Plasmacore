@@ -5,44 +5,25 @@ augment Bitmap
   GLOBAL METHODS
     method create( asset:Asset )->Bitmap
       return Bitmap( asset->File )
+
+    method decode( bytes:Byte[] )->Bitmap
+      # Use native layer/OS PNG/JPEG decoder
+      nativeHeader
+        struct RogueClassBitmap__Bitmap;
+        RogueClassBitmap__Bitmap* Bitmap_decode_image( RogueByte* bytes, RogueInt32 count );
+      endNativeHeader
+      local bitmap = native( "Bitmap_decode_image( $bytes->data->as_bytes, $bytes->count )" )->Bitmap
+      if (not bitmap) return Bitmap(1,1).[ error=true ]
+      bitmap.swap_red_and_blue
+      bitmap.is_premultiplied_alpha = true
+      return bitmap
+
+  METHODS
+    method to_png_bytes->Byte[]
+      throw UnsupportedOperationError()
+
+    method to_jpeg_bytes( quality=75:Int32 )->Byte[]
+      throw UnsupportedOperationError()
+
 endAugment
-
-class PNGDecoder
-  METHODS
-    method decode( encoded_bytes:Byte[], dest_bitmap=null:Bitmap, &make_power_of_two )->Bitmap
-      trace "TODO", encoded_bytes.count
-      return null
-endClass
-
-
-class PNGEncoder
-  METHODS
-    method encode( bitmap:Bitmap, encoded_bytes=null:Byte[] )->Byte[]
-      trace "TODO"
-      return null
-endClass
-
-
-class JPEGDecoder
-  METHODS
-    method decode( encoded_bytes:Byte[], dest_bitmap=null:Bitmap, &make_power_of_two )->Bitmap
-      trace "TODO"
-      return null
-endClass
-
-
-class JPEGEncoder
-  METHODS
-    method encode( bitmap:Bitmap, encoded_bytes=null:Byte[], quality=75:Int32 )->Byte[]
-      trace "TODO"
-      return null
-endClass
-
-
-class BMPDecoder
-  METHODS
-    method decode( encoded_bytes:Byte[], bitmap=null:Bitmap )->Bitmap
-      trace "TODO"
-      return null
-endClass
 
