@@ -64,6 +64,9 @@ class TextureManager [singleton]
           TextureManager.on_load( m )
         endFunction
 
+    method all_textures_loaded->Logical
+      return (pending_textures.is_empty and loading_textures.is_empty)
+
     method load_pending
       if (pending_textures.count)
         forEach (texture in pending_textures)

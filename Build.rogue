@@ -1,6 +1,9 @@
 # To run this build file, install Rogue from github.com/AbePralle/Rogue then cd
 # to this folder and type "rogo" at the command line.
 
+#$ LIBRARIES(macOS) = freetype(freetype2)
+#$ LIBRARIES(Linux) = libfreetype6-dev(freetype2)
+
 routine rogo_default
   rogo_help
 endRoutine
