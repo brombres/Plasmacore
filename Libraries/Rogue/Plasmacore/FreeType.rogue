@@ -1,5 +1,8 @@
 module Plasmacore
 
+# Kerning info example:
+# https://freetype.org/freetype2/docs/tutorial/step2.html
+
 class FreeTypeFace
   DEPENDENCIES
     $if not defined(CUSTOM_BITMAP_IO)
