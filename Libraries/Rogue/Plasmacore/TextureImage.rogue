@@ -43,7 +43,7 @@ class TextureImage : Image
 
       if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
       use mode = render_mode
-        mode.texture = texture
+        mode.texture = @texture
         if (rotation)
           # Position & size are incorporated in ObjectTransform
           mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
@@ -92,7 +92,7 @@ class TextureImage : Image
 
       if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
       use mode = render_mode
-        mode.texture = texture
+        mode.texture = @texture
         mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
         mode.add_positions( XY(0,0), XY(0,1), XY(1,1) )
         mode.add_uvs( uva, uvc, uvb )
@@ -103,19 +103,22 @@ class TextureImage : Image
 
     method is_loaded->Logical
       if (prior.is_loaded) return true
-      if (not texture.is_loaded) return false
+      if (not @texture.is_loaded) return false
 
       is_loaded = true
       if (original_size == XY.zero)
-        original_size = texture.image_size
+        original_size = @texture.image_size
         size = original_size
       endIf
 
-      if (not @uv) @uv = Box(texture.uv_max)->Quad
+      if (not @uv) @uv = Box(@texture.uv_max)->Quad
 
       return true
 
     method set_uv( @uv )
+
+    method texture->Texture
+      return @texture
 
     method uv->Quad
       return @uv.value

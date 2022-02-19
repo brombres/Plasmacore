@@ -10,7 +10,8 @@ import MetalKit
 
 @objc class NativeInterface : NSObject
 {
-  @objc class func createTextureFromBitmap( _ textureID:Int, _ data:UnsafePointer<UInt8>, _ width:Int, _ height:Int )
+  @discardableResult
+  @objc class func createTexture( _ textureID:Int, _ width:Int, _ height:Int )->MTLTexture?
   {
     do
     {
@@ -21,12 +22,13 @@ import MetalKit
       if let texture = device.makeTexture( descriptor:descriptor )
       {
         Plasmacore.singleton.textures[textureID] = texture
-        texture.replace( region:MTLRegionMake2D(0,0,width,height), mipmapLevel:0, withBytes:data, bytesPerRow:width*4 )
+        return texture
       }
     }
     catch
     {
     }
+    return nil
   }
 
   @objc class func receiveMessage( _ data:UnsafePointer<UInt8>, count:Int )->NSData?
@@ -54,5 +56,35 @@ import MetalKit
       return nil
     }
   }
+
+  @objc class func updateTexture( _ textureID:Int, _ width:Int, _ height:Int, _ data:UnsafePointer<UInt8> )
+  {
+    do
+    {
+      var texture = Plasmacore.singleton.textures[textureID]
+      if (texture?.width != width || texture?.height != height)
+      {
+        texture = nil
+      }
+
+      if (texture == nil)
+      {
+        texture = createTexture( textureID, width, height )
+        if let texture = texture
+        {
+          Plasmacore.singleton.textures[textureID] = texture
+        }
+      }
+
+      if let texture = texture
+      {
+        texture.replace( region:MTLRegionMake2D(0,0,width,height), mipmapLevel:0, withBytes:data, bytesPerRow:width*4 )
+      }
+    }
+    catch
+    {
+    }
+  }
+
 }
 

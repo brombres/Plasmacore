@@ -91,11 +91,6 @@ RogueClassBitmap__Bitmap* Bitmap_decode_image( RogueByte* bytes, RogueInt32 coun
   }
 }
 
-void Plasmacore_create_texture_from_bitmap( RogueInt32 texture_id, RogueByte* bytes, RogueInt32 width, RogueInt32 height )
-{
-  [NativeInterface createTextureFromBitmap:texture_id :bytes :width :height];
-}
-
 /*
 void* PlasmacoreSound_create( RogueString* filepath, bool is_music )
 {
@@ -259,5 +254,15 @@ extern "C" void RogueInterface_set_arg_value( int index, const char* value )
   char* copy = new char[ len+1 ];
   strcpy( copy, value );
   RogueInterface_argv[ index ] = copy;
+}
+
+void Texture_create( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height )
+{
+  [NativeInterface createTexture:texture_id :width :height];
+}
+
+void Texture_update( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height, RogueByte* bytes )
+{
+  [NativeInterface updateTexture:texture_id :width :height :bytes];
 }
 

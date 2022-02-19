@@ -50,6 +50,12 @@ Plasmacore.on_draw =
   #Texture( "Images/Max.png" )
 Cube
 
+Plasmacore.on_pointer_event =
+  function (e:PointerEvent)
+    if (e.is_press)
+      Cube.image.texture.set( Bitmap(Cube.image.size,Random.color) )
+    endIf
+  endFunction
 
-local face = FreeTypeFace( "Arial.ttf", 16 )
+#local face = FreeTypeFace( "Arial.ttf", 16 )
 

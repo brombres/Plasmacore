@@ -316,6 +316,10 @@ class Renderer: NSObject, MTKViewDelegate
                 {
                   renderMode?.setTexture( texture )
                 }
+                else
+                {
+                  renderMode?.setTexture( nil )
+                }
                 continue
               default:
                 print( "[ERROR] Unexpected render queue command \(RenderCmd(rawValue:opcode)!)" )

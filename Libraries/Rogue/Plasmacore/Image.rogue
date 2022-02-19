@@ -53,6 +53,9 @@ class Image
     method set_uv( new_uv:Quad )
       throw UnsupportedOperationError()
 
+    method texture->Texture
+      throw UnsupportedOperationError()
+
     method uv->Quad
       throw UnsupportedOperationError()
 endClass

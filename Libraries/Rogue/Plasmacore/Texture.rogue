@@ -5,7 +5,9 @@ class Texture
     id           : Int32
     asset        : ImageAsset
     bitmap       : Bitmap
+
     is_loaded    = false
+
     image_size   : XY  # equal to or a subset of texture_size
     texture_size : XY
 
@@ -13,16 +15,33 @@ class Texture
     method init( asset )
       id = TextureManager.next_id
       ++TextureManager.next_id
-      load
+      load_async
 
-    method init( bitmap )
+    method init( bitmap:Bitmap )
       id = TextureManager.next_id
       ++TextureManager.next_id
-      load
+      set( bitmap )
 
-    method load
+    method load_async
       # Asynchronous load; .is_loaded set to true when complete.
       if (not is_loaded) TextureManager.pending_textures.add( this )
+
+    method load_from_bitmap
+      local pixels = bitmap.pixels
+      local width  = bitmap.width
+      local height = bitmap.height
+
+      bitmap.swap_red_and_blue
+      nativeHeader
+        void Texture_update( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height, RogueByte* bytes );
+      endNativeHeader
+
+      native @|Texture_update( $id, $width, $height, $pixels->data->as_bytes );
+      bitmap.swap_red_and_blue
+
+      texture_size = XY(width,height)
+      if (image_size.is_zero) image_size = texture_size
+      is_loaded = true
 
     method on_cleanup
       unload
@@ -38,6 +57,14 @@ class Texture
         println "Error loading $"(asset.filepath)
       else
         println "Error converting bitmap to texture."
+      endIf
+
+    method set( bitmap )
+      is_loaded = false
+      if (Plasmacore.is_rendering)
+        load_from_bitmap
+      else
+        load_async
       endIf
 
     method unload
@@ -79,22 +106,7 @@ class TextureManager [singleton]
               loading_textures[ texture.id ] = texture
             endIf
           else
-            local id     = texture.id
-            local pixels = texture.bitmap.pixels
-            local width  = texture.bitmap.width
-            local height = texture.bitmap.height
-
-            texture.bitmap.swap_red_and_blue
-            nativeHeader
-              void Plasmacore_create_texture_from_bitmap( RogueInt32 texture_id, RogueByte* bytes,
-                  RogueInt32 width, RogueInt32 height );
-            endNativeHeader
-            native @|Plasmacore_create_texture_from_bitmap( $id, $pixels->data->as_bytes, $width, $height );
-            texture.bitmap.swap_red_and_blue
-
-            texture.texture_size = XY(width,height)
-            if (texture.image_size.is_zero) texture.image_size = texture.texture_size
-            texture.is_loaded = true
+            texture.load_from_bitmap
           endIf
         endForEach
         pending_textures.clear

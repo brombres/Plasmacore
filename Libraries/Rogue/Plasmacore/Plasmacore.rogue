@@ -39,7 +39,9 @@ class Plasmacore [essential singleton]
     text_event_handler    : Function(TextEvent)
     update_handler        : Function
 
+    is_rendering       : Logical
     last_update_time   : Real64
+
     has_focused_scroll : Logical
 
     displays = Table<<Int32,Display>>()
@@ -105,15 +107,17 @@ class Plasmacore [essential singleton]
 
       MessageListener["Display.render"] =
         function( m:Message )
-          local display_id     = m.read_int32x
-          local display_width  = m.read_int32x
-          local display_height = m.read_int32x
-          local display = Plasmacore.display( display_id )
-          local reply = m.reply( &reuse=display.render_reply )
-          display.render_reply = reply
-          display.render( display_width, display_height )
-          reply.write_int32x( RenderCmd.END_RENDER )
-          reply.send
+          temporarily Plasmacore.is_rendering = true
+            local display_id     = m.read_int32x
+            local display_width  = m.read_int32x
+            local display_height = m.read_int32x
+            local display = Plasmacore.display( display_id )
+            local reply = m.reply( &reuse=display.render_reply )
+            display.render_reply = reply
+            display.render( display_width, display_height )
+            reply.write_int32x( RenderCmd.END_RENDER )
+            reply.send
+          endTemporarily
         endFunction
 
     method configure
