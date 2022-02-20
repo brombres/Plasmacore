@@ -29,20 +29,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		309BF31F27AE36F200A6738B /* Renderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Renderer.swift; path = ../../../Libraries/Framework/Swift/Renderer.swift; sourceTree = "<group>"; };
-		309BF32027AE36F200A6738B /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../../Libraries/Framework/Swift/Shaders.metal; sourceTree = "<group>"; };
-		309BF32127AE36F200A6738B /* ShaderTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ShaderTypes.h; path = ../../../Libraries/Framework/Swift/ShaderTypes.h; sourceTree = "<group>"; };
-		309BF32227AE36F200A6738B /* RenderCmd.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderCmd.swift; path = ../../../Libraries/Framework/Swift/RenderCmd.swift; sourceTree = "<group>"; };
-		309BF32627AE677C00A6738B /* RenderData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderData.swift; path = ../../../Libraries/Framework/Swift/RenderData.swift; sourceTree = "<group>"; };
-		309BF32727AE677C00A6738B /* RenderMode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderMode.swift; path = ../../../Libraries/Framework/Swift/RenderMode.swift; sourceTree = "<group>"; };
-		309BF32C27B0CD7B00A6738B /* Matrix.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Matrix.swift; path = ../../../Libraries/Framework/Swift/Matrix.swift; sourceTree = "<group>"; };
-		30B494FF27A8E54800BCB47D /* Plasmacore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Plasmacore.swift; path = ../../../Libraries/Framework/Swift/Plasmacore.swift; sourceTree = "<group>"; };
-		30B4950127A8E57A00BCB47D /* RogueInterface.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueInterface.mm; path = ../../../Libraries/Framework/Swift/RogueInterface.mm; sourceTree = "<group>"; };
-		30B4950227A8E57A00BCB47D /* NativeInterface.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = NativeInterface.swift; path = ../../../Libraries/Framework/Swift/NativeInterface.swift; sourceTree = "<group>"; };
-		30B4950327A8E57A00BCB47D /* RogueInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueInterface.h; path = ../../../Libraries/Framework/Swift/RogueInterface.h; sourceTree = "<group>"; };
-		30B4950427A8E57A00BCB47D /* BridgingHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BridgingHeader.h; path = ../../../Libraries/Framework/Swift/BridgingHeader.h; sourceTree = "<group>"; };
-		30B4950527A8E57A00BCB47D /* PlasmacoreUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreUtility.swift; path = ../../../Libraries/Framework/Swift/PlasmacoreUtility.swift; sourceTree = "<group>"; };
-		30B4950627A8E57A00BCB47D /* PlasmacoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreMessage.swift; path = ../../../Libraries/Framework/Swift/PlasmacoreMessage.swift; sourceTree = "<group>"; };
+		309BF31F27AE36F200A6738B /* Renderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Renderer.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/Renderer.swift; sourceTree = "<group>"; };
+		309BF32027AE36F200A6738B /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/Shaders.metal; sourceTree = "<group>"; };
+		309BF32127AE36F200A6738B /* ShaderTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ShaderTypes.h; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/ShaderTypes.h; sourceTree = "<group>"; };
+		309BF32227AE36F200A6738B /* RenderCmd.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderCmd.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/RenderCmd.swift; sourceTree = "<group>"; };
+		309BF32627AE677C00A6738B /* RenderData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderData.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/RenderData.swift; sourceTree = "<group>"; };
+		309BF32727AE677C00A6738B /* RenderMode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RenderMode.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/RenderMode.swift; sourceTree = "<group>"; };
+		309BF32C27B0CD7B00A6738B /* Matrix.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Matrix.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/Matrix.swift; sourceTree = "<group>"; };
+		30B494FF27A8E54800BCB47D /* Plasmacore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Plasmacore.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/Plasmacore.swift; sourceTree = "<group>"; };
+		30B4950127A8E57A00BCB47D /* RogueInterface.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueInterface.mm; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/RogueInterface.mm; sourceTree = "<group>"; };
+		30B4950227A8E57A00BCB47D /* NativeInterface.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = NativeInterface.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/NativeInterface.swift; sourceTree = "<group>"; };
+		30B4950327A8E57A00BCB47D /* RogueInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueInterface.h; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/RogueInterface.h; sourceTree = "<group>"; };
+		30B4950427A8E57A00BCB47D /* BridgingHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BridgingHeader.h; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/BridgingHeader.h; sourceTree = "<group>"; };
+		30B4950527A8E57A00BCB47D /* PlasmacoreUtility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreUtility.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/PlasmacoreUtility.swift; sourceTree = "<group>"; };
+		30B4950627A8E57A00BCB47D /* PlasmacoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PlasmacoreMessage.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/PlasmacoreMessage.swift; sourceTree = "<group>"; };
 		30B4950B27A8E59000BCB47D /* RogueProgram.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RogueProgram.mm; path = ../../../Build/macOS/Source/RogueProgram.mm; sourceTree = "<group>"; };
 		30B4950C27A8E59000BCB47D /* RogueProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueProgram.h; path = ../../../Build/macOS/Source/RogueProgram.h; sourceTree = "<group>"; };
 		30C6726127A5110700B21D55 /* Project-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Project-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -51,8 +51,8 @@
 		30C6726D27A5110900B21D55 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		30C6727027A5110900B21D55 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		30C6727227A5110900B21D55 /* Project_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Project_macOS.entitlements; sourceTree = "<group>"; };
-		30E1A5B527BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "PlasmacoreView-macOS.swift"; path = "../../../Libraries/Framework/Swift/PlasmacoreView-macOS.swift"; sourceTree = "<group>"; };
-		30E1A5B727BD923D00C4FB7F /* Keyboard.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Keyboard.swift; path = ../../../Libraries/Framework/Swift/Keyboard.swift; sourceTree = "<group>"; };
+		30E1A5B527BCAD4A00C4FB7F /* PlasmacoreView-macOS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "PlasmacoreView-macOS.swift"; path = "../../../Libraries/Plasmacore/Libraries/Framework/Swift/PlasmacoreView-macOS.swift"; sourceTree = "<group>"; };
+		30E1A5B727BD923D00C4FB7F /* Keyboard.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Keyboard.swift; path = ../../../Libraries/Plasmacore/Libraries/Framework/Swift/Keyboard.swift; sourceTree = "<group>"; };
 		30EC53AE27B4622E002138B1 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Images; path = ../../../Assets/Images; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -399,7 +399,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.plasmacore.Project-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Framework/Swift/BridgingHeader.h;
+				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Plasmacore/Libraries/Framework/Swift/BridgingHeader.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -425,7 +425,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.plasmacore.Project-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Framework/Swift/BridgingHeader.h;
+				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Plasmacore/Libraries/Framework/Swift/BridgingHeader.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
