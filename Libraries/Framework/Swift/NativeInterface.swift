@@ -81,9 +81,6 @@ import MetalKit
         texture.replace( region:MTLRegionMake2D(0,0,width,height), mipmapLevel:0, withBytes:data, bytesPerRow:width*4 )
       }
     }
-    catch
-    {
-    }
   }
 
 }

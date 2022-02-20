@@ -1,16 +1,13 @@
 # To run this build file, install Rogue from github.com/AbePralle/Rogue then cd
 # to this folder and type "rogo" at the command line.
 
-#$ LIBRARIES(macOS) = freetype(freetype2)
-#$ LIBRARIES(Linux) = libfreetype6-dev(freetype2)
-
 routine rogo_default
   rogo_help
 endRoutine
 
 routine rogo_macos
   local targets = "macOS,ObjC,Plasmacore,C++,Desktop"
-  execute "roguec Source/Main.rogue --target=$ --gc=manual --output=Build/macOS/Source/RogueProgram"(targets)
+  execute "roguec Source/Main.rogue --libraries=Libraries/Plasmacore/Libraries/Rogue --target=$ --gc=manual --output=Build/macOS/Source/RogueProgram"(targets)
 endRoutine
 
 routine execute( commands:String, error_message=null:String, &suppress_error )->Logical
