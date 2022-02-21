@@ -20,7 +20,7 @@ class Image
       return Image( Texture(bitmap) )
 
     method create( name:String )->Image
-      return TextureImage( ImageAsset(name) )
+      return TextureImage( Asset(name) )
 
     method create( texture:Texture, uv=null:Quad? )->Image
       return TextureImage( texture, uv )

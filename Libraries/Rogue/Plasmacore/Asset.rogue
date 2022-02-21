@@ -18,31 +18,9 @@ class Asset
       return which{ filepath || name }
 
     method exists->Logical
-      return filepath?
+      return filepath? and File.exists(filepath)
 
     method to->File
       return File( this->String )
-endClass
-
-class ImageAsset : Asset
-  METHODS
-    method init( name )
-      contingent
-        filepath = Plasmacore.find_asset_filepath( name )
-        sufficient (filepath?)
-        block name
-          if (not name.contains("Images/"))
-            name = "Images/" + name
-            filepath = Plasmacore.find_asset_filepath( name )
-            sufficient (filepath?)
-          endIf
-          filepath = Plasmacore.find_asset_filepath( name + ".png" )
-          sufficient (filepath?)
-          filepath = Plasmacore.find_asset_filepath( name + ".jpg" )
-          sufficient (filepath?)
-          filepath = Plasmacore.find_asset_filepath( name + ".jpeg" )
-          sufficient (filepath?)
-        endBlock
-      endContingent
 endClass
 

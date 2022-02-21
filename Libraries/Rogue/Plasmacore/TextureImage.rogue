@@ -6,7 +6,7 @@ class TextureImage : Image
     uv      : Quad?
 
   METHODS
-    method init( asset:ImageAsset )
+    method init( asset:Asset )
       init( Texture(asset) )
 
     method init( texture, uv=null )

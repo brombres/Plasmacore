@@ -3,7 +3,7 @@ module Plasmacore
 class Texture
   PROPERTIES
     id           : Int32
-    asset        : ImageAsset
+    asset        : Asset
     bitmap       : Bitmap
 
     is_loaded    = false
