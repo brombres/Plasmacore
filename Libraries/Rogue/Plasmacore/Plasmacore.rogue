@@ -38,7 +38,8 @@ class Plasmacore [essential singleton]
     text_event_handler    : Function(TextEvent)
     update_handler        : Function
 
-    is_rendering       : Logical
+    is_configured      = false
+    is_rendering       = false
     last_update_time   : Real64
 
     has_focused_scroll : Logical
@@ -48,10 +49,7 @@ class Plasmacore [essential singleton]
 
   METHODS
     method init
-      MessageListener["Application.on_launch"] =
-        function( m:Message )
-          Plasmacore.configure
-        endFunction
+      # MessageListener["Application.on_launch"] = ...
 
       MessageManager.set_listener( "Display.on_focus_gained",
         (m) => Keyboard.clear_pressed_keys )
@@ -120,6 +118,8 @@ class Plasmacore [essential singleton]
         endFunction
 
     method configure
+      if (is_configured) return
+      is_configured = true
       if (configure_handler) configure_handler()
 
     method display( id:Int32 )->Display
@@ -156,6 +156,8 @@ class Plasmacore [essential singleton]
       if (update_handler) update_handler()
 
     method update_and_draw
+      configure # only has an effect the first time
+
       local cur_time = System.time
       local update_count = ((cur_time - last_update_time) * 60 + 0.1)->Int32
       last_update_time = cur_time
