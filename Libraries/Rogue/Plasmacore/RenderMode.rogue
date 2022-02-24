@@ -12,17 +12,17 @@ class RenderMode
     SHAPE_TRIANGLES     =  3
 
   GLOBAL PROPERTIES
-    LINES             : RenderMode
-    POLYGONS          : RenderMode
-    TEXTURED_POLYGONS : RenderMode
-    COLOR_MULTIPLIED_TEXTURED_POLYGONS : RenderMode
+    LINES                  : RenderMode
+    SOLID_FILL             : RenderMode
+    ALPHA_TEXTURE          : RenderMode
+    ALPHA_TEXTURE_MULTIPLY : RenderMode
 
   GLOBAL METHODS
-    method COLOR_MULTIPLIED_TEXTURED_POLYGONS->RenderMode
-      if (@COLOR_MULTIPLIED_TEXTURED_POLYGONS) return @COLOR_MULTIPLIED_TEXTURED_POLYGONS
-      COLOR_MULTIPLIED_TEXTURED_POLYGONS = RenderMode( "colorMultipliedTexturedVertexShader",
+    method ALPHA_TEXTURE_MULTIPLY->RenderMode
+      if (@ALPHA_TEXTURE_MULTIPLY) return @ALPHA_TEXTURE_MULTIPLY
+      ALPHA_TEXTURE_MULTIPLY = RenderMode( "colorMultipliedTexturedVertexShader",
           "colorMultipliedTexturedFragmentShader", RenderMode.BLEND_ONE )
-      return @COLOR_MULTIPLIED_TEXTURED_POLYGONS
+      return @ALPHA_TEXTURE_MULTIPLY
 
     method LINES->RenderMode
       if (@LINES) return @LINES
@@ -30,15 +30,15 @@ class RenderMode
       @LINES.shape = SHAPE_LINES
       return @LINES
 
-    method POLYGONS->RenderMode
-      if (@POLYGONS) return @POLYGONS
-      POLYGONS = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
-      return @POLYGONS
+    method SOLID_FILL->RenderMode
+      if (@SOLID_FILL) return @SOLID_FILL
+      SOLID_FILL = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
+      return @SOLID_FILL
 
-    method TEXTURED_POLYGONS->RenderMode
-      if (@TEXTURED_POLYGONS) return @TEXTURED_POLYGONS
-      TEXTURED_POLYGONS = RenderMode( "texturedVertexShader", "texturedFragmentShader", RenderMode.BLEND_ONE )
-      return @TEXTURED_POLYGONS
+    method ALPHA_TEXTURE->RenderMode
+      if (@ALPHA_TEXTURE) return @ALPHA_TEXTURE
+      ALPHA_TEXTURE = RenderMode( "texturedVertexShader", "texturedFragmentShader", RenderMode.BLEND_ONE )
+      return @ALPHA_TEXTURE
 
   PROPERTIES
     id                   : Int32

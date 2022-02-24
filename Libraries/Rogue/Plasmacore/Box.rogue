@@ -2,10 +2,10 @@ uses Plasmacore
 
 augment Box
   METHODS
-    method fill( color:Color, render_mode=RenderMode.POLYGONS:RenderMode )
+    method fill( color:Color, render_mode=RenderMode.SOLID_FILL:RenderMode )
       fill( Quad<<Color>>(color,color,color,color),render_mode )
 
-    method fill( colors:Quad<<Color>>, render_mode=RenderMode.POLYGONS:RenderMode )
+    method fill( colors:Quad<<Color>>, render_mode=RenderMode.SOLID_FILL:RenderMode )
       use mode = render_mode
         mode.add_positions( position, position+size, position+size.xv )
         mode.add_positions( position, position+size.yv, position+size )

@@ -38,7 +38,7 @@ Plasmacore.on_draw =
       #Cube.image.rotation = Degrees(22.5)
       #Cube.image.anchor = Anchor.RIGHT
       Cube.image.draw( Canvas.center, Anchor.CENTER )
-      #local render_mode = RenderMode.COLOR_MULTIPLIED_TEXTURED_POLYGONS
+      #local render_mode = RenderMode.ALPHA_TEXTURE_MULTIPLY
       #render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation,XYZ(1,0,0)), Anchor.RIGHT, Color.WHITE.with_opacity(0.25))
       #render_mode.draw( Cube.image, Canvas.center, Matrix.rotate(Cube.rotation+pi,XYZ(1,0,0)), Anchor.RIGHT, Color.BLUE )
     endIf

@@ -41,7 +41,7 @@ class TextureImage : Image
         swapValues( uvb, uvd )
       endIf
 
-      if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
+      if (render_mode is null) render_mode = RenderMode.ALPHA_TEXTURE
       use mode = render_mode
         mode.texture = @texture
         if (rotation)
@@ -90,7 +90,7 @@ class TextureImage : Image
         swapValues( uvb, uvd )
       endIf
 
-      if (render_mode is null) render_mode = RenderMode.TEXTURED_POLYGONS
+      if (render_mode is null) render_mode = RenderMode.ALPHA_TEXTURE
       use mode = render_mode
         mode.texture = @texture
         mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
