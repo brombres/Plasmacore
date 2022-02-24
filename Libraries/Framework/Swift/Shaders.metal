@@ -36,7 +36,7 @@ typedef struct
 //------------------------------------------------------------------------------
 // Solid Color Shaders
 //------------------------------------------------------------------------------
-vertex TransformedVertex coloredVertexShader( Vertex in [[stage_in]],
+vertex TransformedVertex solidFillVertexShader( Vertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]] )
 {
   TransformedVertex out;
@@ -48,7 +48,7 @@ vertex TransformedVertex coloredVertexShader( Vertex in [[stage_in]],
   return out;
 }
 
-fragment float4 coloredFragmentShader(
+fragment float4 solidFillFragmentShader(
     TransformedVertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
     sampler samplr [[sampler(0)]]
@@ -60,7 +60,7 @@ fragment float4 coloredFragmentShader(
 //------------------------------------------------------------------------------
 // Texture Shaders
 //------------------------------------------------------------------------------
-vertex TransformedVertex texturedVertexShader(Vertex in [[stage_in]],
+vertex TransformedVertex alphaTextureVertexShader(Vertex in [[stage_in]],
                                constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
 {
     TransformedVertex out;
@@ -72,7 +72,7 @@ vertex TransformedVertex texturedVertexShader(Vertex in [[stage_in]],
     return out;
 }
 
-fragment float4 texturedFragmentShader(
+fragment float4 alphaTextureFragmentShader(
     TransformedVertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
     texture2d<half> colorMap     [[ texture(TextureStageColor) ]],
@@ -87,7 +87,7 @@ fragment float4 texturedFragmentShader(
 //------------------------------------------------------------------------------
 // Color Multiplied Textured Shaders
 //------------------------------------------------------------------------------
-vertex TransformedVertex colorMultipliedTexturedVertexShader(Vertex in [[stage_in]],
+vertex TransformedVertex alphaTextureMultiplyVertexShader(Vertex in [[stage_in]],
                                constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]])
 {
     TransformedVertex out;
@@ -100,7 +100,7 @@ vertex TransformedVertex colorMultipliedTexturedVertexShader(Vertex in [[stage_i
     return out;
 }
 
-fragment float4 colorMultipliedTexturedFragmentShader(
+fragment float4 alphaTextureMultiplyFragmentShader(
     TransformedVertex in [[stage_in]],
     constant Constants & constants [[ buffer(VertexBufferIndexConstants) ]],
     texture2d<half> colorMap     [[ texture(TextureStageColor) ]],

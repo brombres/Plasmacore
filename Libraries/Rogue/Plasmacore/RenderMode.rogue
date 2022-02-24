@@ -20,24 +20,24 @@ class RenderMode
   GLOBAL METHODS
     method ALPHA_TEXTURE_MULTIPLY->RenderMode
       if (@ALPHA_TEXTURE_MULTIPLY) return @ALPHA_TEXTURE_MULTIPLY
-      ALPHA_TEXTURE_MULTIPLY = RenderMode( "colorMultipliedTexturedVertexShader",
-          "colorMultipliedTexturedFragmentShader", RenderMode.BLEND_ONE )
+      ALPHA_TEXTURE_MULTIPLY = RenderMode( "alphaTextureMultiplyVertexShader",
+          "alphaTextureMultiplyFragmentShader", RenderMode.BLEND_ONE )
       return @ALPHA_TEXTURE_MULTIPLY
 
     method LINES->RenderMode
       if (@LINES) return @LINES
-      LINES = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
+      LINES = RenderMode( "solidFillVertexShader", "solidFillFragmentShader", RenderMode.BLEND_ALPHA )
       @LINES.shape = SHAPE_LINES
       return @LINES
 
     method SOLID_FILL->RenderMode
       if (@SOLID_FILL) return @SOLID_FILL
-      SOLID_FILL = RenderMode( "coloredVertexShader", "coloredFragmentShader", RenderMode.BLEND_ALPHA )
+      SOLID_FILL = RenderMode( "solidFillVertexShader", "solidFillFragmentShader", RenderMode.BLEND_ALPHA )
       return @SOLID_FILL
 
     method ALPHA_TEXTURE->RenderMode
       if (@ALPHA_TEXTURE) return @ALPHA_TEXTURE
-      ALPHA_TEXTURE = RenderMode( "texturedVertexShader", "texturedFragmentShader", RenderMode.BLEND_ONE )
+      ALPHA_TEXTURE = RenderMode( "alphaTextureVertexShader", "alphaTextureFragmentShader", RenderMode.BLEND_ONE )
       return @ALPHA_TEXTURE
 
   PROPERTIES
