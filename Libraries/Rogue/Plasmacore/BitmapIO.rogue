@@ -22,6 +22,7 @@ augment Bitmap
     method to_png_bytes->Byte[]
       nativeHeader
         struct RogueByte_List;
+        struct RogueClassBitmap__Bitmap;
         bool Bitmap_to_png_bytes( RogueClassBitmap__Bitmap* bitmap, RogueByte_List* bytes );
       endNativeHeader
 
@@ -42,6 +43,7 @@ augment Bitmap
     method to_jpeg_bytes( quality=75:Int32 )->Byte[]
       nativeHeader
         struct RogueByte_List;
+        struct RogueClassBitmap__Bitmap;
         bool Bitmap_to_jpeg_bytes( RogueClassBitmap__Bitmap* bitmap, RogueByte_List* bytes );
       endNativeHeader
 
