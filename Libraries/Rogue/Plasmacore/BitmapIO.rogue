@@ -20,10 +20,39 @@ augment Bitmap
 
   METHODS
     method to_png_bytes->Byte[]
-      throw UnsupportedOperationError()
+      nativeHeader
+        struct RogueByte_List;
+        bool Bitmap_to_png_bytes( RogueClassBitmap__Bitmap* bitmap, RogueByte_List* bytes );
+      endNativeHeader
+
+      # macOS (and iOS?) only works with bitmaps that have premultiplied alpha - it
+      # unmultiplies them as it creates the output bytes. If we're not already premultiplied
+      # we'll clone a copy of this bitmap to avoid the integer division rounding errors
+      # that would result from premultiply > unmultiply
+      local bitmap = which{ is_premultiplied_alpha:this || cloned }
+      bitmap.premultiply_alpha
+      bitmap.swap_red_and_blue
+
+      local result = Byte[]
+      native @|Bitmap_to_png_bytes( $bitmap, $result );
+
+      bitmap.swap_red_and_blue
+      return result
 
     method to_jpeg_bytes( quality=75:Int32 )->Byte[]
-      throw UnsupportedOperationError()
+      nativeHeader
+        struct RogueByte_List;
+        bool Bitmap_to_jpeg_bytes( RogueClassBitmap__Bitmap* bitmap, RogueByte_List* bytes );
+      endNativeHeader
+
+      swap_red_and_blue
+
+      local result = Byte[]
+      native @|Bitmap_to_jpeg_bytes( $this, $result );
+
+      swap_red_and_blue
+      return result
+
 
 endAugment
 

@@ -31,6 +31,44 @@ import MetalKit
     return nil
   }
 
+  @objc class func graphicsContextToJPEGBytes( _ context:CGContext )->Data?
+  {
+    if let image = context.makeImage()
+    {
+      if let cfData = CFDataCreateMutable( nil, 0 )
+      {
+        if let destination = CGImageDestinationCreateWithData( cfData, kUTTypeJPEG as CFString, 1, nil )
+        {
+          CGImageDestinationAddImage( destination, image, nil )
+          if CGImageDestinationFinalize( destination )
+          {
+            return cfData as Data
+          }
+        }
+      }
+    }
+    return nil
+  }
+
+  @objc class func graphicsContextToPNGBytes( _ context:CGContext )->Data?
+  {
+    if let image = context.makeImage()
+    {
+      if let cfData = CFDataCreateMutable( nil, 0 )
+      {
+        if let destination = CGImageDestinationCreateWithData( cfData, kUTTypePNG as CFString, 1, nil )
+        {
+          CGImageDestinationAddImage( destination, image, nil )
+          if CGImageDestinationFinalize( destination )
+          {
+            return cfData as Data
+          }
+        }
+      }
+    }
+    return nil
+  }
+
   @objc class func receiveMessage( _ data:UnsafePointer<UInt8>, count:Int )->NSData?
   {
     let m = PlasmacoreMessage( data:Array(UnsafeBufferPointer(start:data,count:count)) )

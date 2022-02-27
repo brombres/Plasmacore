@@ -22,6 +22,136 @@ using namespace std;
 static int          RogueInterface_argc = 0;
 static const char** RogueInterface_argv = {0};
 
+//-----------------------------------------------------------------------------
+// RogueInterface
+// Swift <-> Rogue Helpers
+//
+// NativeInterface_* calls Swift from Rogue
+// RogueInterface_*  calls Rogue from Swift
+//-----------------------------------------------------------------------------
+extern "C" void RogueInterface_configure()
+{
+  Rogue_configure( RogueInterface_argc, RogueInterface_argv );
+}
+
+extern "C" void RogueInterface_launch()
+{
+  Rogue_launch();
+}
+
+extern "C" void RogueInterface_collect_garbage()
+{
+  Rogue_collect_garbage();
+}
+
+bool NativeInterface_send_message( RogueByte_List* bytes )
+{
+  NSData* result = [NativeInterface receiveMessage:bytes->data->as_bytes count:bytes->count];
+  if (result)
+  {
+    RogueInt32 count = (RogueInt32) result.length;
+    RogueByte_List__clear( bytes );
+    RogueByte_List__reserve__Int32( bytes, count );
+    bytes->count = count;
+    [result getBytes:bytes->data->as_bytes length:count];
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+extern "C" NSData* RogueInterface_send_message( const unsigned char* data, int count )
+{
+  RogueClassPlasmacore__MessageManager* mm =
+    (RogueClassPlasmacore__MessageManager*) ROGUE_SINGLETON(Plasmacore__MessageManager);
+  RogueClassPlasmacore__Message* m = RoguePlasmacore__MessageManager__message( mm );
+  RogueByte_List* list = m->data;
+  RogueByte_List__reserve__Int32( list, count );
+  memcpy( list->data->as_bytes, data, count );
+  list->count = count;
+  RoguePlasmacore__Message__init_from_data( m );
+
+  RogueByte_List* response_data = RoguePlasmacore__MessageManager__receive_message__Plasmacore__Message( mm, m );
+  if (response_data)
+  {
+    return [[NSData alloc] initWithBytes:response_data->data->as_bytes length:response_data->count];
+  }
+  else
+  {
+    return nil;
+  }
+}
+
+extern "C" void RogueInterface_set_arg_count( int count )
+{
+  RogueInterface_argc = count;
+  RogueInterface_argv = new const char*[ count+1 ];
+  memset( RogueInterface_argv, 0, sizeof(const char*) * (count+1) );
+}
+
+extern "C" void RogueInterface_set_arg_value( int index, const char* value )
+{
+  size_t len = strlen( value );
+  char* copy = new char[ len+1 ];
+  strcpy( copy, value );
+  RogueInterface_argv[ index ] = copy;
+}
+
+bool Bitmap_to_jpeg_bytes( RogueClassBitmap__Bitmap* bitmap, RogueByte_List* bytes )
+{
+  CGContextRef gc = CGBitmapContextCreate(
+    (void*)bitmap->pixels->data->as_int32s, bitmap->width, bitmap->height, 8, bitmap->width*4,
+    CGColorSpaceCreateDeviceRGB(), kCGImageAlphaPremultipliedLast
+  );
+
+  NSData* jpeg_data = [NativeInterface graphicsContextToJPEGBytes:gc];
+
+  CGContextRelease( gc );
+
+  if (!jpeg_data) return false;
+
+  RogueInt32 count = (RogueInt32)jpeg_data.length;
+  bytes->count = count;
+  RogueByte_List__reserve__Int32( bytes, count );
+  [jpeg_data getBytes:bytes->data->as_bytes length:count];
+
+  return true;
+}
+
+bool Bitmap_to_png_bytes( RogueClassBitmap__Bitmap* bitmap, RogueByte_List* bytes )
+{
+  CGContextRef gc = CGBitmapContextCreate(
+    (void*)bitmap->pixels->data->as_int32s, bitmap->width, bitmap->height, 8, bitmap->width*4,
+    CGColorSpaceCreateDeviceRGB(), kCGImageAlphaPremultipliedLast
+  );
+
+  NSData* png_data = [NativeInterface graphicsContextToPNGBytes:gc];
+
+  CGContextRelease( gc );
+
+  if (!png_data) return false;
+
+  RogueInt32 count = (RogueInt32)png_data.length;
+  bytes->count = count;
+  RogueByte_List__reserve__Int32( bytes, count );
+  [png_data getBytes:bytes->data->as_bytes length:count];
+
+  return true;
+}
+
+void Texture_create( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height )
+{
+  [NativeInterface createTexture:texture_id :width :height];
+}
+
+void Texture_update( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height, RogueByte* bytes )
+{
+  [NativeInterface updateTexture:texture_id :width :height :bytes];
+}
+
+
 /*
 NSString* Plasmacore_rogue_string_to_ns_string( RogueString* st )
 {
@@ -181,88 +311,4 @@ void PlasmacoreSound_set_volume( void* sound, double volume )
   }
 }
 */
-
-//-----------------------------------------------------------------------------
-// RogueInterface
-// Swift -> Rogue Helpers
-//-----------------------------------------------------------------------------
-extern "C" void RogueInterface_configure()
-{
-  Rogue_configure( RogueInterface_argc, RogueInterface_argv );
-}
-
-extern "C" void RogueInterface_launch()
-{
-  Rogue_launch();
-}
-
-extern "C" void RogueInterface_collect_garbage()
-{
-  Rogue_collect_garbage();
-}
-
-bool NativeInterface_send_message( RogueByte_List* bytes )
-{
-  NSData* result = [NativeInterface receiveMessage:bytes->data->as_bytes count:bytes->count];
-  if (result)
-  {
-    RogueInt32 count = (RogueInt32) result.length;
-    RogueByte_List__clear( bytes );
-    RogueByte_List__reserve__Int32( bytes, count );
-    bytes->count = count;
-    [result getBytes:bytes->data->as_bytes length:count];
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-
-extern "C" NSData* RogueInterface_send_message( const unsigned char* data, int count )
-{
-  RogueClassPlasmacore__MessageManager* mm =
-    (RogueClassPlasmacore__MessageManager*) ROGUE_SINGLETON(Plasmacore__MessageManager);
-  RogueClassPlasmacore__Message* m = RoguePlasmacore__MessageManager__message( mm );
-  RogueByte_List* list = m->data;
-  RogueByte_List__reserve__Int32( list, count );
-  memcpy( list->data->as_bytes, data, count );
-  list->count = count;
-  RoguePlasmacore__Message__init_from_data( m );
-
-  RogueByte_List* response_data = RoguePlasmacore__MessageManager__receive_message__Plasmacore__Message( mm, m );
-  if (response_data)
-  {
-    return [[NSData alloc] initWithBytes:response_data->data->as_bytes length:response_data->count];
-  }
-  else
-  {
-    return nil;
-  }
-}
-
-extern "C" void RogueInterface_set_arg_count( int count )
-{
-  RogueInterface_argc = count;
-  RogueInterface_argv = new const char*[ count+1 ];
-  memset( RogueInterface_argv, 0, sizeof(const char*) * (count+1) );
-}
-
-extern "C" void RogueInterface_set_arg_value( int index, const char* value )
-{
-  size_t len = strlen( value );
-  char* copy = new char[ len+1 ];
-  strcpy( copy, value );
-  RogueInterface_argv[ index ] = copy;
-}
-
-void Texture_create( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height )
-{
-  [NativeInterface createTexture:texture_id :width :height];
-}
-
-void Texture_update( RogueInt32 texture_id, RogueInt32 width, RogueInt32 height, RogueByte* bytes )
-{
-  [NativeInterface updateTexture:texture_id :width :height :bytes];
-}
 
