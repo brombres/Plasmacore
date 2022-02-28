@@ -117,6 +117,7 @@ class RenderData
 
   func bindColorBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ firstIndex:Int, _ index:Int )
   {
+    if (firstIndex == colorCount) { addColor( 0 ); }
     let offset = (colorCapacity * frame + firstIndex) * sizeOfFloat
     renderEncoder.setVertexBuffer( colorBuffer, offset:offset, index:index )
   }
@@ -136,6 +137,7 @@ class RenderData
 
   func bindUVBuffer( _ renderEncoder:MTLRenderCommandEncoder, _ firstIndex:Int, _ index:Int )
   {
+    if (firstIndex == uvCount) { addUV(0,0) }
     let offset = (uvCapacity * frame + firstIndex) * sizeOfFloat
     renderEncoder.setVertexBuffer( uvBuffer, offset:offset, index:index )
   }
