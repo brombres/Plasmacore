@@ -99,6 +99,9 @@ class Image( texture:Texture, size:XY?, uv:Quad? ) [compound]
         ObjectTransform.pop
       endIf
 
+    method height->Int32
+      return size.y
+
     method is_loaded->Logical
       return (texture.is_loaded)
 
@@ -109,5 +112,8 @@ class Image( texture:Texture, size:XY?, uv:Quad? ) [compound]
     method uv->Quad
       if (@uv) return @uv.value
       return texture.uv->Quad
+
+    method width->Int32
+      return size.x
 endClass
 
