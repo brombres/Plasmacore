@@ -25,7 +25,6 @@ $include "Plasmacore/RenderMode.rogue"
 $include "Plasmacore/RenderQueue.rogue"
 $include "Plasmacore/Style.rogue"
 $include "Plasmacore/Texture.rogue"
-$include "Plasmacore/TextureImage.rogue"
 $include "Plasmacore/Triangle.rogue"
 $include "Plasmacore/ViewTransform.rogue"
 
