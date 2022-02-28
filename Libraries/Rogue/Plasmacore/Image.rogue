@@ -1,6 +1,6 @@
 module Plasmacore
 
-class Image( texture:Texture, size=null:XY?, uv=null:Quad? ) [compound]
+class Image( texture:Texture, size:XY?, uv:Quad? ) [compound]
   GLOBAL METHODS
     method create( asset:Asset )->Image
       return Image( Texture(asset) )
@@ -8,8 +8,25 @@ class Image( texture:Texture, size=null:XY?, uv=null:Quad? ) [compound]
     method create( bitmap:Bitmap )->Image
       return Image( Texture(bitmap), bitmap.size, Box(1,1)->Quad )
 
+    method create( other:Image, bounds:Box )->Image
+      return Image( other.texture, bounds )
+
+    method create( texture:Texture, bounds=null:Box? )->Image
+      if (bounds)
+        local size = bounds.value.size
+        local uv   : Quad?
+        if (not texture.texture_size.is_zero)
+          local uv1 = bounds.value.position / texture.texture_size
+          local uv2 = (bounds.value.position + bounds.value.size) / texture.texture_size
+          uv = Box( uv1, uv2-uv1 )->Quad
+        endIf
+        return Image( texture, size, uv )
+      else
+        return Image( texture, null, null )
+      endIf
+
   METHODS
-    method draw( position:XY, style:Style )
+    method draw( position:XY, style=Style():Style )
       if (not texture.is_loaded)
         println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
       endIf

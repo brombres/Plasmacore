@@ -12,9 +12,10 @@ class Texture
     texture_size : XY
 
   METHODS
-    method init( asset )
+    method init( asset, texture_size=XY(0,0):XY )
       id = TextureManager.next_id
       ++TextureManager.next_id
+      image_size = texture_size
       load_async
 
     method init( bitmap:Bitmap )
