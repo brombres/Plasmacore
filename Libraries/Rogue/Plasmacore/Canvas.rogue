@@ -34,8 +34,8 @@ class Canvas [singleton]
     method bounds->Box
       return Box( width, height )
 
-    method center->XY [macro]
-      return size/2
+    method center->XY
+      return this.size/2
 
     method clear( color=Color.BLACK:Color )
       render_queue.clear_color = color
