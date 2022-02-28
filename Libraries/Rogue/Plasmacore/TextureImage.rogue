@@ -11,7 +11,7 @@ class TextureImage : Image
 
     method init( texture, uv=null )
 
-    method draw( position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
+    method draw( position:XY, style:Style )
       if (not is_loaded)
         println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
       endIf
@@ -20,10 +20,17 @@ class TextureImage : Image
       endIf
 
       localize size
-      if (rotation)
-        ObjectTransform.push( Matrix.transform(XYZ(position,0), size, anchor, rotation.value) )
+      local has_transform = style.transform or style.rotate.value
+
+      if (style.transform)
+        local m = Matrix.translate( position )
+        m *= style.transform.value
+        m *= Matrix.transform( XYZ(size,1), style.anchor )
+        ObjectTransform.push( m )
+      elseIf (style.rotate.value)
+        ObjectTransform.push( Matrix.transform(XYZ(position,0), size, style.anchor, style.rotate.value) )
       else
-        position -= size * anchor.position
+        position -= size * style.anchor.position
       endIf
 
       localize uv
@@ -32,19 +39,27 @@ class TextureImage : Image
       local uvc = uv.c
       local uvd = uv.d
 
-      if (hflip)
+      if (style.hflip)
         swapValues( uva, uvb )
         swapValues( uvc, uvd )
       endIf
-      if (vflip)
+      if (style.vflip)
         swapValues( uva, uvc )
         swapValues( uvb, uvd )
       endIf
 
-      if (render_mode is null) render_mode = RenderMode.ALPHA_TEXTURE
+      local render_mode = style.render_mode
+      if (render_mode is null)
+        if (style.has_color or style.has_colors)
+          render_mode = RenderMode.ALPHA_TEXTURE_MULTIPLY
+        else
+          render_mode = RenderMode.ALPHA_TEXTURE
+        endIf
+      endIf
+
       use mode = render_mode
         mode.texture = @texture
-        if (rotation)
+        if (has_transform)
           # Position & size are incorporated in ObjectTransform
           mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
           mode.add_positions( XY(0,0), XY(0,1), XY(1,1) )
@@ -54,52 +69,23 @@ class TextureImage : Image
         endIf
         mode.add_uvs( uva, uvc, uvb )
         mode.add_uvs( uva, uvd, uvc )
-        mode.colors.add( Color.RED )
-        mode.colors.add( Color.RED )
-        mode.colors.add( Color.RED )
-        mode.colors.add( Color.RED )
+        if (style.has_colors)
+          local colors = style.colors
+          mode.colors.add( colors.a )
+          mode.colors.add( colors.c )
+          mode.colors.add( colors.b )
+          mode.colors.add( colors.a )
+          mode.colors.add( colors.d )
+          mode.colors.add( colors.c )
+        elseIf (style.has_color)
+          local color = style.color
+          loop (6) mode.colors.add( color )
+        endIf
       endUse
 
-      if (rotation) ObjectTransform.pop
-
-    method draw( position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, render_mode=null:RenderMode )
-      if (not is_loaded)
-        println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
+      if (has_transform)
+        ObjectTransform.pop
       endIf
-      if (not @uv)
-        println "[Plasmacore] Image uv coordinates are undefined."
-      endIf
-
-      local m = Matrix.translate( position )
-      m *= rotation
-      m *= Matrix.transform( XYZ(size,1), anchor )
-      ObjectTransform.push( m )
-
-      localize uv
-      local uva = uv.a
-      local uvb = uv.b
-      local uvc = uv.c
-      local uvd = uv.d
-
-      if (hflip)
-        swapValues( uva, uvb )
-        swapValues( uvc, uvd )
-      endIf
-      if (vflip)
-        swapValues( uva, uvc )
-        swapValues( uvb, uvd )
-      endIf
-
-      if (render_mode is null) render_mode = RenderMode.ALPHA_TEXTURE
-      use mode = render_mode
-        mode.texture = @texture
-        mode.add_positions( XY(0,0), XY(1,1), XY(1,0) )
-        mode.add_positions( XY(0,0), XY(0,1), XY(1,1) )
-        mode.add_uvs( uva, uvc, uvb )
-        mode.add_uvs( uva, uvd, uvc )
-      endUse
-
-      ObjectTransform.pop
 
     method is_loaded->Logical
       if (prior.is_loaded) return true

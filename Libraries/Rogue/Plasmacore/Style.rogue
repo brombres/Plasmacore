@@ -1,0 +1,30 @@
+module Plasmacore
+
+class Style( anchor=Anchor.CENTER:Anchor, color=null:Color?, colors=null:Quad<<Color>>?, opacity=1.0:Real64,
+             render_mode=null:RenderMode, rotate=Radians(0):Radians, transform=null:Matrix?,
+             &hflip, &vflip ) [compound]
+  METHODS
+    method has_color->Logical
+      return @color.exists or opacity < 1
+
+    method has_colors->Logical
+      return @colors.exists
+
+    method color->Color
+      if (not @color.exists) return Color.WHITE.with_opacity(opacity)
+      elseIf (opacity == 1)  return @color.value
+      else                   return @color.value.with_opacity(opacity)
+
+    method colors->Quad<<Color>>
+      if (opacity == 1)
+        return @colors.value
+      else
+        return Quad<<Color>>(
+          @colors.value.a.with_opacity(opacity),
+          @colors.value.b.with_opacity(opacity),
+          @colors.value.c.with_opacity(opacity),
+          @colors.value.d.with_opacity(opacity)
+        )
+      endIf
+endClass
+

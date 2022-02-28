@@ -154,40 +154,6 @@ class RenderMode
         uvs.clear
       endIf
 
-    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, color=null:Color? )
-      if (color)
-        loop (6) colors.add( color.value )
-      endIf
-      image.draw( position, rotation, anchor, this )
-
-    method draw( image:Image, position:XY, rotation=null:Radians?, anchor=Anchor.CENTER:Anchor, colors=null:Quad<<Color>>? )
-      if (colors)
-        this.colors.add( colors.value.a )
-        this.colors.add( colors.value.c )
-        this.colors.add( colors.value.b )
-        this.colors.add( colors.value.a )
-        this.colors.add( colors.value.d )
-        this.colors.add( colors.value.c )
-      endIf
-      image.draw( position, rotation, anchor, this )
-
-    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, color=null:Color? )
-      if (color)
-        loop (6) colors.add( color.value )
-      endIf
-      image.draw( position, rotation, anchor, this )
-
-    method draw( image:Image, position:XY, rotation:Matrix, anchor=Anchor.CENTER:Anchor, colors=null:Quad<<Color>>? )
-      if (colors)
-        this.colors.add( colors.value.a )
-        this.colors.add( colors.value.c )
-        this.colors.add( colors.value.b )
-        this.colors.add( colors.value.a )
-        this.colors.add( colors.value.d )
-        this.colors.add( colors.value.c )
-      endIf
-      image.draw( position, rotation, anchor, this )
-
     method mark_modified
       if (is_modified) return
       is_modified = true
