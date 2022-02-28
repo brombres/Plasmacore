@@ -1,6 +1,7 @@
 module Plasmacore
 
-class Style( anchor=Anchor.CENTER:Anchor, color=null:Color?, colors=null:Quad<<Color>>?, opacity=1.0:Real64,
+class Style( anchor=Anchor.CENTER:Anchor, scale=XY(1,1):XY,
+             color=null:Color?, colors=null:Quad<<Color>>?, opacity=1.0:Real64,
              render_mode=null:RenderMode, rotate=Radians(0):Radians, transform=null:Matrix?,
              &hflip, &vflip ) [compound]
   METHODS

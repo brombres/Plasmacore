@@ -1,34 +1,20 @@
 module Plasmacore
 
-class Image
-  PROPERTIES
-    size          : XY
-    original_size : XY
-    attributes    : Int32
-    texture       : Texture
-    uv            : Quad?
+class Image( texture:Texture, size=null:XY?, uv=null:Quad? ) [compound]
+  GLOBAL METHODS
+    method create( asset:Asset )->Image
+      return Image( Texture(asset) )
+
+    method create( bitmap:Bitmap )->Image
+      return Image( Texture(bitmap), bitmap.size, Box(1,1)->Quad )
 
   METHODS
-    method init( asset:Asset )
-      init( Texture(asset) )
-
-    method init( bitmap:Bitmap )
-      init( Texture(bitmap) )
-
-    method init( name:String )
-      init( Asset(name) )
-
-    method init( texture, uv=null )
-
     method draw( position:XY, style:Style )
-      if (not is_loaded)
+      if (not texture.is_loaded)
         println "[Plasmacore] Image has not finished loading - check .is_loaded before drawing."
       endIf
-      if (not @uv)
-        println "[Plasmacore] Image uv coordinates are undefined."
-      endIf
 
-      localize size
+      local size = size * style.scale
       local has_transform = style.transform or style.rotate.value
 
       if (style.transform)
@@ -97,37 +83,14 @@ class Image
       endIf
 
     method is_loaded->Logical
-      if (not @texture.is_loaded) return false
+      return (texture.is_loaded)
 
-      if (original_size == XY.zero)
-        original_size = @texture.image_size
-        size = original_size
-      endIf
-
-      if (not @uv) @uv = Box(@texture.uv_max)->Quad
-      return true
-
-    method scale->XY
-      return size / original_size
-
-    method scale_to_fill( size:XY )
-      scale = (size / original_size).max
-
-    method scale_to_fit( size:XY )
-      scale = (size / original_size).min
-
-    method set_scale( scale:XY )
-      size = scale * original_size
-
-    method set_scale( s:Real64 )
-      size = s * original_size
-
-    method set_uv( @uv )
-
-    method texture->Texture
-      return @texture
+    method size->XY
+      if (@size) return @size.value
+      return texture.size
 
     method uv->Quad
-      return @uv.value
+      if (@uv) return @uv.value
+      return texture.uv->Quad
 endClass
 

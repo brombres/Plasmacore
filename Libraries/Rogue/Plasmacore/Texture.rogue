@@ -67,14 +67,17 @@ class Texture
         load_async
       endIf
 
+    method size->XY
+      return image_size
+
     method unload
       if (is_loaded)
         Message( "Texture.unload" ).[ write_int32x(id) ].send
         is_loaded = false
       endIf
 
-    method uv_max->XY
-      return image_size / texture_size
+    method uv->Box
+      return Box( image_size / texture_size )
 
 endClass
 

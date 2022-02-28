@@ -28,6 +28,8 @@ $include "Plasmacore/Texture.rogue"
 $include "Plasmacore/Triangle.rogue"
 $include "Plasmacore/ViewTransform.rogue"
 
+$essential Bitmap::Bitmap.create(Int32,Int32)
+
 class Plasmacore [essential singleton]
   PROPERTIES
     configure_handler     : Function
