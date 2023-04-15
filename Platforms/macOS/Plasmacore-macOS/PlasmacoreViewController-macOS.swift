@@ -9,7 +9,7 @@ import Cocoa
 import MetalKit
 
 // Our macOS specific view controller
-class GameViewController: NSViewController {
+class PlasmacoreViewController: NSViewController {
 
     var renderer: Renderer!
     var mtkView: MTKView!
