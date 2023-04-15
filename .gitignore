@@ -11,3 +11,6 @@ BuildLocal.rogue
 *.swo
 *.swp
 *~
+
+# Libraries
+/Libraries/MoltenVK

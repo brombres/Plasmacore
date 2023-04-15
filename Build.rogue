@@ -48,15 +48,39 @@ routine rogo_default
 endRoutine
 
 routine check_dependencies
-  local folder = File( "Libraries" )
-  if (not folder.exists) folder.create_folder
+  if (not File("Libraries").exists) File("Libraries").create_folder
 
-  folder /= "MoltenVK"
-  if (not folder.exists)
+  update_moltenvk
+endRoutine
+
+routine rogo_update_moltenvk
+  update_moltenvk( &rebuild )
+endRoutine
+
+routine update_moltenvk( &rebuild )
+  if (not File("Libraries/MoltenVK").exists)
     execute @|git clone https://github.com/KhronosGroup/MoltenVK.git Libraries/MoltenVK
   endIf
 
-  #execute @|cd Libraries/MoltenVK && ./fetchDependencies --macos --ios --iossim
+  if (rebuild or not File("Libraries/MoltenVK/External").exists)
+    execute @|cd Libraries/MoltenVK && ./fetchDependencies --macos --ios --iossim
+  endIf
+
+  if (rebuild or not File("Libraries/MoltenVK/Package/Release/MoltenVK/MoltenVK.xcframework/macos-arm64_x86_64").exists)
+    println "Building MoltenVK for macOS"
+    local cmd = "cd Libraries/MoltenVK"
+    execute @|cd Libraries/MoltenVK && make macos
+  endIf
+
+  if (rebuild or not File("Libraries/MoltenVK/Package/Release/MoltenVK/MoltenVK.xcframework/ios-arm64").exists)
+    println "Building MoltenVK for iOS"
+    execute @|cd Libraries/MoltenVK && make ios
+  endIf
+
+  if (rebuild or not File("Libraries/MoltenVK/Package/Release/MoltenVK/MoltenVK.xcframework/ios-arm64_x86_64-simulator").exists)
+    println "Building MoltenVK for iOS"
+    execute @|cd Libraries/MoltenVK && make iossim
+  endIf
 endRoutine
 
 #{
