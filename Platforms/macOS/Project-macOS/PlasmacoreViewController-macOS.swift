@@ -1,44 +1,49 @@
+// GameViewController.swift
+// Project-macOS
 //
-//  GameViewController.swift
-//  Project-macOS
+// Created by Abe Pralle on 4/14/23.
 //
-//  Created by Abe Pralle on 4/14/23.
-//
+// References used:
+//   https://www.reddit.com/r/vulkan/comments/d61wnd/moltenvk_with_swift/
+//   https://stackoverflow.com/questions/25981553/cvdisplaylink-with-swift
 
 import Cocoa
-import MetalKit
 
 // Our macOS specific view controller
-class PlasmacoreViewController: NSViewController {
+class PlasmacoreViewController : NSViewController
+{
+  var display_link : CVDisplayLink?
 
-    var renderer: Renderer!
-    var mtkView: MTKView!
+	override func viewDidLoad()
+  {
+		super.viewDidLoad()
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
+		view.wantsLayer = true
 
-        guard let mtkView = self.view as? MTKView else {
-            print("View attached to GameViewController is not an MTKView")
-            return
-        }
-
-        // Select the device to render with.  We choose the default device
-        guard let defaultDevice = MTLCreateSystemDefaultDevice() else {
-            print("Metal is not supported on this device")
-            return
-        }
-
-        mtkView.device = defaultDevice
-
-        guard let newRenderer = Renderer(metalKitView: mtkView) else {
-            print("Renderer cannot be initialized")
-            return
-        }
-
-        renderer = newRenderer
-
-        renderer.mtkView(mtkView, drawableSizeWillChange: mtkView.drawableSize)
-
-        mtkView.delegate = renderer
+    let displayLinkOutputCallback:CVDisplayLinkOutputCallback =
+    {
+      (displayLink:CVDisplayLink, inNow:UnsafePointer<CVTimeStamp>, inOutputTime:UnsafePointer<CVTimeStamp>,
+          flagsIn:CVOptionFlags, flagsOut:UnsafeMutablePointer<CVOptionFlags>,
+          displayLinkContext:UnsafeMutableRawPointer?) -> CVReturn in
+      //my_function_which_takes_voidpointer_for_VkMetalSurfaceCreateInfoEXT(target);
+      CVDisplayLinkStop( displayLink )
+      return kCVReturnSuccess
     }
+
+		CVDisplayLinkCreateWithActiveCGDisplays( &display_link )
+		CVDisplayLinkSetOutputCallback(
+      display_link!,
+      displayLinkOutputCallback,
+      Unmanaged.passUnretained(view.layer!).toOpaque()
+    )
+		CVDisplayLinkStart( display_link! )
+	}
+
+	override var representedObject: Any?
+  {
+		didSet
+    {
+		  // Update the view, if already loaded.
+		}
+	}
 }
