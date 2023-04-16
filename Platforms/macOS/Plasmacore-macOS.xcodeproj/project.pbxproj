@@ -13,6 +13,10 @@
 		305174FF29EA19B900D5E47E /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 305174FE29EA19B900D5E47E /* Shaders.metal */; };
 		3051750229EA19BA00D5E47E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3051750129EA19BA00D5E47E /* Assets.xcassets */; };
 		3051750529EA19BA00D5E47E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3051750329EA19BA00D5E47E /* Main.storyboard */; };
+		3058B63B29EA65190036CD58 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3058B63A29EA65190036CD58 /* MoltenVK.xcframework */; };
+		3058B63F29EB3C420036CD58 /* RogueInterface.m in Sources */ = {isa = PBXBuildFile; fileRef = 3058B63D29EB3C420036CD58 /* RogueInterface.m */; };
+		3058B64229EB3CF10036CD58 /* RogueProgram.m in Sources */ = {isa = PBXBuildFile; fileRef = 3058B64029EB3CF00036CD58 /* RogueProgram.m */; };
+		3058B64429EB9AAC0036CD58 /* Plasmacore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3058B64329EB9AAC0036CD58 /* Plasmacore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +29,13 @@
 		3051750129EA19BA00D5E47E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3051750429EA19BA00D5E47E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		3051750629EA19BA00D5E47E /* Plasmacore_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Plasmacore_macOS.entitlements; sourceTree = "<group>"; };
+		3058B63A29EA65190036CD58 /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = ../../Libraries/MoltenVK/Package/Release/MoltenVK/MoltenVK.xcframework; sourceTree = "<group>"; };
+		3058B63C29EB3C420036CD58 /* RogueInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueInterface.h; path = ../../../Libraries/Framework/Swift/RogueInterface.h; sourceTree = "<group>"; };
+		3058B63D29EB3C420036CD58 /* RogueInterface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RogueInterface.m; path = ../../../Libraries/Framework/Swift/RogueInterface.m; sourceTree = "<group>"; };
+		3058B63E29EB3C420036CD58 /* BridgingHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BridgingHeader.h; path = ../../../Libraries/Framework/Swift/BridgingHeader.h; sourceTree = "<group>"; };
+		3058B64029EB3CF00036CD58 /* RogueProgram.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RogueProgram.m; path = ../../../Build/macOS/Source/RogueProgram.m; sourceTree = "<group>"; };
+		3058B64129EB3CF00036CD58 /* RogueProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RogueProgram.h; path = ../../../Build/macOS/Source/RogueProgram.h; sourceTree = "<group>"; };
+		3058B64329EB9AAC0036CD58 /* Plasmacore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Plasmacore.swift; path = ../../../Libraries/Framework/Swift/Plasmacore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3058B63B29EA65190036CD58 /* MoltenVK.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +55,7 @@
 			children = (
 				305174F729EA19B900D5E47E /* Plasmacore-macOS */,
 				305174F629EA19B900D5E47E /* Products */,
+				3058B63929EA65190036CD58 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,6 +70,12 @@
 		305174F729EA19B900D5E47E /* Plasmacore-macOS */ = {
 			isa = PBXGroup;
 			children = (
+				3058B64329EB9AAC0036CD58 /* Plasmacore.swift */,
+				3058B64129EB3CF00036CD58 /* RogueProgram.h */,
+				3058B64029EB3CF00036CD58 /* RogueProgram.m */,
+				3058B63E29EB3C420036CD58 /* BridgingHeader.h */,
+				3058B63C29EB3C420036CD58 /* RogueInterface.h */,
+				3058B63D29EB3C420036CD58 /* RogueInterface.m */,
 				305174F829EA19B900D5E47E /* AppDelegate.swift */,
 				305174FA29EA19B900D5E47E /* PlasmacoreViewController-macOS.swift */,
 				305174FC29EA19B900D5E47E /* Renderer.swift */,
@@ -67,6 +86,14 @@
 				3051750629EA19BA00D5E47E /* Plasmacore_macOS.entitlements */,
 			);
 			path = "Plasmacore-macOS";
+			sourceTree = "<group>";
+		};
+		3058B63929EA65190036CD58 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3058B63A29EA65190036CD58 /* MoltenVK.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,10 +166,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3058B64429EB9AAC0036CD58 /* Plasmacore.swift in Sources */,
 				305174FF29EA19B900D5E47E /* Shaders.metal in Sources */,
+				3058B63F29EB3C420036CD58 /* RogueInterface.m in Sources */,
 				305174FB29EA19B900D5E47E /* PlasmacoreViewController-macOS.swift in Sources */,
 				305174FD29EA19B900D5E47E /* Renderer.swift in Sources */,
 				305174F929EA19B900D5E47E /* AppDelegate.swift in Sources */,
+				3058B64229EB3CF10036CD58 /* RogueProgram.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,7 +326,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.runegate.Plasmacore-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Framework/Swift/BridgingHeader.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -324,7 +354,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.runegate.Plasmacore-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_OBJC_BRIDGING_HEADER = ../../Libraries/Framework/Swift/BridgingHeader.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

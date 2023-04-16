@@ -47,6 +47,32 @@ routine rogo_default
   #rogo_run
 endRoutine
 
+routine rogo_macos( option:String )
+  # option: [open|rebuild]
+  local rebuild = false
+  which (option)
+    case ""
+      noAction
+    case "rebuild"
+      rebuild = true
+    case "open"
+      local listing = File( "Platforms/macOS/**/*.xcodeproj" ).listing
+      if (listing.count == 1)
+        execute "open $"(File(listing.first).esc)
+      endIf
+      return
+    others
+      throw Error( "Unrecognized option '$'."(option) )
+  endWhich
+
+  local files = Files( "Source/**/*.rogue" )
+  if (rebuild or files.any_newer_than(File("Build/macOS/Source/RogueProgram.m")))
+    local cmd = "roguec Source/Main.rogue --target=C,ObjC,macOS,Plasmacore --output=Build/macOS/Source/RogueProgram"
+    if (Build.BUILD_MODE == "debug") cmd += " --debug"
+    execute cmd
+  endIf
+endRoutine
+
 routine check_dependencies
   if (not File("Libraries").exists) File("Libraries").create_folder
 
