@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  Plasmacore-macOS
+//  Project-macOS
 //
 //  Created by Abe Pralle on 4/14/23.
 //
@@ -12,8 +12,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @IBOutlet var window: NSWindow!
     
-    func applicationDidFinishLaunching(_ aNotification: Notification) {
-        
+    func applicationDidFinishLaunching(_ aNotification: Notification)
+    {
+      Plasmacore.singleton.launch()
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {

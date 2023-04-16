@@ -1,6 +1,6 @@
 //
 //  Shaders.metal
-//  Plasmacore-macOS
+//  Project-macOS
 //
 //  Created by Abe Pralle on 4/14/23.
 //

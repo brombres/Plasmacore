@@ -86,7 +86,7 @@ NSData* RogueInterface_send_message( const unsigned char* data, int count )
 void RogueInterface_set_arg_count( int count )
 {
   RogueInterface_argc = count;
-  RogueInterface_argv = (const char**)ROGUE_MALLOC( sizeof(const char*) * (count+1) );
+  RogueInterface_argv = (char**)ROGUE_MALLOC( sizeof(const char*) * (count+1) );
   memset( RogueInterface_argv, 0, sizeof(const char*) * (count+1) );
 }
 
