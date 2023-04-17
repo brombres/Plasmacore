@@ -26,8 +26,15 @@ class PlasmacoreViewController : NSViewController
           flagsIn:CVOptionFlags, flagsOut:UnsafeMutablePointer<CVOptionFlags>,
           displayLinkContext:UnsafeMutableRawPointer?) -> CVReturn in
       //my_function_which_takes_voidpointer_for_VkMetalSurfaceCreateInfoEXT(target);
-      CVDisplayLinkStop( displayLink )
+      //CVDisplayLinkStop( displayLink )
+      CubeInterface_render()
       return kCVReturnSuccess
+    }
+
+    if let layer = view.layer as? CAMetalLayer
+    {
+      NSLog( "Calling CubeInterface_configure()" )
+      CubeInterface_configure( layer )
     }
 
 		CVDisplayLinkCreateWithActiveCGDisplays( &display_link )
@@ -38,6 +45,11 @@ class PlasmacoreViewController : NSViewController
     )
 		CVDisplayLinkStart( display_link! )
 	}
+
+  deinit
+  {
+    //CVDisplayLinkStop( display_link )
+  }
 
 	override var representedObject: Any?
   {
