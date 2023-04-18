@@ -32,11 +32,14 @@
   #import <Foundation/Foundation.h>
 #endif
 
+#import <QuartzCore/QuartzCore.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void    RogueInterface_configure(void);
+void    RogueInterface_configure_renderer( CAMetalLayer* ca_metal_layer );
 void    RogueInterface_launch(void);
 void    RogueInterface_collect_garbage(void);
 NSData* RogueInterface_send_message( const unsigned char* data, int count );

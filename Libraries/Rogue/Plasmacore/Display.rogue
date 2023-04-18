@@ -1,0 +1,6 @@
+module Plasmacore
+
+class Display [singleton]
+  PROPERTIES
+    renderer : Renderer
+endClass

@@ -33,6 +33,8 @@ class PlasmacoreViewController : NSViewController
 
     if let layer = view.layer as? CAMetalLayer
     {
+      NSLog( "Calling Plasmacore.configureRenderer()" )
+      Plasmacore.singleton.configureRenderer( layer:layer )
       NSLog( "Calling CubeInterface_configure()" )
       CubeInterface_configure( layer )
     }

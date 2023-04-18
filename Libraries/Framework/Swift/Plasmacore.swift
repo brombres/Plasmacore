@@ -127,7 +127,13 @@ class Plasmacore
     RogueInterface_configure();
   }
 
-  func collect_garbage()
+  func configureRenderer( layer:CAMetalLayer )
+  {
+    launch()
+    RogueInterface_configure_renderer( layer )
+  }
+
+  func collectGarbage()
   {
     objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
     RogueInterface_collect_garbage()
