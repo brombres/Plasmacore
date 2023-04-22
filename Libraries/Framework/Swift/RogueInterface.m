@@ -33,7 +33,10 @@ void RogueInterface_configure(void)
 
 void RogueInterface_configure_renderer( CAMetalLayer* ca_metal_layer )
 {
-  PlasmacoreMoltenVKRenderer__create__RogueVoidPointer( (RogueVoidPointer){(__bridge void *)(ca_metal_layer)} );
+  PlasmacoreMoltenVKRenderer__configure__RogueVoidPointer(
+    ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer),
+    (RogueVoidPointer){(__bridge void *)(ca_metal_layer)}
+  );
 }
 
 void RogueInterface_launch(void)

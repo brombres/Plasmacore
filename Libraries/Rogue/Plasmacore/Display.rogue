@@ -3,4 +3,11 @@ module Plasmacore
 class Display [singleton]
   PROPERTIES
     renderer : Renderer
+
+  METHODS
+    method begin_render [api]
+      renderer.begin_render
+
+    method end_render [api]
+      renderer.end_render
 endClass

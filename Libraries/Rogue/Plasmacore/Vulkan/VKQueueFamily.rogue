@@ -1,0 +1,37 @@
+module Plasmacore
+
+class VKQueueFamily [compound]
+  PROPERTIES
+    gpu_info            : VKGPUInfo
+    index               : Int32
+    supports_presenting : Logical?
+    native "VkQueueFamilyProperties properties;"
+
+  METHODS
+    method supports_graphics->Logical
+      return native("($this.properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)")->Logical
+
+    method supports_presenting->Logical
+      if (@supports_presenting) return @supports_presenting.value
+
+      local result : Logical
+      local vk_instance = VKInstance
+      local renderer = Display.renderer->(as VulkanRenderer)
+      native
+        @|VkBool32 supports_presenting;
+         |$vk_instance->fn_vkGetPhysicalDeviceSurfaceSupportKHR(
+         |  $this.gpu_info->gpu,
+         |  $this.index,
+         |  $renderer->surface,
+         |  &supports_presenting
+         |);
+         |$result = (RogueLogical) supports_presenting;
+
+      @supports_presenting = result
+      return result
+
+    method to->String
+      return "($ supports_graphics:$ supports_presenting:$)"(index,supports_graphics,supports_presenting)
+
+endClass
+

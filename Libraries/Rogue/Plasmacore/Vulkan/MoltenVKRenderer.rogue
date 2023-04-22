@@ -1,0 +1,42 @@
+module Plasmacore
+
+$include Plasmacore/Vulkan
+
+class MoltenVKRenderer : VulkanRenderer [essential singleton]
+  PROPERTIES
+    native "void* ca_metal_layer;"
+
+  METHODS
+    method configure( ca_metal_layer:RogueVoidPointer ) [essential]
+      configure
+      native @|$this->ca_metal_layer = $ca_metal_layer.value;
+      Display.renderer = this
+
+    method create_surface [api override]
+      local vk_instance = VKInstance
+
+      if (surface_created) destroy_surface
+
+      native
+        @|VkMetalSurfaceCreateInfoEXT surface_info = { 0 };
+         |surface_info.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+         |surface_info.pLayer = (__bridge const CAMetalLayer*) $this->ca_metal_layer;
+         |
+         |vkCreateMetalSurfaceEXT(
+         |  $vk_instance->value,
+         |  &surface_info,
+         |  NULL,
+         |  &$this->surface
+         |);
+
+      surface_created = true
+
+      find_queue_families
+
+    method destroy_surface
+      if (surface_created)
+        surface_created = false
+        native @|vkDestroySurfaceKHR( ROGUE_SINGLETON(PlasmacoreVKInstance)->value, $this->surface, NULL );
+      endIf
+
+endClass

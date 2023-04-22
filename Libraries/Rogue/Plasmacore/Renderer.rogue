@@ -1,4 +1,10 @@
 module Plasmacore
 
 class Renderer
+  METHODS
+    method begin_render
+      noAction
+
+    method end_render
+      noAction
 endClass

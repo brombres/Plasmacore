@@ -1,0 +1,17 @@
+module Plasmacore
+
+$include Vulkan/VKBitFormat
+$include Vulkan/VKColorSpace
+$include Vulkan/VKDevice
+$include Vulkan/VKGPUInfo
+$include Vulkan/VKGPUType
+$include Vulkan/VKInstance
+$include Vulkan/VKQueueFamily
+$include Vulkan/VKSurfaceFormat
+$include Vulkan/VKSwapChain
+$include Vulkan/VulkanRenderer
+
+nativeHeader
+  @|#define VK_USE_PLATFORM_METAL_EXT 1
+   |#include <vulkan/vulkan.h>
+

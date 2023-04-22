@@ -1,4 +1,0 @@
-module Plasmacore
-
-class VulkanRenderer : Renderer
-endClass

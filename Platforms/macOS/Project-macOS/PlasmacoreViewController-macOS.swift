@@ -36,7 +36,7 @@ class PlasmacoreViewController : NSViewController
       NSLog( "Calling Plasmacore.configureRenderer()" )
       Plasmacore.singleton.configureRenderer( layer:layer )
       NSLog( "Calling CubeInterface_configure()" )
-      CubeInterface_configure( layer )
+      CubeInterface_configure()
     }
 
 		CVDisplayLinkCreateWithActiveCGDisplays( &display_link )

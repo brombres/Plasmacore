@@ -1,0 +1,87 @@
+module Plasmacore
+
+class VKGPUInfo [api]
+  PROPERTIES
+    index                : Int32
+    available_extensions : String[]
+    enabled_extensions   = String[]
+    queue_families       : VKQueueFamily[]
+    native "VkPhysicalDevice           gpu;"
+    native "VkPhysicalDeviceProperties properties;"
+    native "VkPhysicalDeviceFeatures   features;"
+
+  METHODS
+    method available_extensions->String[]
+      if (@available_extensions) return @available_extensions
+
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateDeviceExtensionProperties( $this->gpu, NULL, &count, NULL );
+         |
+         |if (count > 0)
+         |{
+         |  VkExtensionProperties *extensions = ROGUE_MALLOC(sizeof(VkExtensionProperties) * count);
+         |  vkEnumerateDeviceExtensionProperties( $this->gpu, NULL, &count, extensions );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+      result.add( native("RogueString_create(extensions[i].extensionName)")->String )
+
+      native
+        @|  }
+         |  ROGUE_FREE( extensions );
+         |}
+
+         @available_extensions = result
+      return result
+
+    method device_configuration->VKDeviceConfiguration [api]
+      return VKDeviceConfiguration( this )
+
+    method enable_extension( name:String )->Logical
+      if (available_extensions.contains(name))
+        if (not enabled_extensions.contains(name)) enabled_extensions.add( name )
+        return true
+      else
+        return false
+      endIf
+
+    method name->String
+      return native("RogueString_create( (const char*) &($this->properties.deviceName) )")->String
+
+    method queue_families->VKQueueFamily[]
+      if (@queue_families) return @queue_families
+
+      local vk_instance = VKInstance
+      local result = VKQueueFamily[]
+      native
+        @|uint32_t count = 0;
+         |vkGetPhysicalDeviceQueueFamilyProperties( $this->gpu, &count, NULL );
+         |if (count && count < 64)
+         |{
+         |  VkQueueFamilyProperties properties[64];
+         |  int i;
+         |  vkGetPhysicalDeviceQueueFamilyProperties( $this->gpu, &count, properties );
+         |  for (i=0; i<count; ++i)
+         |  {
+              local family : VKQueueFamily
+      native
+        @|    $family.gpu_info   = $this;
+         |    $family.index      = (RogueInt32) i;
+         |    $family.properties = properties[i];
+      result.add( family );
+      native
+        @|  }
+         |}
+
+         @queue_families = result
+         return @queue_families
+
+    method to->String
+      return "$: $ ($)"(index,name,type)
+
+    method type->VKGPUType
+      return VKGPUType( native("$this->properties.deviceType")->Int32 )
+endClass
+

@@ -1,0 +1,133 @@
+module Plasmacore
+
+class VKDeviceConfiguration( gpu_info:VKGPUInfo )
+  PROPERTIES
+    available_extensions : String[]
+    enabled_extensions   = String[]
+
+  METHODS
+    method available_extensions->String[]
+      if (@available_extensions) return @available_extensions
+
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateDeviceExtensionProperties( $this->gpu_info->gpu, NULL, &count, NULL );
+         |
+         |if (count > 0)
+         |{
+         |  VkExtensionProperties *extensions = ROGUE_MALLOC(sizeof(VkExtensionProperties) * count);
+         |  vkEnumerateDeviceExtensionProperties( $this->gpu_info->gpu, NULL, &count, extensions );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+      result.add( native("RogueString_create(extensions[i].extensionName)")->String )
+
+      native
+        @|  }
+         |  ROGUE_FREE( extensions );
+         |}
+
+      @available_extensions = result
+      return result
+
+    method create_device->VKDevice
+      return VKDevice( this )
+
+    method enable_extension( name:String )->Logical
+      if (available_extensions.contains(name))
+        if (not enabled_extensions.contains(name)) enabled_extensions.add( name )
+        return true
+      else
+        return false
+      endIf
+endClass
+
+class VKDevice
+  PROPERTIES
+    native "VkDevice value;"
+
+    native "PFN_vkCreateSwapchainKHR    fn_vkCreateSwapchainKHR;"
+    native "PFN_vkDestroySwapchainKHR   fn_vkDestroySwapchainKHR;"
+    native "PFN_vkGetSwapchainImagesKHR fn_vkGetSwapchainImagesKHR;"
+    native "PFN_vkAcquireNextImageKHR   fn_vkAcquireNextImageKHR;"
+    native "PFN_vkQueuePresentKHR       fn_vkQueuePresentKHR;"
+
+    native "VkQueue          graphics_queue;"
+    native "VkQueue          presentation_queue;"
+
+  METHODS
+    method init( config:VKDeviceConfiguration )
+      local renderer = Display.renderer->(as VulkanRenderer)
+
+      native
+        @|float queue_priorities[1] = {0.0};
+         |const char* extension_names[64];
+         |
+         |VkDeviceQueueCreateInfo queues[2];
+         |queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+         |queues[0].pNext = NULL;
+         |queues[0].queueFamilyIndex = $renderer->graphics_queue_family.index;
+         |queues[0].queueCount = 1;
+         |queues[0].pQueuePriorities = queue_priorities;
+         |queues[0].flags = 0;
+
+      forEach (extension_name at i in config.enabled_extensions)
+        native @|extension_names[$i] = $extension_name->data->as_utf8;
+      endForEach
+
+      local instance = VKInstance
+
+      native
+        @|
+         |VkDeviceCreateInfo device_info =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .queueCreateInfoCount = 1,
+         |  .pQueueCreateInfos = queues,
+         |  .enabledLayerCount = 0,
+         |  .ppEnabledLayerNames = NULL,
+         |  .enabledExtensionCount = $config->enabled_extensions->count,
+         |  .ppEnabledExtensionNames = extension_names,
+         |  .pEnabledFeatures = NULL,  // If specific features are required, pass them in here
+         |};
+         |
+         |if ($renderer->uses_separate_presentation_queue)
+         |{
+         |  queues[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+         |  queues[1].pNext = NULL;
+         |  queues[1].queueFamilyIndex = $renderer->presentation_queue_family.index;
+         |  queues[1].queueCount = 1;
+         |  queues[1].pQueuePriorities = queue_priorities;
+         |  queues[1].flags = 0;
+         |  device_info.queueCreateInfoCount = 2;
+         |}
+         |
+         |vkCreateDevice( $renderer->gpu_info->gpu, &device_info, NULL, &$this->value );
+         |
+         |{
+         |  PFN_vkGetDeviceProcAddr vkGetDeviceProcedureAddress = $instance->fn_vkGetDeviceProcAddr;
+         |  VkDevice device = $this->value;
+         |  $this->fn_vkCreateSwapchainKHR    = (PFN_vkCreateSwapchainKHR)
+         |                                      vkGetDeviceProcedureAddress( device, "vkCreateSwapchainKHR" );
+         |  $this->fn_vkDestroySwapchainKHR   = (PFN_vkDestroySwapchainKHR)
+         |                                      vkGetDeviceProcedureAddress( device, "vkDestroySwapchainKHR" );
+         |  $this->fn_vkGetSwapchainImagesKHR = (PFN_vkGetSwapchainImagesKHR)
+         |                                      vkGetDeviceProcedureAddress( device, "vkGetSwapchainImagesKHR" );
+         |  $this->fn_vkAcquireNextImageKHR   = (PFN_vkAcquireNextImageKHR)
+         |                                      vkGetDeviceProcedureAddress( device, "vkAcquireNextImageKHR" );
+         |  $this->fn_vkQueuePresentKHR       = (PFN_vkQueuePresentKHR)
+         |                                       vkGetDeviceProcedureAddress( device, "vkQueuePresentKHR" );
+         |}
+         |
+         |vkGetDeviceQueue( $this->value, $renderer->graphics_queue_family.index, 0, &$this->graphics_queue );
+         |if ($renderer->uses_separate_presentation_queue)
+         |{
+         |  vkGetDeviceQueue( $this->value, $renderer->presentation_queue_family.index, 0, &$this->presentation_queue );
+         |}
+         |else
+         |{
+         |  $this->presentation_queue = $this->graphics_queue;
+         |}
+endClass

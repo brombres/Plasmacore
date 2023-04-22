@@ -1,10 +1,10 @@
 #include "CubeInterface.h"
 #include "CubeWrapper.h"
 
-void CubeInterface_configure( CAMetalLayer* layer )
+void CubeInterface_configure(void)
 {
   const char* argv[] = { "cube" };
-  call_demo_main( (__bridge void *)(layer), 1, argv );
+  call_demo_main( 1, argv );
 }
 
 void CubeInterface_render(void)

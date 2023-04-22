@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-void CubeInterface_configure( CAMetalLayer* layer );
+void CubeInterface_configure(void);
 void CubeInterface_render(void);
 
 //static void demo_main(struct demo *demo, void *caMetalLayer, int argc, const char *argv[]) {

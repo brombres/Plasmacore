@@ -1,0 +1,151 @@
+module Plasmacore
+
+$include Plasmacore/Vulkan
+
+class VulkanRenderer : Renderer [abstract]
+  PROPERTIES
+    native "VkPresentModeKHR present_mode;"
+    native "VkSurfaceKHR     surface;"
+
+    gpu_info   : VKGPUInfo
+    gpu_number = -1
+    device     : VKDevice
+
+    uses_separate_presentation_queue : Logical
+    surface_created                  : Logical
+
+    graphics_queue_family            : VKQueueFamily
+    presentation_queue_family        : VKQueueFamily
+    surface_format                   : VKSurfaceFormat
+    swap_chain                       : VKSwapChain
+
+    surface_formats : VKSurfaceFormat[]
+
+
+  METHODS
+    method init_object
+      native @|$this->present_mode = VK_PRESENT_MODE_FIFO_KHR;
+
+    method begin_render [override]
+      swap_chain.block_until_ready
+
+    method configure
+      VKInstance.configure
+
+      local preferred_device_order =
+      [
+        VKGPUType.DISCRETE_GPU
+        VKGPUType.INTEGRATED_GPU
+        VKGPUType.VIRTUAL_GPU
+        VKGPUType.CPU
+        VKGPUType.OTHER
+      ]
+
+      local devices = VKInstance.physical_devices
+      forEach (search_type in preferred_device_order)
+        if local found_device = devices.first( (info) with (search_type) => info.type == search_type )
+          gpu_info = found_device
+          gpu_number = found_device.index
+          escapeForEach
+        endIf
+      endForEach
+
+      if (gpu_info)
+        log.println "[Vulkan] Using GPU $"(gpu_info)
+        gpu_info.enable_extension( "VK_KHR_swapchain" )
+        gpu_info.enable_extension( "VK_KHR_portability_subset" )
+      else
+        error.println "[Vulkan] ERROR: no GPU found"
+      endIf
+
+
+    method create_device [api]
+      if (not gpu_info) return
+
+      local config = gpu_info.device_configuration
+      config.enable_extension( "VK_KHR_swapchain" )
+      config.enable_extension( "VK_KHR_portability_subset" )
+      device = config.create_device
+
+      block
+        local desired_formats =
+        [
+          VKBitFormat.R8G8B8A8_UNORM,
+          VKBitFormat.B8G8R8A8_UNORM,
+          VKBitFormat.A2B10G10R10_UNORM_PACK32,
+          VKBitFormat.A2R10G10B10_UNORM_PACK32,
+          VKBitFormat.R16G16B16A16_SFLOAT
+        ]
+        forEach (desired_format in desired_formats)
+          if local format = surface_formats.first( $.bit_format == desired_format )
+            surface_format = format
+            escapeBlock
+          endIf
+        endForEach
+
+        surface_format = surface_formats.first
+      endBlock
+
+      swap_chain = VKSwapChain()
+
+    method create_surface [abstract api]
+
+    method end_render [override]
+      swap_chain.advance_frame
+
+    method find_queue_families
+      block
+        # Find a queue family that supports both graphics and presentation
+        forEach (family in gpu_info.queue_families)
+          if (family.supports_graphics and family.supports_presenting)
+            graphics_queue_family = family
+            presentation_queue_family = family
+            escapeBlock
+          endIf
+        endForEach
+
+        # Find separate queue families for graphics and for presentation
+        forEach (family in gpu_info.queue_families)
+          if (family.supports_graphics)
+            graphics_queue_family = family
+            escapeForEach
+          endIf
+        endForEach
+
+        forEach (family in gpu_info.queue_families)
+          if (family.supports_presenting)
+            presentation_queue_family = family
+            escapeBlock
+          endIf
+        endForEach
+
+      endBlock
+
+      uses_separate_presentation_queue = (graphics_queue_family.index != presentation_queue_family.index)
+
+    method surface_formats->VKSurfaceFormat[]
+      if (@surface_formats) return @surface_formats
+
+      local vk_instance = VKInstance
+      local result = VKSurfaceFormat[]
+      native
+        @|uint32_t count = 0;
+         |$vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface, &count, NULL);
+         |if (count && count < 200)
+         |{
+         |  VkSurfaceFormatKHR formats[200];
+         |  int i;
+         |  $vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface, &count, formats);
+         |  for (i=0; i<count; ++i)
+         |  {
+              local format : VKSurfaceFormat
+      native
+        @|    $format.value = formats[i];
+              result.add( format )
+      native
+        @|  }
+         |}
+
+         @surface_formats = result
+         return @surface_formats
+endClass

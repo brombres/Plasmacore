@@ -1,2 +1,7 @@
 $include Plasmacore/Display
 $include Plasmacore/Renderer
+
+class Plasmacore
+  DEFINITIONS
+    VERSION_CODE = 1
+endClass

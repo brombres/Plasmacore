@@ -1,0 +1,209 @@
+module Plasmacore
+
+class VKInstanceConfiguration
+  GLOBAL PROPERTIES
+    available_extensions : String[]
+    available_layers     : String[]
+
+  PROPERTIES
+    app_name           : String
+    app_version_code   : Int32
+    enabled_extensions = String[]
+    enabled_layers     = String[]
+
+  GLOBAL METHODS
+    method available_extensions->String[]
+      if (@available_extensions) return @available_extensions
+
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateInstanceExtensionProperties( NULL, &count, NULL );
+         |
+         |if (count > 0)
+         |{
+         |  VkExtensionProperties *instance_extensions = ROGUE_MALLOC(sizeof(VkExtensionProperties) * count);
+         |  vkEnumerateInstanceExtensionProperties( NULL, &count, instance_extensions );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+              result.add( native("RogueString_create(instance_extensions[i].extensionName)")->String )
+
+      native
+        @|  }
+         |  ROGUE_FREE( instance_extensions );
+         |}
+
+         @available_extensions = result
+      return result
+
+    method available_layers->String[]
+      if (@available_layers) return @available_layers
+
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateInstanceLayerProperties( &count, NULL );
+         |
+         |if (count > 0)
+         |{
+         |  VkLayerProperties *instance_layers = ROGUE_MALLOC(sizeof(VkLayerProperties) * count);
+         |  vkEnumerateInstanceLayerProperties( &count, instance_layers );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+              result.add( native("RogueString_create(instance_layers[i].layerName)")->String )
+
+      native
+        @|  }
+         |  ROGUE_FREE( instance_layers );
+         |}
+
+         @available_layers = result
+      return result
+
+
+  METHODS
+    method init
+      init( "Plasmacore2023", Plasmacore.VERSION_CODE )
+
+    method init( app_name, app_version_code )
+      # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
+      enable_extension( "VK_KHR_get_physical_device_properties2" )
+      enable_extension( "VK_KHR_surface" )
+      enable_extension( "VK_EXT_metal_surface" )
+
+    method enable_debug( setting:Logical )
+      if (setting)
+        enable_extension( "VK_EXT_debug_utils" )
+        enable_layer( "VK_LAYER_KHRONOS_validation" )
+      endIf
+
+    method enable_extension( name:String )->Logical
+      if (available_extensions.contains(name))
+        if (enabled_extensions.contains(name)) return true
+        enabled_extensions.add( name )
+        return true
+      else
+        return false
+      endIf
+
+    method enable_layer( name:String )->Logical
+      if (available_layers.contains(name))
+        if (enabled_layers.contains(name)) return true
+        enabled_layers.add( name )
+        return true
+      else
+        return false
+      endIf
+
+endClass
+
+class VKInstance [essential api singleton]
+  PROPERTIES
+    is_configured : Logical
+    native "VkInstance value;"
+    native "PFN_vkGetDeviceProcAddr                       fn_vkGetDeviceProcAddr;"
+    native "PFN_vkGetPhysicalDeviceSurfaceSupportKHR      fn_vkGetPhysicalDeviceSurfaceSupportKHR;"
+    native "PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;"
+    native "PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      fn_vkGetPhysicalDeviceSurfaceFormatsKHR;"
+    native "PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fn_vkGetPhysicalDeviceSurfacePresentModesKHR;"
+    native "PFN_vkGetSwapchainImagesKHR                   fn_vkGetSwapchainImagesKHR;"
+
+  METHODS
+    method configure
+      configure( VKInstanceConfiguration() )
+
+    method configure( app_name:String, app_version_code:Int32 )
+      # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
+      configure( VKInstanceConfiguration(app_name,app_version_code) )
+
+    method configure( configuration:VKInstanceConfiguration )
+      # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
+      if (is_configured) return
+      is_configured = true
+
+      local engine_version_code = Plasmacore.VERSION_CODE
+      local is_portable = configuration.enable_extension( "VK_KHR_portability_enumeration" )
+
+      native
+        @|const char* extension_names[64];
+         |const char* layer_names[64];
+      forEach (extension_name at i in configuration.enabled_extensions)
+        native @|extension_names[$i] = $extension_name->data->as_utf8;
+      endForEach
+      forEach (layer_name at i in configuration.enabled_layers)
+        native @|layer_names[$i] = $layer_name->data->as_utf8;
+      endForEach
+
+      native
+        @|const VkApplicationInfo app_info = {
+         |  .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+         |  .pNext = NULL,
+         |  .pApplicationName = $configuration->app_name->data->as_utf8,
+         |  .applicationVersion = $configuration->app_version_code,
+         |  .pEngineName = "Plasmacore2023",
+         |  .engineVersion = $engine_version_code,
+         |  .apiVersion = VK_API_VERSION_1_0
+         |};
+         |
+         |VkInstanceCreateInfo instance_info = {
+         |  .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .flags = ($is_portable ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0),
+         |  .pApplicationInfo = &app_info,
+         |  .enabledLayerCount = $configuration->enabled_layers->count,
+         |  .ppEnabledLayerNames = layer_names,
+         |  .enabledExtensionCount = $configuration->enabled_extensions->count,
+         |  .ppEnabledExtensionNames = extension_names,
+         |};
+         |
+         |VkResult err = vkCreateInstance( &instance_info, NULL, &$this->value);
+         |if (err)
+         |{
+         |  printf( "[Vulkan] Error creating Vulkan instance.\n" );
+         |}
+         |
+         |
+
+      log.println "[Vulkan] Created instance"
+
+      native
+        @|$this->fn_vkGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)
+         |    vkGetInstanceProcAddr( $this->value, "vkGetDeviceProcAddr" );
+         |$this->fn_vkGetPhysicalDeviceSurfaceSupportKHR = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)
+         |    vkGetInstanceProcAddr( $this->value, "vkGetPhysicalDeviceSurfaceSupportKHR" );
+         |$this->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR = (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+         |    vkGetInstanceProcAddr( $this->value, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR" );
+         |$this->fn_vkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)
+         |    vkGetInstanceProcAddr( $this->value, "vkGetPhysicalDeviceSurfaceFormatsKHR" );
+         |$this->fn_vkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)
+         |    vkGetInstanceProcAddr( $this->value, "vkGetPhysicalDeviceSurfacePresentModesKHR" );
+         |$this->fn_vkGetSwapchainImagesKHR = (PFN_vkGetSwapchainImagesKHR)
+         |    vkGetInstanceProcAddr( $this->value, "vkGetSwapchainImagesKHR" );
+
+    method physical_devices->VKGPUInfo[]
+      local result = VKGPUInfo[]
+      native
+        @|uint32_t count = 0;
+         |VkResult err = vkEnumeratePhysicalDevices( $this->value, &count, NULL );
+         |if ( !err && count && count < 64 )
+         |{
+         |  VkPhysicalDevice devices[64];
+         |  int i;
+         |  err = vkEnumeratePhysicalDevices( $this->value, &count, devices );
+         |  for (i=0; i<count; ++i)
+         |  {
+              local device_info = VKGPUInfo()
+      native
+        @|    $device_info->index = (RogueInt32) i;
+         |    $device_info->gpu   = devices[i];
+         |    vkGetPhysicalDeviceProperties( devices[i], &$device_info->properties );
+         |    vkGetPhysicalDeviceFeatures( devices[i], &$device_info->features );
+              result.add( device_info );
+      native
+        @|  }
+         |}
+      return result
+endClass
+

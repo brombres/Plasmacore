@@ -6,6 +6,7 @@ BuildLocal.rogue
 
 # Mac
 .DS_Store
+xcdebugger
 
 # Vim
 *.swo
