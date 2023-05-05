@@ -2,6 +2,7 @@ module Plasmacore
 
 $include Vulkan/VKBitFormat
 $include Vulkan/VKColorSpace
+$include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKDevice
 $include Vulkan/VKGPUInfo
 $include Vulkan/VKGPUType
@@ -10,7 +11,8 @@ $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
-$include Vulkan/VKSwapChain
+$include Vulkan/VKSurfaceTransform
+$include Vulkan/VKSwapchain
 $include Vulkan/VulkanRenderer
 
 nativeHeader

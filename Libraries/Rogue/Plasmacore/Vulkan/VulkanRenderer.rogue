@@ -16,7 +16,7 @@ class VulkanRenderer : Renderer [abstract]
     graphics_queue_family            : VKQueueFamily
     presentation_queue_family        : VKQueueFamily
     surface_format                   : VKSurfaceFormat
-    swap_chain                       : VKSwapChain
+    swap_chain                       : VKSwapchain
 
     surface_formats : VKSurfaceFormat[]
 
@@ -26,6 +26,7 @@ class VulkanRenderer : Renderer [abstract]
       native @|$this->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
     method begin_render [override]
+      swap_chain.prepare
       swap_chain.block_until_ready
 
     method configure
@@ -85,7 +86,7 @@ class VulkanRenderer : Renderer [abstract]
         surface_format = surface_formats.first
       endBlock
 
-      swap_chain = VKSwapChain( this )
+      swap_chain = VKSwapchain( this )
 
     method create_surface [abstract api]
 

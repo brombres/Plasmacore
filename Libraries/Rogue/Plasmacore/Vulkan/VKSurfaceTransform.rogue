@@ -1,0 +1,13 @@
+module Plasmacore
+
+enum VKSurfaceTransform
+  IDENTITY                     = 0x00000001
+  ROTATE_90                    = 0x00000002
+  ROTATE_180                   = 0x00000004
+  ROTATE_270                   = 0x00000008
+  HORIZONTAL_MIRROR            = 0x00000010
+  HORIZONTAL_MIRROR_ROTATE_90  = 0x00000020
+  HORIZONTAL_MIRROR_ROTATE_180 = 0x00000040
+  HORIZONTAL_MIRROR_ROTATE_270 = 0x00000080
+  INHERIT                      = 0x00000100
+endEnum

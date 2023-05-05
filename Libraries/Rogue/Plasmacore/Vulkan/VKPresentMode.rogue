@@ -1,0 +1,10 @@
+module Plasmacore
+
+enum VKPresentMode
+  IMMEDIATE                 = 0
+  MAILBOX                   = 1
+  FIFO                      = 2
+  FIFO_RELAXED              = 3
+  SHARED_DEMAND_REFRESH     = 1000111000
+  SHARED_CONTINUOUS_REFRESH = 1000111001
+endEnum

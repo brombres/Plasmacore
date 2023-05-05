@@ -2,9 +2,14 @@ module Plasmacore
 
 class Display [singleton]
   PROPERTIES
-    renderer : Renderer
+    renderer     : Renderer
+    size         : XY
+    is_minimized : Logical
 
   METHODS
+    method init
+      size = XY(800,600)
+
     method begin_render [api]
       renderer.begin_render
 

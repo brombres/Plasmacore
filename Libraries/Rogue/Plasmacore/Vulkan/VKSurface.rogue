@@ -11,6 +11,19 @@ class VKSurface
   METHODS
     method init( renderer )
 
+    method current_transform->VKSurfaceTransform
+      local result : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $result = (RogueInt32) capabilities.currentTransform;
+         |}
+      return VKSurfaceTransform( result )
+
     method destroy
       on_cleanup
 
@@ -117,5 +130,31 @@ class VKSurface
          |  $h = (RogueInt32) capabilities.currentExtent.height;
          |}
        return XY( w, h )
+
+    method supports_composite_alpha_type( type:VKCompositeAlphaType )->Logical
+      local supported_alpha : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $supported_alpha = (RogueInt32) capabilities.supportedCompositeAlpha;
+         |}
+      return (supported_alpha & type->Int32)?
+
+    method supports_transform( transform:VKSurfaceTransform )->Logical
+      local supported_transforms : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $supported_transforms = (RogueInt32) capabilities.supportedTransforms;
+         |}
+      return (supported_transforms & transform->Int32)?
 
 endClass

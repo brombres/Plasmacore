@@ -1,0 +1,8 @@
+module Plasmacore
+
+enum VKCompositeAlphaType
+  OPAQUE          = 1
+  PRE_MULTIPLIED  = 2
+  POST_MULTIPLIED = 4
+  INHERIT         = 8
+endEnum
