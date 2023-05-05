@@ -1,0 +1,154 @@
+module Plasmacore
+
+class VKSwapchain
+  PROPERTIES
+    renderer      : VulkanRenderer
+    buffer_count  : Int32
+    max_lag       : Int32
+    current_frame : VKFramePresenter
+    frames        = VKFramePresenter[]
+    is_prepared   : Logical
+
+    native "VkSwapchainKHR value;"
+
+  METHODS
+    method init( renderer, buffer_count=2, max_lag=1 )
+      buffer_count .= clamped( renderer.surface.min_buffer_count, renderer.surface.max_buffer_count )
+      max_lag .= clamped( 1, buffer_count-1 )
+      loop (max_lag) frames.add( VKFramePresenter() )
+      current_frame = frames.first
+
+    method prepare
+      #{
+      if (renderer.surface.max_size.min == 0)
+        is_prepared = false
+        Display.is_minimized = true
+        return
+      else
+        Display.is_minimized = false
+      endIf
+
+      if (is_prepared) return
+      is_prepared = true
+      }#
+
+      local size = Display.size
+      if (renderer.surface.size.x != -1) size = renderer.surface.size
+      size .= clamped( renderer.surface.min_size, renderer.surface.max_size )
+      Display.size = size
+
+      local pre_transform = VKSurfaceTransform.IDENTITY
+      if (not renderer.surface.supports_transform(pre_transform))
+        pre_transform = renderer.surface.current_transform
+      endIf
+
+      local composite_alpha_type : VKCompositeAlphaType
+      forEach (type in VKCompositeAlphaType.categories)
+        if (renderer.surface.supports_composite_alpha_type(type))
+          composite_alpha_type = type
+          escapeForEach
+        endIf
+      endForEach
+
+      local present_mode = VKPresentMode.FIFO
+
+      local device = renderer.device
+
+      native
+        @|{
+         |  VkSwapchainKHR old_swapchain = $this->value;
+         |
+         |  VkSwapchainCreateInfoKHR swap_chain_config =
+         |  {
+         |    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+         |    .pNext = NULL,
+         |    .surface = $renderer->surface->value,
+         |    .minImageCount = $buffer_count,
+         |    .imageFormat = $renderer->surface_format.value.format,
+         |    .imageColorSpace = $renderer->surface_format.value.colorSpace,
+         |    .imageExtent =
+         |    {
+         |      .width  = $size.x,
+         |      .height = $size.y
+         |    },
+         |    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+         |    .preTransform = $pre_transform.value,
+         |    .compositeAlpha = $composite_alpha_type.value,
+         |    .imageArrayLayers = 1,
+         |    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+         |    .queueFamilyIndexCount = 0,
+         |    .pQueueFamilyIndices = NULL,
+         |    .presentMode  = $present_mode.value,
+         |    .oldSwapchain = old_swapchain,
+         |    .clipped = 1,
+         |  };
+         |  uint32_t i;
+         |  $device->fn_vkCreateSwapchainKHR( $device->value, &swap_chain_config, NULL, &$this->value );
+         |
+         |  if (old_swapchain != VK_NULL_HANDLE)
+         |  {
+         |    $device->fn_vkDestroySwapchainKHR( $device->value, old_swapchain, NULL );
+         |  }
+         |}
+
+        #trace "---- " renderer.surface.current_transform
+
+
+      #trace "---- " renderer.surface.min_buffer_count
+      #trace "---- " renderer.surface.max_buffer_count
+      #trace "---- " renderer.surface.present_modes
+      #trace "---- " VKCompositeAlphaType.categories
+
+    method advance_frame
+      current_frame = frames[ (frames.locate(current_frame).value + 1) % frames.count ]
+
+    method block_until_ready
+      current_frame.block_until_ready
+
+endClass
+
+class VKFramePresenter
+  PROPERTIES
+    native "VkFence fence;"
+    native "VkSemaphore image_acquired_semaphore;"
+    native "VkSemaphore draw_complete_semaphore;"
+    native "VkSemaphore image_ownership_semaphore;"
+
+  METHODS
+    method init
+      local renderer = Display.renderer->(as VulkanRenderer)
+      local device = renderer.device
+
+      native
+        @|VkFenceCreateInfo fence_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .flags = VK_FENCE_CREATE_SIGNALED_BIT
+         |};
+         |
+         |VkSemaphoreCreateInfo sephamore_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .flags = 0
+         |};
+         |
+         |VkDevice device = $device->value;
+         |
+         |vkCreateFence( device, &fence_config, NULL, &$this->fence );
+         |
+         |vkCreateSemaphore( device, &sephamore_config, NULL, &$this->image_acquired_semaphore );
+         |vkCreateSemaphore( device, &sephamore_config, NULL, &$this->draw_complete_semaphore );
+         |if ($renderer->uses_separate_presentation_queue)
+         |{
+         |  vkCreateSemaphore( device, &sephamore_config, NULL, &$this->image_ownership_semaphore );
+         |}
+
+    method block_until_ready
+      local renderer = Display.renderer->(as VulkanRenderer)
+      local device = renderer.device
+      native
+        @|vkWaitForFences( $device->value, 1, &$this->fence, VK_TRUE, UINT64_MAX );
+         |vkResetFences( $device->value, 1, &$this->fence );
+endClass
