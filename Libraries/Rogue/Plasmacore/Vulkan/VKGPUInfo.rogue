@@ -9,6 +9,7 @@ class VKGPUInfo [api]
     native "VkPhysicalDevice           gpu;"
     native "VkPhysicalDeviceProperties properties;"
     native "VkPhysicalDeviceFeatures   features;"
+    native "VkPhysicalDeviceMemoryProperties memory_properties;"
 
   METHODS
     method available_extensions->String[]

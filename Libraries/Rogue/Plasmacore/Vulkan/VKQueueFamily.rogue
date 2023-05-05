@@ -22,7 +22,7 @@ class VKQueueFamily [compound]
          |$vk_instance->fn_vkGetPhysicalDeviceSurfaceSupportKHR(
          |  $this.gpu_info->gpu,
          |  $this.index,
-         |  $renderer->surface,
+         |  $renderer->surface->value,
          |  &supports_presenting
          |);
          |$result = (RogueLogical) supports_presenting;

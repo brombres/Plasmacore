@@ -1,3 +1,5 @@
+uses Geometry [export]
+
 $include Plasmacore/Display
 $include Plasmacore/Renderer
 

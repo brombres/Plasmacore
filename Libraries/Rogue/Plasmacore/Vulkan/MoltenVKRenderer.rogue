@@ -15,7 +15,9 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
     method create_surface [api override]
       local vk_instance = VKInstance
 
-      if (surface_created) destroy_surface
+      if (surface) surface.destroy
+
+      surface = VKSurface( this )
 
       native
         @|VkMetalSurfaceCreateInfoEXT surface_info = { 0 };
@@ -26,17 +28,9 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
          |  $vk_instance->value,
          |  &surface_info,
          |  NULL,
-         |  &$this->surface
+         |  &$surface->value
          |);
 
-      surface_created = true
-
       find_queue_families
-
-    method destroy_surface
-      if (surface_created)
-        surface_created = false
-        native @|vkDestroySurfaceKHR( ROGUE_SINGLETON(PlasmacoreVKInstance)->value, $this->surface, NULL );
-      endIf
 
 endClass

@@ -102,7 +102,9 @@ endClass
 class VKInstance [essential api singleton]
   PROPERTIES
     is_configured : Logical
+
     native "VkInstance value;"
+
     native "PFN_vkGetDeviceProcAddr                       fn_vkGetDeviceProcAddr;"
     native "PFN_vkGetPhysicalDeviceSurfaceSupportKHR      fn_vkGetPhysicalDeviceSurfaceSupportKHR;"
     native "PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;"
@@ -200,6 +202,7 @@ class VKInstance [essential api singleton]
          |    $device_info->gpu   = devices[i];
          |    vkGetPhysicalDeviceProperties( devices[i], &$device_info->properties );
          |    vkGetPhysicalDeviceFeatures( devices[i], &$device_info->features );
+         |    vkGetPhysicalDeviceMemoryProperties( devices[i], &$device_info->memory_properties );
               result.add( device_info );
       native
         @|  }

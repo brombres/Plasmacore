@@ -1,0 +1,121 @@
+module Plasmacore
+
+class VKSurface
+  PROPERTIES
+    renderer      : VulkanRenderer
+    native "VkSurfaceKHR value;"
+    is_cleaned_up : Logical
+
+    present_modes : VKPresentMode[]
+
+  METHODS
+    method init( renderer )
+
+    method destroy
+      on_cleanup
+
+    method max_buffer_count->Int32
+      local result : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $result = (RogueInt32) capabilities.maxImageCount;
+         |}
+      return result
+
+    method max_size->XY
+      local w, h : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $w = (RogueInt32) capabilities.maxImageExtent.width;
+         |  $h = (RogueInt32) capabilities.maxImageExtent.height;
+         |}
+       return XY( w, h )
+
+    method min_buffer_count->Int32
+      local result : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $result = (RogueInt32) capabilities.minImageCount;
+         |}
+      return result
+
+    method min_size->XY
+      local w, h : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $w = (RogueInt32) capabilities.minImageExtent.width;
+         |  $h = (RogueInt32) capabilities.minImageExtent.height;
+         |}
+       return XY( w, h )
+
+    method on_cleanup
+      if (is_cleaned_up) return
+      is_cleaned_up = true
+      native @|vkDestroySurfaceKHR( ROGUE_SINGLETON(PlasmacoreVKInstance)->value, $this->value, NULL );
+
+    method present_modes->VKPresentMode[]
+      if (@present_modes) return @present_modes
+
+      local vk_instance = VKInstance
+      local result = VKPresentMode[]
+      native
+        @|{
+         |  PFN_vkGetPhysicalDeviceSurfacePresentModesKHR get_modes = $vk_instance->fn_vkGetPhysicalDeviceSurfacePresentModesKHR;
+         |  uint32_t count = 0;
+         |
+         |  get_modes( $renderer->gpu_info->gpu, $this->value, &count, NULL );
+         |  if (count && count < 32)
+         |  {
+         |    VkPresentModeKHR modes[32];
+         |    int i;
+         |    get_modes( $renderer->gpu_info->gpu, $this->value, &count, modes );
+         |    for (i=0; i<count; ++i)
+         |    {
+                local mode : Int32
+      native
+        @|      $mode = (RogueInt32) modes[i];
+                result.add( VKPresentMode(mode) );
+      native
+        @|    }
+         |  }
+         |}
+
+         @present_modes = result
+
+      return @present_modes
+
+    method size->XY
+      local w, h : Int32
+      local instance = VKInstance
+      native
+        @|{
+         |  VkSurfaceCapabilitiesKHR capabilities;
+         |  $instance->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+         |    $renderer->gpu_info->gpu, $this->value, &capabilities
+         |  );
+         |  $w = (RogueInt32) capabilities.currentExtent.width;
+         |  $h = (RogueInt32) capabilities.currentExtent.height;
+         |}
+       return XY( w, h )
+
+endClass

@@ -5,14 +5,13 @@ $include Plasmacore/Vulkan
 class VulkanRenderer : Renderer [abstract]
   PROPERTIES
     native "VkPresentModeKHR present_mode;"
-    native "VkSurfaceKHR     surface;"
+    surface    : VKSurface
 
     gpu_info   : VKGPUInfo
     gpu_number = -1
     device     : VKDevice
 
     uses_separate_presentation_queue : Logical
-    surface_created                  : Logical
 
     graphics_queue_family            : VKQueueFamily
     presentation_queue_family        : VKQueueFamily
@@ -86,7 +85,7 @@ class VulkanRenderer : Renderer [abstract]
         surface_format = surface_formats.first
       endBlock
 
-      swap_chain = VKSwapChain()
+      swap_chain = VKSwapChain( this )
 
     method create_surface [abstract api]
 
@@ -130,12 +129,12 @@ class VulkanRenderer : Renderer [abstract]
       local result = VKSurfaceFormat[]
       native
         @|uint32_t count = 0;
-         |$vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface, &count, NULL);
+         |$vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, NULL);
          |if (count && count < 200)
          |{
          |  VkSurfaceFormatKHR formats[200];
          |  int i;
-         |  $vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface, &count, formats);
+         |  $vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, formats);
          |  for (i=0; i<count; ++i)
          |  {
               local format : VKSurfaceFormat

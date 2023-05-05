@@ -2,12 +2,13 @@ module Plasmacore
 
 class VKSwapChain
   PROPERTIES
+    renderer      : VulkanRenderer
     current_frame : VKFramePresenter
     frames        = VKFramePresenter[]
 
   METHODS
-    method init( buffer_count=3:Int32, max_lag=2:Int32 )
-      max_lag .= clamped_low( 1 )
+    method init( renderer, buffer_count=2:Int32, max_lag=1:Int32 )
+      max_lag .= clamped( 1, buffer_count-1 )
       loop (max_lag) frames.add( VKFramePresenter() )
       current_frame = frames.first
 
