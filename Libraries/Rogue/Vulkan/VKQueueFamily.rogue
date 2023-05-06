@@ -15,11 +15,10 @@ class VKQueueFamily [compound]
       if (@supports_presenting) return @supports_presenting.value
 
       local result : Logical
-      local vk_instance = PVKInstance
-      local renderer = Display.renderer->(as VulkanRenderer)
+      local renderer = VulkanRenderer
       native
         @|VkBool32 supports_presenting;
-         |$vk_instance->fn_vkGetPhysicalDeviceSurfaceSupportKHR(
+         |$renderer->vkGetPhysicalDeviceSurfaceSupportKHR(
          |  $this.gpu_info->gpu,
          |  $this.index,
          |  $renderer->surface->value,

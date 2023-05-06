@@ -58,7 +58,7 @@ class VKDevice
 
   METHODS
     method init( config:VKDeviceConfiguration )
-      local renderer = Display.renderer->(as VulkanRenderer)
+      local renderer = VulkanRenderer
 
       native
         @|float queue_priorities[1] = {0.0};
@@ -75,8 +75,6 @@ class VKDevice
       forEach (extension_name at i in config.enabled_extensions)
         native @|extension_names[$i] = $extension_name->data->as_utf8;
       endForEach
-
-      local instance = PVKInstance
 
       native
         @|
@@ -107,7 +105,7 @@ class VKDevice
          |vkCreateDevice( $renderer->gpu_info->gpu, &device_info, NULL, &$this->value );
          |
          |{
-         |  PFN_vkGetDeviceProcAddr vkGetDeviceProcedureAddress = $instance->fn_vkGetDeviceProcAddr;
+         |  PFN_vkGetDeviceProcAddr vkGetDeviceProcedureAddress = $renderer->vkGetDeviceProcAddr;
          |  VkDevice device = $this->value;
          |  $this->fn_vkCreateSwapchainKHR    = (PFN_vkCreateSwapchainKHR)
          |                                      vkGetDeviceProcedureAddress( device, "vkCreateSwapchainKHR" );

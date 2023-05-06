@@ -2,9 +2,12 @@ module Plasmacore
 
 uses Vulkan
 
-class VulkanRenderer : Renderer [abstract singleton]
+class VulkanRenderer : Renderer [essential abstract singleton]
   PROPERTIES
+    instance   : VKInstance
+
     native "VkPresentModeKHR present_mode;"
+
     surface    : VKSurface
 
     gpu_info   : VKGPUInfo
@@ -20,6 +23,14 @@ class VulkanRenderer : Renderer [abstract singleton]
 
     surface_formats : VKSurfaceFormat[]
 
+    native "PFN_vkGetDeviceProcAddr                       vkGetDeviceProcAddr;"
+    native "PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;"
+    native "PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;"
+    native "PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;"
+    native "PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;"
+    native "PFN_vkGetSwapchainImagesKHR                   vkGetSwapchainImagesKHR;"
+
+    is_configured : Logical
 
   METHODS
     method init_object
@@ -29,8 +40,42 @@ class VulkanRenderer : Renderer [abstract singleton]
       swapchain.prepare
       swapchain.block_until_ready
 
-    method configure
-      PVKInstance.configure
+    method configure [api]
+      trace "---- configure"
+      if (is_configured) return
+      is_configured = true
+
+      # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
+      local app_name = "Plasmacore App"
+      local app_version_code = 1
+
+      local app_info = VKApplicationInfo( app_name, app_version_code, "Plasmacore2023", Plasmacore.VERSION_CODE )
+
+      local create_info = VKInstanceCreateInfo( app_info )
+      create_info.enable_extension( "VK_KHR_get_physical_device_properties2" )
+      create_info.enable_extension( "VK_KHR_surface" )
+      create_info.enable_extension( "VK_EXT_metal_surface" )
+      create_info.enable_extension( "VK_KHR_portability_enumeration" )
+
+      instance = VKInstance( create_info )
+
+      local fn = instance.device_procedure_address( "vkGetDeviceProcAddr" )
+      native @|$this->vkGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr) $fn.value;
+
+      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfaceSupportKHR" )
+      native @|$this->vkGetPhysicalDeviceSurfaceSupportKHR = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR) $fn.value;
+
+      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfaceCapabilitiesKHR" )
+      native @|$this->vkGetPhysicalDeviceSurfaceCapabilitiesKHR = (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR) $fn.value;
+
+      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfaceFormatsKHR" )
+      native @|$this->vkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR) $fn.value;
+
+      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfacePresentModesKHR" )
+      native @|$this->vkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR) $fn.value;
+
+      fn = instance.device_procedure_address( "vkGetSwapchainImagesKHR" )
+      native @|$this->vkGetSwapchainImagesKHR = (PFN_vkGetSwapchainImagesKHR) $fn.value;
 
       local preferred_device_order =
       [
@@ -41,7 +86,7 @@ class VulkanRenderer : Renderer [abstract singleton]
         VKGPUType.OTHER
       ]
 
-      local devices = PVKInstance.physical_devices
+      local devices = instance.physical_devices
       forEach (search_type in preferred_device_order)
         if local found_device = devices.first( (info) with (search_type) => info.type == search_type )
           gpu_info = found_device
@@ -57,7 +102,6 @@ class VulkanRenderer : Renderer [abstract singleton]
       else
         error.println "[Vulkan] ERROR: no GPU found"
       endIf
-
 
     method create_device [api]
       if (not gpu_info) return
@@ -126,16 +170,15 @@ class VulkanRenderer : Renderer [abstract singleton]
     method surface_formats->VKSurfaceFormat[]
       if (@surface_formats) return @surface_formats
 
-      local vk_instance = PVKInstance
       local result = VKSurfaceFormat[]
       native
         @|uint32_t count = 0;
-         |$vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, NULL);
+         |$this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, NULL);
          |if (count && count < 200)
          |{
          |  VkSurfaceFormatKHR formats[200];
          |  int i;
-         |  $vk_instance->fn_vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, formats);
+         |  $this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, formats);
          |  for (i=0; i<count; ++i)
          |  {
               local format : VKSurfaceFormat

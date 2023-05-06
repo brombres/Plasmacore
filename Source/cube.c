@@ -99,25 +99,6 @@ void DbgMsg(char *fmt, ...) {
     fflush(stdout);
 }
 
-#define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                                                              \
-    {                                                                                                         \
-        demo->fp##entrypoint = (PFN_vk##entrypoint)vkGetInstanceProcAddr(inst, "vk" #entrypoint);             \
-        if (demo->fp##entrypoint == NULL) {                                                                   \
-            ERR_EXIT("vkGetInstanceProcAddr failed to find vk" #entrypoint, "vkGetInstanceProcAddr Failure"); \
-        }                                                                                                     \
-    }
-
-static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
-
-#define GET_DEVICE_PROC_ADDR(dev, entrypoint)                                                                    \
-    {                                                                                                            \
-        if (!g_gdpa) g_gdpa = (PFN_vkGetDeviceProcAddr)vkGetInstanceProcAddr(demo->inst, "vkGetDeviceProcAddr"); \
-        demo->fp##entrypoint = (PFN_vk##entrypoint)g_gdpa(dev, "vk" #entrypoint);                                \
-        if (demo->fp##entrypoint == NULL) {                                                                      \
-            ERR_EXIT("vkGetDeviceProcAddr failed to find vk" #entrypoint, "vkGetDeviceProcAddr Failure");        \
-        }                                                                                                        \
-    }
-
 #define GRAPHICS_QUEUE_FAMILY_INDEX ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->graphics_queue_family.index
 #define PRESENT_QUEUE_FAMILY_INDEX ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->presentation_queue_family.index
 #define SEPARATE_PRESENT_QUEUE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->uses_separate_presentation_queue
@@ -141,9 +122,8 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define FN_ACQUIRE_NEXT_IMAGE_KHR   ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkAcquireNextImageKHR
 #define FN_QUEUE_PRESENT_KHR        ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkQueuePresentKHR
 
-#define FN_GET_PHYSICAL_DEVICE_SURFACE_CAPABILITIES  ROGUE_SINGLETON(PlasmacorePVKInstance)->fn_vkGetPhysicalDeviceSurfaceCapabilitiesKHR
-#define FN_GET_PHYSICAL_DEVICE_SURFACE_FORMATS       ROGUE_SINGLETON(PlasmacorePVKInstance)->fn_vkGetPhysicalDeviceSurfaceFormatsKHR
-#define FN_GET_PHYSICAL_DEVICE_SURFACE_PRESENT_MODES ROGUE_SINGLETON(PlasmacorePVKInstance)->fn_vkGetPhysicalDeviceSurfacePresentModesKHR
+#define FN_GET_PHYSICAL_DEVICE_SURFACE_CAPABILITIES  ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetPhysicalDeviceSurfaceCapabilitiesKHR
+#define FN_GET_PHYSICAL_DEVICE_SURFACE_PRESENT_MODES ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetPhysicalDeviceSurfacePresentModesKHR
 
 /*
  * structure to track all objects related to a texture.
@@ -2059,16 +2039,20 @@ static void demo_init_vk(struct demo *demo) {
     demo->is_minimized = false;
     demo->cmd_pool = VK_NULL_HANDLE;
 
-    PlasmacorePVKInstance__configure__RogueString_RogueInt32(
-      ROGUE_SINGLETON(PlasmacorePVKInstance),
-      RogueString_create( APP_SHORT_NAME ),
-      0
-    );
-    demo->inst = ROGUE_SINGLETON(PlasmacorePVKInstance)->instance_value;
+    //PlasmacoreVulkanRenderer_configure(
+      //ROGUE_SINGLETON(PlasmacoreVulkanRenderer)
+    //);
+    //PlasmacoreVulkanRenderer_configure__RogueString_RogueInt32(
+    //  ROGUE_SINGLETON(PlasmacorePVKInstance),
+    //  RogueString_create( APP_SHORT_NAME ),
+    //  0
+    //);
+printf("---- demo_init_vk\n" );
+    demo->inst = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->instance->instance_value;
 
     demo->gpu = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->gpu_info->gpu;
 
-    FN_GET_PHYSICAL_DEVICE_SURFACE_PRESENT_MODES = ROGUE_SINGLETON(PlasmacorePVKInstance)->fn_vkGetPhysicalDeviceSurfacePresentModesKHR;
+    FN_GET_PHYSICAL_DEVICE_SURFACE_PRESENT_MODES = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetPhysicalDeviceSurfacePresentModesKHR;
 }
 
 static void demo_create_device(struct demo *demo) {

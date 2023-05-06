@@ -1,7 +1,5 @@
 module Plasmacore
 
-$include Vulkan/PVKInstance
-
 $include Vulkan/VKApplicationInfo
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceCreateInfo

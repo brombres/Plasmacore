@@ -16,8 +16,6 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
       native @|$this->ca_metal_layer = $ca_metal_layer.value;
 
     method create_surface [api override]
-      local vk_instance = PVKInstance
-
       if (surface) surface.destroy
 
       surface = VKSurface( this )
@@ -28,7 +26,7 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
          |surface_info.pLayer = (__bridge const CAMetalLayer*) $this->ca_metal_layer;
          |
          |vkCreateMetalSurfaceEXT(
-         |  $vk_instance->instance_value,
+         |  $this->instance->instance_value,
          |  &surface_info,
          |  NULL,
          |  &$surface->value

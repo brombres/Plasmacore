@@ -54,7 +54,6 @@ class VKGPUInfo [api]
     method queue_families->VKQueueFamily[]
       if (@queue_families) return @queue_families
 
-      local vk_instance = PVKInstance
       local result = VKQueueFamily[]
       native
         @|uint32_t count = 0;
