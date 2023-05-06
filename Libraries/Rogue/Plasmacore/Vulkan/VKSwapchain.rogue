@@ -7,6 +7,7 @@ class VKSwapchain
     max_lag       : Int32
     current_frame : VKFramePresenter
     frames        = VKFramePresenter[]
+    buffers       = VKRenderBuffer[]
     is_prepared   : Logical
 
     native "VkSwapchainKHR value;"
@@ -82,7 +83,6 @@ class VKSwapchain
          |    .oldSwapchain = old_swapchain,
          |    .clipped = 1,
          |  };
-         |  uint32_t i;
          |  $device->fn_vkCreateSwapchainKHR( $device->value, &swap_chain_config, NULL, &$this->value );
          |
          |  if (old_swapchain != VK_NULL_HANDLE)
@@ -91,13 +91,53 @@ class VKSwapchain
          |  }
          |}
 
-        #trace "---- " renderer.surface.current_transform
+         buffers.clear
 
-
-      #trace "---- " renderer.surface.min_buffer_count
-      #trace "---- " renderer.surface.max_buffer_count
-      #trace "---- " renderer.surface.present_modes
-      #trace "---- " VKCompositeAlphaType.categories
+      native
+        @|{
+         |  uint32_t i, buffer_count;
+         |  PFN_vkGetSwapchainImagesKHR get_swapchain_images = $device->fn_vkGetSwapchainImagesKHR;
+         |  get_swapchain_images( $device->value, $this->value, &buffer_count, NULL );
+         |
+         |  if (buffer_count && buffer_count <= 8)
+         |  {
+         |    VkImage swapchain_images[8];
+         |    get_swapchain_images( $device->value, $this->value, &buffer_count, swapchain_images );
+         |    for (i=0; i<buffer_count; ++i)
+         |    {
+         |      VkImageViewCreateInfo image_view_config =
+         |      {
+         |        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+         |        .pNext = NULL,
+         |        .flags = 0,
+         |        .image = swapchain_images[i],
+         |        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+         |        .format = $renderer->surface_format.value.format,
+         |        .components =
+         |        {
+         |            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+         |            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+         |            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+         |            .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+         |        },
+         |        .subresourceRange =
+         |        {
+         |          .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+         |          .baseMipLevel = 0,
+         |          .levelCount = 1,
+         |          .baseArrayLayer = 0,
+         |          .layerCount = 1
+         |        }
+         |      };
+         |
+                local buffer = VKRenderBuffer()
+                buffers.add( buffer )
+      native
+        @|      $buffer->image = swapchain_images[i];
+         |      vkCreateImageView( $device->value, &image_view_config, NULL, &$buffer->view );
+         |    }
+         |  }
+         |}
 
     method advance_frame
       current_frame = frames[ (frames.locate(current_frame).value + 1) % frames.count ]

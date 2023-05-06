@@ -1,0 +1,14 @@
+module Plasmacore
+
+class VKRenderBuffer
+  PROPERTIES
+    native "VkImage         image;"
+    native "VkImageView     view;"
+    native "VkCommandBuffer cmd;"
+    native "VkCommandBuffer graphics_to_present_cmd;"
+    native "VkBuffer        uniform_buffer;"
+    native "VkDeviceMemory  uniform_memory;"
+    native "void*           uniform_memory_ptr;"
+    native "VkFramebuffer   framebuffer;"
+    native "VkDescriptorSet descriptor_set;"
+endClass

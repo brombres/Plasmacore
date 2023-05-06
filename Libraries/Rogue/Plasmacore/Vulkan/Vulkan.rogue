@@ -9,6 +9,7 @@ $include Vulkan/VKGPUType
 $include Vulkan/VKInstance
 $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
+$include Vulkan/VKRenderBuffer
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
 $include Vulkan/VKSurfaceTransform
