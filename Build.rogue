@@ -68,8 +68,9 @@ routine rogo_macos( option:String )
   local files = Files( "." )
   files.add( "Source/**/*.rogue" )
   files.add( "Libraries/Rogue/Plasmacore/**/*.rogue" )
+  files.add( "Libraries/Rogue/Vulkan/**/*.rogue" )
   if (rebuild or files.any_newer_than(File("Build/macOS/Source/RogueProgram.m")))
-    local cmd = "roguec Source/Main.rogue Plasmacore Vulkan/MoltenVKRenderer"
+    local cmd = "roguec Source/Main.rogue Plasmacore VulkanRenderer/MoltenVKRenderer"
     cmd += " --libraries=Libraries/Rogue"
     cmd += " --target=C,ObjC,macOS,Plasmacore,MoltenVK,Vulkan"
     cmd += " --output=Build/macOS/Source/RogueProgram"

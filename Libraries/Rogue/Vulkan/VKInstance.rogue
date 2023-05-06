@@ -1,0 +1,54 @@
+module Vulkan
+
+class VKInstance
+  PROPERTIES
+    native "VkInstance instance_value;"
+
+  GLOBAL METHODS
+    method instance_extensions->String[]
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateInstanceExtensionProperties( NULL, &count, NULL );
+         |
+         |if (count > 0 && count <= 256)
+         |{
+         |  VkExtensionProperties instance_extensions[256];
+         |  vkEnumerateInstanceExtensionProperties( NULL, &count, instance_extensions );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+              result.add( native("RogueString_create(instance_extensions[i].extensionName)")->String )
+
+      native
+        @|  }
+         |}
+
+      return result
+
+    method instance_layers->String[]
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateInstanceLayerProperties( &count, NULL );
+         |
+         |if (count > 0 && count <= 256)
+         |{
+         |  VkLayerProperties instance_layers[256];
+         |  vkEnumerateInstanceLayerProperties( &count, instance_layers );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+              result.add( native("RogueString_create(instance_layers[i].layerName)")->String )
+
+      native
+        @|  }
+         |}
+
+      return result
+
+  METHODS
+    method init( create_info:VKInstanceCreateInfo )
+      native
+        @|vkCreateInstance( &$create_info->info_value, NULL, &$this->instance_value);
+endClass

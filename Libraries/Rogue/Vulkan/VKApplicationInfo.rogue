@@ -1,0 +1,20 @@
+module Vulkan
+
+class VKApplicationInfo
+  PROPERTIES
+    native "VkApplicationInfo info_value;"
+    app_name            : String
+    app_version_code    : Int32
+    engine_name         : String
+    engine_version_code : Int32
+
+  METHODS
+    method init( app_name, app_version_code, engine_name, engine_version_code )
+      native
+        @|$this->info_value.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+         |$this->info_value.pApplicationName = $app_name->data->as_utf8;
+         |$this->info_value.applicationVersion = $app_version_code;
+         |$this->info_value.pEngineName = $engine_name->data->as_utf8;
+         |$this->info_value.engineVersion = $engine_version_code;
+         |$this->info_value.apiVersion = VK_API_VERSION_1_0;
+endClass

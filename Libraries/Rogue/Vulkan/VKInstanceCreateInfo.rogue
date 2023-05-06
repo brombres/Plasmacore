@@ -1,0 +1,68 @@
+module Vulkan
+
+class VKInstanceCreateInfo
+  PROPERTIES
+    native "VkInstanceCreateInfo info_value;"
+    native "char* extension_names[64];"
+    native "char* layer_names[64];"
+
+    app_info   : VKApplicationInfo
+
+    available_extensions : String[]
+    available_layers     : String[]
+
+    enabled_extensions : String[]
+    enabled_layers     : String[]
+
+  METHODS
+    method init( app_info, enabled_extensions=String[], enabled_layers=String[] )
+      forEach (extension_name at i in enabled_extensions)
+        native @|$this->extension_names[$i] = $extension_name->data->as_utf8;
+      endForEach
+      forEach (layer_name at i in enabled_layers)
+        native @|$this->layer_names[$i] = $layer_name->data->as_utf8;
+      endForEach
+
+      local is_portable = enabled_extensions.contains( "VK_KHR_portability_enumeration" )
+
+      native
+        @|$this->info_value.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+         |$this->info_value.flags = ($is_portable ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0);
+         |$this->info_value.pApplicationInfo = &$app_info->info_value;
+         |$this->info_value.enabledLayerCount = $this->enabled_layers->count;
+         |$this->info_value.ppEnabledLayerNames = (const char* const*)$this->layer_names;
+         |$this->info_value.enabledExtensionCount = $this->enabled_extensions->count;
+         |$this->info_value.ppEnabledExtensionNames = (const char* const*)$this->extension_names;
+
+    method enable_debug( setting:Logical )
+      if (setting)
+        enable_extension( "VK_EXT_debug_utils" )
+        enable_layer( "VK_LAYER_KHRONOS_validation" )
+      endIf
+
+    method enable_extension( name:String )->Logical
+      if (not available_extensions) available_extensions = VKInstance.instance_extensions
+      if (available_extensions.contains(name))
+        if (enabled_extensions.contains(name)) return true
+        local i = enabled_extensions.count
+        enabled_extensions.add( name )
+        native @|$this->extension_names[$i] = $name->data->as_utf8;
+                |++$this->info_value.enabledExtensionCount;
+        return true
+      else
+        return false
+      endIf
+
+    method enable_layer( name:String )->Logical
+      if (not available_layers) available_layers = VKInstance.instance_layers
+      if (available_layers.contains(name))
+        if (enabled_layers.contains(name)) return true
+        local i = enabled_layers.count
+        enabled_layers.add( name )
+        native @|$this->layer_names[$i] = $name->data->as_utf8;
+                |++$this->info_value.enabledLayerCount;
+        return true
+      else
+        return false
+      endIf
+endClass

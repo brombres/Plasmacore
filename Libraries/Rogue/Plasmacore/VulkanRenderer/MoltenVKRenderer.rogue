@@ -1,19 +1,22 @@
 module Plasmacore
 
-$include Plasmacore/Vulkan
+$include VulkanRenderer
 
 class MoltenVKRenderer : VulkanRenderer [essential singleton]
   PROPERTIES
     native "void* ca_metal_layer;"
 
   METHODS
+    method init_object
+      Display.renderer = this
+      VulkanRenderer = this
+
     method configure( ca_metal_layer:RogueVoidPointer ) [essential]
       configure
       native @|$this->ca_metal_layer = $ca_metal_layer.value;
-      Display.renderer = this
 
     method create_surface [api override]
-      local vk_instance = VKInstance
+      local vk_instance = PVKInstance
 
       if (surface) surface.destroy
 
@@ -25,7 +28,7 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
          |surface_info.pLayer = (__bridge const CAMetalLayer*) $this->ca_metal_layer;
          |
          |vkCreateMetalSurfaceEXT(
-         |  $vk_instance->value,
+         |  $vk_instance->instance_value,
          |  &surface_info,
          |  NULL,
          |  &$surface->value

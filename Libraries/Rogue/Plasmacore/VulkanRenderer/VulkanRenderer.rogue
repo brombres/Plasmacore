@@ -1,8 +1,8 @@
 module Plasmacore
 
-$include Plasmacore/Vulkan
+uses Vulkan
 
-class VulkanRenderer : Renderer [abstract]
+class VulkanRenderer : Renderer [abstract singleton]
   PROPERTIES
     native "VkPresentModeKHR present_mode;"
     surface    : VKSurface
@@ -30,7 +30,7 @@ class VulkanRenderer : Renderer [abstract]
       swapchain.block_until_ready
 
     method configure
-      VKInstance.configure
+      PVKInstance.configure
 
       local preferred_device_order =
       [
@@ -41,7 +41,7 @@ class VulkanRenderer : Renderer [abstract]
         VKGPUType.OTHER
       ]
 
-      local devices = VKInstance.physical_devices
+      local devices = PVKInstance.physical_devices
       forEach (search_type in preferred_device_order)
         if local found_device = devices.first( (info) with (search_type) => info.type == search_type )
           gpu_info = found_device
@@ -126,7 +126,7 @@ class VulkanRenderer : Renderer [abstract]
     method surface_formats->VKSurfaceFormat[]
       if (@surface_formats) return @surface_formats
 
-      local vk_instance = VKInstance
+      local vk_instance = PVKInstance
       local result = VKSurfaceFormat[]
       native
         @|uint32_t count = 0;

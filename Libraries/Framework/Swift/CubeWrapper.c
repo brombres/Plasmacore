@@ -3,7 +3,7 @@
 #include "RogueProgram.h"
 
 #define VK_USE_PLATFORM_METAL_EXT 1
-#include "../../MoltenVK/External/Vulkan-Tools/cube/cube.c"
+#include "../../../Source/cube.c"
 
 static struct demo cube_demo = {0};
 

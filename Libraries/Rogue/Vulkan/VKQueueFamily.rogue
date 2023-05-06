@@ -15,7 +15,7 @@ class VKQueueFamily [compound]
       if (@supports_presenting) return @supports_presenting.value
 
       local result : Logical
-      local vk_instance = VKInstance
+      local vk_instance = PVKInstance
       local renderer = Display.renderer->(as VulkanRenderer)
       native
         @|VkBool32 supports_presenting;

@@ -13,7 +13,7 @@ class VKSurface
 
     method current_transform->VKSurfaceTransform
       local result : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -29,7 +29,7 @@ class VKSurface
 
     method max_buffer_count->Int32
       local result : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -42,7 +42,7 @@ class VKSurface
 
     method max_size->XY
       local w, h : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -56,7 +56,7 @@ class VKSurface
 
     method min_buffer_count->Int32
       local result : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -69,7 +69,7 @@ class VKSurface
 
     method min_size->XY
       local w, h : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -84,12 +84,12 @@ class VKSurface
     method on_cleanup
       if (is_cleaned_up) return
       is_cleaned_up = true
-      native @|vkDestroySurfaceKHR( ROGUE_SINGLETON(PlasmacoreVKInstance)->value, $this->value, NULL );
+      native @|vkDestroySurfaceKHR( ROGUE_SINGLETON(PlasmacorePVKInstance)->instance_value, $this->value, NULL );
 
     method present_modes->VKPresentMode[]
       if (@present_modes) return @present_modes
 
-      local vk_instance = VKInstance
+      local vk_instance = PVKInstance
       local result = VKPresentMode[]
       native
         @|{
@@ -119,7 +119,7 @@ class VKSurface
 
     method size->XY
       local w, h : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -133,7 +133,7 @@ class VKSurface
 
     method supports_composite_alpha_type( type:VKCompositeAlphaType )->Logical
       local supported_alpha : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;
@@ -146,7 +146,7 @@ class VKSurface
 
     method supports_transform( transform:VKSurfaceTransform )->Logical
       local supported_transforms : Int32
-      local instance = VKInstance
+      local instance = PVKInstance
       native
         @|{
          |  VkSurfaceCapabilitiesKHR capabilities;

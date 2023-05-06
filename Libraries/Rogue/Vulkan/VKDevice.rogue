@@ -76,7 +76,7 @@ class VKDevice
         native @|extension_names[$i] = $extension_name->data->as_utf8;
       endForEach
 
-      local instance = VKInstance
+      local instance = PVKInstance
 
       native
         @|
