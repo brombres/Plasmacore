@@ -16,6 +16,7 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
       native @|$this->ca_metal_layer = $ca_metal_layer.value;
 
     method create_surface [api override]
+trace "----"
       if (surface) surface.destroy
 
       surface = VKSurface( this )

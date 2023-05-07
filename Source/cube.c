@@ -103,7 +103,7 @@ void DbgMsg(char *fmt, ...) {
 #define PRESENT_QUEUE_FAMILY_INDEX ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->presentation_queue_family.index
 #define SEPARATE_PRESENT_QUEUE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->uses_separate_presentation_queue
 
-#define VK_DEVICE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->value
+#define VK_DEVICE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->device_value
 #define VK_GRAPHICS_QUEUE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->graphics_queue
 #define VK_PRESENTATION_QUEUE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->presentation_queue
 #define VK_BIT_FORMAT  ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->surface_format.value.format
@@ -112,15 +112,15 @@ void DbgMsg(char *fmt, ...) {
 #define VK_IMAGE_ACQUIRED_SEMAPHORE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->swapchain->current_frame->image_acquired_semaphore
 #define VK_DRAW_COMPLETE_SEMAPHORE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->swapchain->current_frame->draw_complete_semaphore
 #define VK_IMAGE_OWNERSHIP_SEMAPHORE ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->swapchain->current_frame->image_ownership_semaphore
-#define VK_MEMORY_PROPERTIES ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->gpu_info->memory_properties
+#define VK_MEMORY_PROPERTIES ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->gpu->memory_properties
 #define VK_SWAPCHAIN_IMAGE_COUNT ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->swapchain->buffers->count
 #define VK_UNIFORM_BUFFER(i) (((PlasmacoreVKRenderBuffer*)(ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->swapchain->buffers->as_objects[i]))->uniform_buffer)
 
-#define FN_CREATE_SWAPCHAIN_KHR     ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkCreateSwapchainKHR
-#define FN_DESTROY_SWAPCHAIN_KHR    ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkDestroySwapchainKHR
-#define FN_GET_SWAPCHAIN_IMAGES_KHR ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkGetSwapchainImagesKHR
-#define FN_ACQUIRE_NEXT_IMAGE_KHR   ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkAcquireNextImageKHR
-#define FN_QUEUE_PRESENT_KHR        ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->device->fn_vkQueuePresentKHR
+#define FN_CREATE_SWAPCHAIN_KHR     ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkCreateSwapchainKHR
+#define FN_DESTROY_SWAPCHAIN_KHR    ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkDestroySwapchainKHR
+#define FN_GET_SWAPCHAIN_IMAGES_KHR ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetSwapchainImagesKHR
+#define FN_ACQUIRE_NEXT_IMAGE_KHR   ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkAcquireNextImageKHR
+#define FN_QUEUE_PRESENT_KHR        ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkQueuePresentKHR
 
 #define FN_GET_PHYSICAL_DEVICE_SURFACE_CAPABILITIES  ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetPhysicalDeviceSurfaceCapabilitiesKHR
 #define FN_GET_PHYSICAL_DEVICE_SURFACE_PRESENT_MODES ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetPhysicalDeviceSurfacePresentModesKHR
@@ -794,6 +794,7 @@ static void demo_draw(struct demo *demo) {
 
     PlasmacoreDisplay__begin_render( ROGUE_SINGLETON(PlasmacoreDisplay) );
 
+printf("---- demo draw\n");
     // TODO
     do {
         // Get the index of the next available swapchain image:
@@ -810,6 +811,7 @@ static void demo_draw(struct demo *demo) {
             // presentation engine will still present the image correctly.
             break;
         } else if (err == VK_ERROR_SURFACE_LOST_KHR) {
+printf("---- 1 create surface\n");
             PlasmacoreMoltenVKRenderer__create_surface( ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer) );
             demo_resize(demo);
         } else {
@@ -2047,10 +2049,9 @@ static void demo_init_vk(struct demo *demo) {
     //  RogueString_create( APP_SHORT_NAME ),
     //  0
     //);
-printf("---- demo_init_vk\n" );
     demo->inst = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->instance->instance_value;
 
-    demo->gpu = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->gpu_info->gpu;
+    demo->gpu = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer)->gpu->device_value;
 
     FN_GET_PHYSICAL_DEVICE_SURFACE_PRESENT_MODES = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->vkGetPhysicalDeviceSurfacePresentModesKHR;
 }

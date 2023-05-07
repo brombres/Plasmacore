@@ -83,11 +83,11 @@ class VKSwapchain
          |    .oldSwapchain = old_swapchain,
          |    .clipped = 1,
          |  };
-         |  $device->fn_vkCreateSwapchainKHR( $device->value, &swap_chain_config, NULL, &$this->value );
+         |  $renderer->vkCreateSwapchainKHR( $device->device_value, &swap_chain_config, NULL, &$this->value );
          |
          |  if (old_swapchain != VK_NULL_HANDLE)
          |  {
-         |    $device->fn_vkDestroySwapchainKHR( $device->value, old_swapchain, NULL );
+         |    $renderer->vkDestroySwapchainKHR( $device->device_value, old_swapchain, NULL );
          |  }
          |}
 
@@ -96,13 +96,13 @@ class VKSwapchain
       native
         @|{
          |  uint32_t i, buffer_count;
-         |  PFN_vkGetSwapchainImagesKHR get_swapchain_images = $device->fn_vkGetSwapchainImagesKHR;
-         |  get_swapchain_images( $device->value, $this->value, &buffer_count, NULL );
+         |  PFN_vkGetSwapchainImagesKHR get_swapchain_images = $renderer->vkGetSwapchainImagesKHR;
+         |  get_swapchain_images( $device->device_value, $this->value, &buffer_count, NULL );
          |
          |  if (buffer_count && buffer_count <= 8)
          |  {
          |    VkImage swapchain_images[8];
-         |    get_swapchain_images( $device->value, $this->value, &buffer_count, swapchain_images );
+         |    get_swapchain_images( $device->device_value, $this->value, &buffer_count, swapchain_images );
          |    for (i=0; i<buffer_count; ++i)
          |    {
          |      VkImageViewCreateInfo image_view_config =
@@ -134,7 +134,7 @@ class VKSwapchain
                 buffers.add( buffer )
       native
         @|      $buffer->image = swapchain_images[i];
-         |      vkCreateImageView( $device->value, &image_view_config, NULL, &$buffer->view );
+         |      vkCreateImageView( $device->device_value, &image_view_config, NULL, &$buffer->view );
          |    }
          |  }
          |}
@@ -174,7 +174,7 @@ class VKFramePresenter
          |  .flags = 0
          |};
          |
-         |VkDevice device = $device->value;
+         |VkDevice device = $device->device_value;
          |
          |vkCreateFence( device, &fence_config, NULL, &$this->fence );
          |
@@ -186,9 +186,9 @@ class VKFramePresenter
          |}
 
     method block_until_ready
-      local renderer = Display.renderer->(as VulkanRenderer)
+      local renderer = VulkanRenderer
       local device = renderer.device
       native
-        @|vkWaitForFences( $device->value, 1, &$this->fence, VK_TRUE, UINT64_MAX );
-         |vkResetFences( $device->value, 1, &$this->fence );
+        @|vkWaitForFences( $device->device_value, 1, &$this->fence, VK_TRUE, UINT64_MAX );
+         |vkResetFences( $device->device_value, 1, &$this->fence );
 endClass

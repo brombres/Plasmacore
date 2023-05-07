@@ -1,0 +1,45 @@
+module Vulkan
+
+class VKDeviceCreateInfo
+  PROPERTIES
+    gpu                  : VKPhysicalDevice
+    available_extensions : String[]
+    enabled_extensions   = String[]
+
+  METHODS
+    method init( gpu )
+
+    method available_extensions->String[]
+      if (@available_extensions) return @available_extensions
+
+      local result = String[]
+
+      native
+        @|uint32_t count = 0;
+         |vkEnumerateDeviceExtensionProperties( $gpu->device_value, NULL, &count, NULL );
+         |
+         |if (count > 0 && count <= 256)
+         |{
+         |  VkExtensionProperties extensions[256];
+         |  vkEnumerateDeviceExtensionProperties( $gpu->device_value, NULL, &count, extensions );
+         |  for (uint32_t i = 0; i < count; i++)
+         |  {
+      result.add( native("RogueString_create(extensions[i].extensionName)")->String )
+
+      native
+        @|  }
+         |}
+
+      @available_extensions = result
+      return result
+
+    method enable_extension( name:String )->Logical
+      if (available_extensions.contains(name))
+        if (not enabled_extensions.contains(name))
+          enabled_extensions.add( name )
+        endIf
+        return true
+      else
+        return false
+      endIf
+endClass

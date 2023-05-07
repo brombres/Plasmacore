@@ -52,34 +52,28 @@ class VKInstance
       native
         @|vkCreateInstance( &$create_info->info_value, NULL, &$this->instance_value);
 
-    method device_procedure_address( name:String )->RogueVoidPointer
+    method procedure_address( name:String )->RogueVoidPointer
       local result : RogueVoidPointer
       native @|$result.value = vkGetInstanceProcAddr( $this->instance_value, $name->data->as_utf8 );
       return result
 
-    method physical_devices->Plasmacore::VKGPUInfo[]
-      local result = Plasmacore::VKGPUInfo[]
-      native
-        @|uint32_t count = 0;
-         |VkResult err = vkEnumeratePhysicalDevices( $this->instance_value, &count, NULL );
-         |if ( !err && count && count < 64 )
-         |{
-         |  VkPhysicalDevice devices[64];
-         |  int i;
-         |  err = vkEnumeratePhysicalDevices( $this->instance_value, &count, devices );
-         |  for (i=0; i<count; ++i)
-         |  {
+    method physical_devices->VKPhysicalDevice[]
+      local count : Int32
+      local result = VKPhysicalDevice[]
 
-      local device_info = Plasmacore::VKGPUInfo()
       native
-        @|    $device_info->index = (RogueInt32) i;
-         |    $device_info->gpu   = devices[i];
-         |    vkGetPhysicalDeviceProperties( devices[i], &$device_info->properties );
-         |    vkGetPhysicalDeviceFeatures( devices[i], &$device_info->features );
-         |    vkGetPhysicalDeviceMemoryProperties( devices[i], &$device_info->memory_properties );
-              result.add( device_info );
-      native
-        @|  }
-         |}
+        @|VkPhysicalDevice devices[64];
+         |vkEnumeratePhysicalDevices( $this->instance_value, (uint32_t*)&$count, NULL );
+
+      if (count and count <= 64)
+        native @|vkEnumeratePhysicalDevices( $this->instance_value, (uint32_t*)&$count, devices );
+        forEach (i in 0..<count)
+          local device = VKPhysicalDevice( i )
+          native @|$device->device_value = devices[$i];
+          device.configure
+          result.add( device );
+        endForEach
+      endIf
+
       return result
 endClass

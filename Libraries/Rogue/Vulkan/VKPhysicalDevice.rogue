@@ -1,0 +1,61 @@
+module Vulkan
+
+class VKPhysicalDevice
+  PROPERTIES
+    index                : Int32
+    name                 : String
+    queue_families       : VKQueueFamily[]
+    native "VkPhysicalDevice                 device_value;"
+    native "VkPhysicalDeviceFeatures         features;"
+    native "VkPhysicalDeviceMemoryProperties memory_properties;"
+    native "VkPhysicalDeviceProperties       properties;"
+
+  METHODS
+    method init( index )
+
+    method configure
+      native @|vkGetPhysicalDeviceProperties( $this->device_value, &$this->properties );
+              |vkGetPhysicalDeviceFeatures( $this->device_value, &$this->features );
+              |vkGetPhysicalDeviceMemoryProperties( $this->device_value, &$this->memory_properties );
+
+    method name->String
+      if (not @name)
+        native @|$name = RogueString_create( (const char*) &($this->properties.deviceName) );
+      endIf
+      return @name
+
+    method queue_families->VKQueueFamily[]
+      if (@queue_families) return @queue_families
+
+      local result = VKQueueFamily[]
+      native
+        @|uint32_t count = 0;
+         |vkGetPhysicalDeviceQueueFamilyProperties( $this->device_value, &count, NULL );
+         |if (count && count < 64)
+         |{
+         |  VkQueueFamilyProperties properties[64];
+         |  int i;
+         |  vkGetPhysicalDeviceQueueFamilyProperties( $this->device_value, &count, properties );
+         |  for (i=0; i<count; ++i)
+         |  {
+              local family : VKQueueFamily
+      native
+        @|    $family.gpu        = $this;
+         |    $family.index      = (RogueInt32) i;
+         |    $family.properties = properties[i];
+      result.add( family );
+      native
+        @|  }
+         |}
+
+         @queue_families = result
+         return @queue_families
+
+    method to->String
+      return "$: $ ($)"(index,name,type)
+
+    method type->VKDeviceType
+      local result : Int32
+      native @|$result = (RogueInt32) $this->properties.deviceType;
+      return VKDeviceType( result )
+endClass

@@ -1,8 +1,11 @@
 module Plasmacore
 
 $include Vulkan/VKApplicationInfo
+$include Vulkan/VKDeviceCreateInfo
+$include Vulkan/VKDeviceType
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceCreateInfo
+$include Vulkan/VKPhysicalDevice
 
 $include Vulkan/VKBitFormat
 $include Vulkan/VKColorSpace

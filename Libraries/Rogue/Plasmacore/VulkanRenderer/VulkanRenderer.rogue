@@ -10,7 +10,7 @@ class VulkanRenderer : Renderer [essential abstract singleton]
 
     surface    : VKSurface
 
-    gpu_info   : VKGPUInfo
+    gpu        : VKPhysicalDevice
     gpu_number = -1
     device     : VKDevice
 
@@ -23,14 +23,20 @@ class VulkanRenderer : Renderer [essential abstract singleton]
 
     surface_formats : VKSurfaceFormat[]
 
+    # VkInstance functions
     native "PFN_vkGetDeviceProcAddr                       vkGetDeviceProcAddr;"
     native "PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;"
     native "PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;"
     native "PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;"
     native "PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;"
-    native "PFN_vkGetSwapchainImagesKHR                   vkGetSwapchainImagesKHR;"
 
-    is_configured : Logical
+    # VkDevice functions
+    native "PFN_vkCreateSwapchainKHR    vkCreateSwapchainKHR;"
+    native "PFN_vkDestroySwapchainKHR   vkDestroySwapchainKHR;"
+    native "PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR;"
+    native "PFN_vkAcquireNextImageKHR   vkAcquireNextImageKHR;"
+    native "PFN_vkQueuePresentKHR       vkQueuePresentKHR;"
+
 
   METHODS
     method init_object
@@ -41,10 +47,7 @@ class VulkanRenderer : Renderer [essential abstract singleton]
       swapchain.block_until_ready
 
     method configure [api]
-      trace "---- configure"
-      if (is_configured) return
-      is_configured = true
-
+trace "----"
       # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
       local app_name = "Plasmacore App"
       local app_version_code = 1
@@ -59,57 +62,69 @@ class VulkanRenderer : Renderer [essential abstract singleton]
 
       instance = VKInstance( create_info )
 
-      local fn = instance.device_procedure_address( "vkGetDeviceProcAddr" )
+      local fn = instance.procedure_address( "vkGetDeviceProcAddr" )
       native @|$this->vkGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr) $fn.value;
 
-      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfaceSupportKHR" )
+      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfaceSupportKHR" )
       native @|$this->vkGetPhysicalDeviceSurfaceSupportKHR = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR) $fn.value;
 
-      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfaceCapabilitiesKHR" )
+      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfaceCapabilitiesKHR" )
       native @|$this->vkGetPhysicalDeviceSurfaceCapabilitiesKHR = (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR) $fn.value;
 
-      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfaceFormatsKHR" )
+      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfaceFormatsKHR" )
       native @|$this->vkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR) $fn.value;
 
-      fn = instance.device_procedure_address( "vkGetPhysicalDeviceSurfacePresentModesKHR" )
+      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfacePresentModesKHR" )
       native @|$this->vkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR) $fn.value;
-
-      fn = instance.device_procedure_address( "vkGetSwapchainImagesKHR" )
-      native @|$this->vkGetSwapchainImagesKHR = (PFN_vkGetSwapchainImagesKHR) $fn.value;
 
       local preferred_device_order =
       [
-        VKGPUType.DISCRETE_GPU
-        VKGPUType.INTEGRATED_GPU
-        VKGPUType.VIRTUAL_GPU
-        VKGPUType.CPU
-        VKGPUType.OTHER
+        VKDeviceType.DISCRETE_GPU
+        VKDeviceType.INTEGRATED_GPU
+        VKDeviceType.VIRTUAL_GPU
+        VKDeviceType.CPU
+        VKDeviceType.OTHER
       ]
 
       local devices = instance.physical_devices
       forEach (search_type in preferred_device_order)
-        if local found_device = devices.first( (info) with (search_type) => info.type == search_type )
-          gpu_info = found_device
+        if local found_device = devices.first( (device) => (device.type == search_type) )
+          gpu = found_device
           gpu_number = found_device.index
           escapeForEach
         endIf
       endForEach
 
-      if (gpu_info)
-        log.println "[Vulkan] Using GPU $"(gpu_info)
-        gpu_info.enable_extension( "VK_KHR_swapchain" )
-        gpu_info.enable_extension( "VK_KHR_portability_subset" )
+      if (gpu)
+        log.println "[Vulkan] Using GPU $"(gpu)
       else
         error.println "[Vulkan] ERROR: no GPU found"
       endIf
 
     method create_device [api]
-      if (not gpu_info) return
+trace "----"
+      if (not gpu) return
 
-      local config = gpu_info.device_configuration
+      local config = VKDeviceCreateInfo( gpu )
       config.enable_extension( "VK_KHR_swapchain" )
       config.enable_extension( "VK_KHR_portability_subset" )
-      device = config.create_device
+
+      device = VKDevice( config )
+
+      local fn = device.procedure_address( "vkCreateSwapchainKHR" )
+      native @|$this->vkCreateSwapchainKHR    = (PFN_vkCreateSwapchainKHR) $fn.value;
+
+      fn = device.procedure_address( "vkDestroySwapchainKHR" )
+      native @|$this->vkDestroySwapchainKHR   = (PFN_vkDestroySwapchainKHR) $fn.value;
+
+      fn = device.procedure_address( "vkGetSwapchainImagesKHR" )
+      native @|$this->vkGetSwapchainImagesKHR = (PFN_vkGetSwapchainImagesKHR) $fn.value;
+
+      fn = device.procedure_address( "vkAcquireNextImageKHR" )
+      native @|$this->vkAcquireNextImageKHR   = (PFN_vkAcquireNextImageKHR) $fn.value;
+
+      fn = device.procedure_address( "vkQueuePresentKHR" )
+      native @|$this->vkQueuePresentKHR       = (PFN_vkQueuePresentKHR) $fn.value;
 
       block
         local desired_formats =
@@ -130,7 +145,7 @@ class VulkanRenderer : Renderer [essential abstract singleton]
         surface_format = surface_formats.first
       endBlock
 
-      swapchain = VKSwapchain( this )
+      swapchain = VKSwapchain( this, 3, 2 )
 
     method create_surface [abstract api]
 
@@ -140,7 +155,7 @@ class VulkanRenderer : Renderer [essential abstract singleton]
     method find_queue_families
       block
         # Find a queue family that supports both graphics and presentation
-        forEach (family in gpu_info.queue_families)
+        forEach (family in gpu.queue_families)
           if (family.supports_graphics and family.supports_presenting)
             graphics_queue_family = family
             presentation_queue_family = family
@@ -149,14 +164,14 @@ class VulkanRenderer : Renderer [essential abstract singleton]
         endForEach
 
         # Find separate queue families for graphics and for presentation
-        forEach (family in gpu_info.queue_families)
+        forEach (family in gpu.queue_families)
           if (family.supports_graphics)
             graphics_queue_family = family
             escapeForEach
           endIf
         endForEach
 
-        forEach (family in gpu_info.queue_families)
+        forEach (family in gpu.queue_families)
           if (family.supports_presenting)
             presentation_queue_family = family
             escapeBlock
@@ -173,12 +188,12 @@ class VulkanRenderer : Renderer [essential abstract singleton]
       local result = VKSurfaceFormat[]
       native
         @|uint32_t count = 0;
-         |$this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, NULL);
+         |$this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu->device_value, $this->surface->value, &count, NULL);
          |if (count && count < 200)
          |{
          |  VkSurfaceFormatKHR formats[200];
          |  int i;
-         |  $this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu_info->gpu, $this->surface->value, &count, formats);
+         |  $this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu->device_value, $this->surface->value, &count, formats);
          |  for (i=0; i<count; ++i)
          |  {
               local format : VKSurfaceFormat

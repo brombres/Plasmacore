@@ -1,8 +1,8 @@
-module Plasmacore
+module Vulkan
 
 class VKQueueFamily [compound]
   PROPERTIES
-    gpu_info            : VKGPUInfo
+    gpu                 : VKPhysicalDevice
     index               : Int32
     supports_presenting : Logical?
     native "VkQueueFamilyProperties properties;"
@@ -15,11 +15,11 @@ class VKQueueFamily [compound]
       if (@supports_presenting) return @supports_presenting.value
 
       local result : Logical
-      local renderer = VulkanRenderer
+      local renderer = Plasmacore::VulkanRenderer
       native
         @|VkBool32 supports_presenting;
          |$renderer->vkGetPhysicalDeviceSurfaceSupportKHR(
-         |  $this.gpu_info->gpu,
+         |  $gpu->device_value,
          |  $this.index,
          |  $renderer->surface->value,
          |  &supports_presenting
