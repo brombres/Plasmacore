@@ -48,6 +48,7 @@ class VulkanRenderer : Renderer [essential abstract singleton]
 
     method configure [api]
 trace "----"
+if (true) return
       # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
       local app_name = "Plasmacore App"
       local app_version_code = 1
