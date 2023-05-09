@@ -1,6 +1,7 @@
 module Vulkan
 
 class VKQueueFamily [compound]
+  #{
   PROPERTIES
     gpu                 : VKPhysicalDevice
     index               : Int32
@@ -31,6 +32,7 @@ class VKQueueFamily [compound]
 
     method to->String
       return "($ supports_graphics:$ supports_presenting:$)"(index,supports_graphics,supports_presenting)
+      }#
 
 endClass
 

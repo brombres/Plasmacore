@@ -1,0 +1,115 @@
+module Plasmacore
+
+class PVKSwapchain
+  PROPERTIES
+    renderer      : VulkanRenderer
+    current_frame : PVKFrameControl
+    frames        = PVKFrameControl[]
+
+    native "VkSwapchainKHR swapchain_value;"
+    buffer_count : Int32
+    native "VkFormat format;"
+    native "VkColorSpaceKHR color_space;"
+    buffer_size : XY
+    native "VkSurfaceTransformFlagsKHR pretransform;"
+    native "VkCompositeAlphaFlagBitsKHR composite_alpha;"
+    native "VkPresentModeKHR present_mode;"
+    native "PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR;"
+    native "PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR;"
+
+  METHODS
+    method init( renderer )
+
+    method advance_frame [api]
+      current_frame = frames[ (frames.locate(current_frame).value + 1) % frames.count ]
+
+    method configure [api]
+trace "----"
+      native
+        @|VkSwapchainKHR old_swapchain = $this->swapchain_value;
+         |
+         |VkSwapchainCreateInfoKHR swapchain_ci =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+         |  .pNext = NULL,
+         |  .surface = $renderer->context->surface->native_surface.value,
+         |  .minImageCount = $buffer_count,
+         |  .imageFormat = $this->format,
+         |  .imageColorSpace = $this->color_space,
+         |  .imageExtent =
+         |  {
+         |    .width  = $buffer_size.x,
+         |    .height = $buffer_size.y
+         |  },
+         |  .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+         |  .preTransform = $this->pretransform,
+         |  .compositeAlpha = $this->composite_alpha,
+         |  .imageArrayLayers = 1,
+         |  .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+         |  .queueFamilyIndexCount = 0,
+         |  .pQueueFamilyIndices = NULL,
+         |  .presentMode = $this->present_mode,
+         |  .oldSwapchain = old_swapchain,
+         |  .clipped = 1,
+         |};
+         |
+         |$this->vkCreateSwapchainKHR( $renderer->context->device->native_device.value, &swapchain_ci, NULL, &$this->swapchain_value );
+         |
+         |if (old_swapchain != VK_NULL_HANDLE)
+         |{
+         |  $this->vkDestroySwapchainKHR( $renderer->context->device->native_device.value, old_swapchain, NULL );
+         |}
+
+    method create_semaphores [api]
+      forEach (i in 0..<2)
+        frames.add( PVKFrameControl(i,renderer) )
+      endForEach
+      current_frame = frames.first
+
+endClass
+
+class PVKFrameControl
+  PROPERTIES
+    index    : Int32
+    renderer : VulkanRenderer
+
+    native "VkFence fence;"
+    native "VkSemaphore image_acquired_semaphore;"
+    native "VkSemaphore draw_complete_semaphore;"
+    native "VkSemaphore image_ownership_semaphore;"
+
+  METHODS
+    method init( index, renderer )
+      native
+        @|VkFenceCreateInfo fence_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .flags = VK_FENCE_CREATE_SIGNALED_BIT
+         |};
+         |
+         |VkSemaphoreCreateInfo sephamore_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .flags = 0
+         |};
+         |
+         |VkDevice device = $renderer->context->device->native_device.value;
+         |
+         |vkCreateFence( device, &fence_config, NULL, &$this->fence );
+         |
+         |vkCreateSemaphore( device, &sephamore_config, NULL, &$this->image_acquired_semaphore );
+         |vkCreateSemaphore( device, &sephamore_config, NULL, &$this->draw_complete_semaphore );
+         |if ($renderer->uses_separate_presentation_queue)
+         |{
+         |  vkCreateSemaphore( device, &sephamore_config, NULL, &$this->image_ownership_semaphore );
+         |}
+
+    method block_until_ready
+      local renderer = VulkanRenderer
+      local device = renderer.device
+      native
+        @|vkWaitForFences( $device->native_device.value, 1, &$this->fence, VK_TRUE, UINT64_MAX );
+         |vkResetFences( $device->native_device.value, 1, &$this->fence );
+endClass

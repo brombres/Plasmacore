@@ -1,13 +1,29 @@
-module Plasmacore
+module Vulkan
 
 class VKDevice
   PROPERTIES
-    native "VkDevice device_value;"
+    context       : VKContext
+    native_device : VKNativeDevice
 
-    native "VkQueue          graphics_queue;"
-    native "VkQueue          presentation_queue;"
+    #native "VkQueue graphics_queue;"
+    #native "VkQueue presentation_queue;"
 
   METHODS
+    method init( context, native_device )
+      SET_NATIVE_PROCEDURE<<context,this,vkCreateSwapchainKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkDestroySwapchainKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkGetSwapchainImagesKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkAcquireNextImageKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkQueuePresentKHR>>
+
+      native
+      @|printf( "---- vkCreateSwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkCreateSwapchainKHR.value );
+       |printf( "---- vkDestroySwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkDestroySwapchainKHR.value );
+       |printf( "---- vkGetSwapchainImagesKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkGetSwapchainImagesKHR.value );
+       |printf( "---- vkAcquireNextImageKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkAcquireNextImageKHR.value );
+       |printf( "---- vkQueuePresentKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkQueuePresentKHR.value );
+
+    #{
     method init( config:VKDeviceCreateInfo )
       local renderer = VulkanRenderer
 
@@ -67,10 +83,10 @@ class VKDevice
          |{
          |  $this->presentation_queue = $this->graphics_queue;
          |}
+      }#
 
     method procedure_address( name:String )->RogueVoidPointer
-      local renderer = VulkanRenderer
       local result : RogueVoidPointer
-      native @|$result.value = $renderer->vkGetDeviceProcAddr( $this->device_value, $name->data->as_utf8 );
+      native @|$result.value = $context->vkGetDeviceProcAddr.value( $this->native_device.value, $name->data->as_utf8 );
       return result
 endClass

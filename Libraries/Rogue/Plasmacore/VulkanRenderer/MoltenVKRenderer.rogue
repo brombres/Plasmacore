@@ -17,9 +17,9 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
 
     method create_surface [api override]
 trace "----"
-      if (surface) surface.destroy
+      if (context.surface) context.surface.destroy
 
-      surface = VKSurface( this )
+      context.surface = VKSurface( context )
 
       native
         @|VkMetalSurfaceCreateInfoEXT surface_info = { 0 };
@@ -27,12 +27,13 @@ trace "----"
          |surface_info.pLayer = (__bridge const CAMetalLayer*) $this->ca_metal_layer;
          |
          |vkCreateMetalSurfaceEXT(
-         |  $this->instance->instance_value,
+         |  $this->context->instance->native_instance.value,
          |  &surface_info,
          |  NULL,
-         |  &$surface->value
+         |  &$context->surface->native_surface.value
          |);
+         |
 
-      find_queue_families
+      #find_queue_families
 
 endClass

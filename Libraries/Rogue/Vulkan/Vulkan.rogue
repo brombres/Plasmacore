@@ -1,6 +1,15 @@
-module Plasmacore
+module Vulkan
+
+$macro NATIVE_PROCEDURE<<$procedure_name>>
+  $procedure_name : VKNativeProcedure<<$procedure_name>>
+$endMacro
+
+$macro SET_NATIVE_PROCEDURE<<$var_context,$source_context,$procedure_name>>
+  $var_context.$procedure_name = VKNativeProcedure<<$procedure_name>>( $source_context.procedure_address($string($procedure_name)) )
+$endMacro
 
 $include Vulkan/VKApplicationInfo
+$include Vulkan/VKContext
 $include Vulkan/VKDeviceCreateInfo
 $include Vulkan/VKDeviceType
 $include Vulkan/VKInstance
@@ -11,8 +20,6 @@ $include Vulkan/VKBitFormat
 $include Vulkan/VKColorSpace
 $include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKDevice
-$include Vulkan/VKGPUInfo
-$include Vulkan/VKGPUType
 $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
 $include Vulkan/VKRenderBuffer
@@ -24,4 +31,21 @@ $include Vulkan/VKSwapchain
 nativeHeader
   @|#define VK_USE_PLATFORM_METAL_EXT 1
    |#include <vulkan/vulkan.h>
+
+nativeType<<"VkDevice">>                 VKNativeDevice
+nativeType<<"VkPhysicalDevice">>         VKNativeGPU
+nativeType<<"VkInstance">>               VKNativeInstance
+nativeType<<"VkSurfaceKHR">>             VKNativeSurface
+nativeType<<"VkSurfaceCapabilitiesKHR">> VKNativeSurfaceCapabilities
+
+class VKNativeProcedure<<$NativeType>> [compound]
+  PROPERTIES
+    native "PFN_$NativeType value;"
+
+  GLOBAL METHODS
+    method create( pointer:RogueVoidPointer )->VKNativeProcedure<<$NativeType>>
+      local result : VKNativeProcedure<<$NativeType>>
+      native @|$result.value = $pointer.value;
+      return result
+endClass
 

@@ -1,0 +1,25 @@
+module Vulkan
+
+class VKContext
+  PROPERTIES
+    instance : VKInstance
+    gpu      : VKPhysicalDevice
+    surface  : VKSurface
+    device   : VKDevice
+
+    # VkInstance functions
+    NATIVE_PROCEDURE<<vkGetDeviceProcAddr>>
+    NATIVE_PROCEDURE<<vkGetPhysicalDeviceSurfaceSupportKHR>>
+    NATIVE_PROCEDURE<<vkGetPhysicalDeviceSurfaceCapabilitiesKHR>>
+    NATIVE_PROCEDURE<<vkGetPhysicalDeviceSurfaceFormatsKHR>>
+    NATIVE_PROCEDURE<<vkGetPhysicalDeviceSurfacePresentModesKHR>>
+
+    # VkDevice functions
+    NATIVE_PROCEDURE<<vkCreateSwapchainKHR>>
+    NATIVE_PROCEDURE<<vkDestroySwapchainKHR>>
+    NATIVE_PROCEDURE<<vkGetSwapchainImagesKHR>>
+    NATIVE_PROCEDURE<<vkAcquireNextImageKHR>>
+    NATIVE_PROCEDURE<<vkQueuePresentKHR>>
+
+  METHODS
+endClass

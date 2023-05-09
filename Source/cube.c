@@ -146,12 +146,21 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 
 #define GET_DEVICE_PROC_ADDR(dev, entrypoint)                                                                    \
     {                                                                                                            \
-        if (!g_gdpa) g_gdpa = (PFN_vkGetDeviceProcAddr)vkGetInstanceProcAddr(demo->inst, "vkGetDeviceProcAddr"); \
+        if (!g_gdpa) g_gdpa = (PFN_vkGetDeviceProcAddr)vkGetInstanceProcAddr(DEMO_INSTANCE, "vkGetDeviceProcAddr"); \
         demo->fp##entrypoint = (PFN_vk##entrypoint)g_gdpa(dev, "vk" #entrypoint);                                \
         if (demo->fp##entrypoint == NULL) {                                                                      \
             ERR_EXIT("vkGetDeviceProcAddr failed to find vk" #entrypoint, "vkGetDeviceProcAddr Failure");        \
         }                                                                                                        \
     }
+
+#define DEMO_INSTANCE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->instance->native_instance.value)
+#define DEMO_SWAPCHAIN (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->swapchain_value)
+
+#define DEMO_FENCE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->fence)
+#define DEMO_IMAGE_ACQUIRED_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->image_acquired_semaphore)
+#define DEMO_DRAW_COMPLETE_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->draw_complete_semaphore)
+#define DEMO_IMAGE_OWNERSHIP_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->image_ownership_semaphore)
+#define DEMO_SURFACE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface->native_surface.value)
 
 /*
  * structure to track all objects related to a texture.
@@ -380,7 +389,6 @@ struct demo {
     uint32_t last_early_id;  // 0 if no early images
     uint32_t last_late_id;   // 0 if no late images
 
-    VkInstance inst;
     VkPhysicalDevice gpu;
     VkDevice device;
     VkQueue graphics_queue;
@@ -415,11 +423,8 @@ struct demo {
     PFN_vkGetRefreshCycleDurationGOOGLE fpGetRefreshCycleDurationGOOGLE;
     PFN_vkGetPastPresentationTimingGOOGLE fpGetPastPresentationTimingGOOGLE;
     uint32_t swapchainImageCount;
-    VkSwapchainKHR swapchain;
     SwapchainImageResources *swapchain_image_resources;
     VkPresentModeKHR presentMode;
-    VkFence fences[FRAME_LAG];
-    int frame_index;
 
     VkCommandPool cmd_pool;
     VkCommandPool present_cmd_pool;
@@ -954,12 +959,12 @@ void DemoUpdateTargetIPD(struct demo *demo) {
     VkPastPresentationTimingGOOGLE *past = NULL;
     uint32_t count = 0;
 
-    err = demo->fpGetPastPresentationTimingGOOGLE(demo->device, demo->swapchain, &count, NULL);
+    err = demo->fpGetPastPresentationTimingGOOGLE(demo->device, DEMO_SWAPCHAIN, &count, NULL);
     assert(!err);
     if (count) {
         past = (VkPastPresentationTimingGOOGLE *)malloc(sizeof(VkPastPresentationTimingGOOGLE) * count);
         assert(past);
-        err = demo->fpGetPastPresentationTimingGOOGLE(demo->device, demo->swapchain, &count, past);
+        err = demo->fpGetPastPresentationTimingGOOGLE(demo->device, DEMO_SWAPCHAIN, &count, past);
         assert(!err);
 
         bool early = false;
@@ -1067,26 +1072,26 @@ static void demo_draw(struct demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
     // Ensure no more than FRAME_LAG renderings are outstanding
-    vkWaitForFences(demo->device, 1, &demo->fences[demo->frame_index], VK_TRUE, UINT64_MAX);
-    vkResetFences(demo->device, 1, &demo->fences[demo->frame_index]);
+    vkWaitForFences(demo->device, 1, &DEMO_FENCE, VK_TRUE, UINT64_MAX);
+    vkResetFences(demo->device, 1, &DEMO_FENCE);
 
     do {
         // Get the index of the next available swapchain image:
         err =
-            demo->fpAcquireNextImageKHR(demo->device, demo->swapchain, UINT64_MAX,
-                                        demo->image_acquired_semaphores[demo->frame_index], VK_NULL_HANDLE, &demo->current_buffer);
+            demo->fpAcquireNextImageKHR(demo->device, DEMO_SWAPCHAIN, UINT64_MAX,
+                                        DEMO_IMAGE_ACQUIRED_SEMAPHORE, VK_NULL_HANDLE, &demo->current_buffer);
 
         if (err == VK_ERROR_OUT_OF_DATE_KHR) {
-            // demo->swapchain is out of date (e.g. the window was resized) and
+            // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
             // must be recreated:
             demo_resize(demo);
         } else if (err == VK_SUBOPTIMAL_KHR) {
-            // demo->swapchain is not as optimal as it could be, but the platform's
+            // DEMO_SWAPCHAIN is not as optimal as it could be, but the platform's
             // presentation engine will still present the image correctly.
             break;
         } else if (err == VK_ERROR_SURFACE_LOST_KHR) {
 printf("-------------surface lost 1\n");
-            vkDestroySurfaceKHR(demo->inst, demo->surface, NULL);
+            //vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
             demo_create_surface(demo);
             demo_resize(demo);
         } else {
@@ -1119,12 +1124,12 @@ printf("-------------surface lost 1\n");
     pipe_stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     submit_info.pWaitDstStageMask = &pipe_stage_flags;
     submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = &demo->image_acquired_semaphores[demo->frame_index];
+    submit_info.pWaitSemaphores = &DEMO_IMAGE_ACQUIRED_SEMAPHORE;
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &demo->swapchain_image_resources[demo->current_buffer].cmd;
     submit_info.signalSemaphoreCount = 1;
-    submit_info.pSignalSemaphores = &demo->draw_complete_semaphores[demo->frame_index];
-    err = vkQueueSubmit(demo->graphics_queue, 1, &submit_info, demo->fences[demo->frame_index]);
+    submit_info.pSignalSemaphores = &DEMO_DRAW_COMPLETE_SEMAPHORE;
+    err = vkQueueSubmit(demo->graphics_queue, 1, &submit_info, DEMO_FENCE);
     assert(!err);
 
     if (demo->separate_present_queue) {
@@ -1134,11 +1139,11 @@ printf("-------------surface lost 1\n");
         VkFence nullFence = VK_NULL_HANDLE;
         pipe_stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         submit_info.waitSemaphoreCount = 1;
-        submit_info.pWaitSemaphores = &demo->draw_complete_semaphores[demo->frame_index];
+        submit_info.pWaitSemaphores = &DEMO_DRAW_COMPLETE_SEMAPHORE;
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &demo->swapchain_image_resources[demo->current_buffer].graphics_to_present_cmd;
         submit_info.signalSemaphoreCount = 1;
-        submit_info.pSignalSemaphores = &demo->image_ownership_semaphores[demo->frame_index];
+        submit_info.pSignalSemaphores = &DEMO_IMAGE_OWNERSHIP_SEMAPHORE;
         err = vkQueueSubmit(demo->present_queue, 1, &submit_info, nullFence);
         assert(!err);
     }
@@ -1149,10 +1154,10 @@ printf("-------------surface lost 1\n");
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext = NULL,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = (demo->separate_present_queue) ? &demo->image_ownership_semaphores[demo->frame_index]
-                                                          : &demo->draw_complete_semaphores[demo->frame_index],
+        .pWaitSemaphores = (demo->separate_present_queue) ? &DEMO_IMAGE_OWNERSHIP_SEMAPHORE
+                                                          : &DEMO_DRAW_COMPLETE_SEMAPHORE,
         .swapchainCount = 1,
-        .pSwapchains = &demo->swapchain,
+        .pSwapchains = &DEMO_SWAPCHAIN,
         .pImageIndices = &demo->current_buffer,
     };
 
@@ -1221,17 +1226,16 @@ printf("-------------surface lost 1\n");
     }
 
     err = demo->fpQueuePresentKHR(demo->present_queue, &present);
-    demo->frame_index += 1;
-    demo->frame_index %= FRAME_LAG;
+PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
-        // demo->swapchain is out of date (e.g. the window was resized) and
+        // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
         // must be recreated:
         demo_resize(demo);
     } else if (err == VK_SUBOPTIMAL_KHR) {
         // SUBOPTIMAL could be due to a resize
         VkSurfaceCapabilitiesKHR surfCapabilities;
-        err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(demo->gpu, demo->surface, &surfCapabilities);
+        err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(demo->gpu, DEMO_SURFACE, &surfCapabilities);
         assert(!err);
         if (surfCapabilities.currentExtent.width != (uint32_t)demo->width ||
             surfCapabilities.currentExtent.height != (uint32_t)demo->height) {
@@ -1239,7 +1243,7 @@ printf("-------------surface lost 1\n");
         }
     } else if (err == VK_ERROR_SURFACE_LOST_KHR) {
 printf("-------------surface lost 2\n");
-        vkDestroySurfaceKHR(demo->inst, demo->surface, NULL);
+        //vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
         demo_create_surface(demo);
         demo_resize(demo);
     } else {
@@ -1247,21 +1251,22 @@ printf("-------------surface lost 2\n");
     }
 }
 
-static void demo_prepare_buffers(struct demo *demo) {
+static void demo_prepare_buffers(struct demo *demo)
+{
     VkResult U_ASSERT_ONLY err;
-    VkSwapchainKHR oldSwapchain = demo->swapchain;
+    //VkSwapchainKHR oldSwapchain = DEMO_SWAPCHAIN;
 
     // Check the surface capabilities and formats
     VkSurfaceCapabilitiesKHR surfCapabilities;
-    err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(demo->gpu, demo->surface, &surfCapabilities);
+    err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(demo->gpu, DEMO_SURFACE, &surfCapabilities);
     assert(!err);
 
     uint32_t presentModeCount;
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(demo->gpu, demo->surface, &presentModeCount, NULL);
+    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(demo->gpu, DEMO_SURFACE, &presentModeCount, NULL);
     assert(!err);
     VkPresentModeKHR *presentModes = (VkPresentModeKHR *)malloc(presentModeCount * sizeof(VkPresentModeKHR));
     assert(presentModes);
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(demo->gpu, demo->surface, &presentModeCount, presentModes);
+    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(demo->gpu, DEMO_SURFACE, &presentModeCount, presentModes);
     assert(!err);
 
     VkExtent2D swapchainExtent;
@@ -1377,47 +1382,63 @@ static void demo_prepare_buffers(struct demo *demo) {
         }
     }
 
-    VkSwapchainCreateInfoKHR swapchain_ci = {
-        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        .pNext = NULL,
-        .surface = demo->surface,
-        .minImageCount = desiredNumOfSwapchainImages,
-        .imageFormat = demo->format,
-        .imageColorSpace = demo->color_space,
-        .imageExtent =
-            {
-                .width = swapchainExtent.width,
-                .height = swapchainExtent.height,
-            },
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        .preTransform = preTransform,
-        .compositeAlpha = compositeAlpha,
-        .imageArrayLayers = 1,
-        .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices = NULL,
-        .presentMode = swapchainPresentMode,
-        .oldSwapchain = oldSwapchain,
-        .clipped = true,
-    };
+    //TODO
+    PlasmacorePVKSwapchain* swapchain = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain;
+    swapchain->buffer_count = (RogueInt32) desiredNumOfSwapchainImages;
+    swapchain->format = demo->format;
+    swapchain->color_space = demo->color_space;
+    swapchain->buffer_size.x = (RogueInt32) swapchainExtent.width;
+    swapchain->buffer_size.y = (RogueInt32) swapchainExtent.height;
+    swapchain->pretransform  = preTransform;
+    swapchain->composite_alpha = compositeAlpha;
+    swapchain->present_mode = swapchainPresentMode;
+    swapchain->vkCreateSwapchainKHR = demo->fpCreateSwapchainKHR;
+    swapchain->vkDestroySwapchainKHR = demo->fpDestroySwapchainKHR;
+
+    //VkSwapchainCreateInfoKHR swapchain_ci = {
+    //    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+    //    .pNext = NULL,
+    //    .surface = DEMO_SURFACE,
+    //    .minImageCount = desiredNumOfSwapchainImages,
+    //    .imageFormat = demo->format,
+    //    .imageColorSpace = demo->color_space,
+    //    .imageExtent =
+    //        {
+    //            .width = swapchainExtent.width,
+    //            .height = swapchainExtent.height,
+    //        },
+    //    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    //    .preTransform = preTransform,
+    //    .compositeAlpha = compositeAlpha,
+    //    .imageArrayLayers = 1,
+    //    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    //    .queueFamilyIndexCount = 0,
+    //    .pQueueFamilyIndices = NULL,
+    //    .presentMode = swapchainPresentMode,
+    //    .oldSwapchain = oldSwapchain,
+    //    .clipped = true,
+    //};
+
+    PlasmacorePVKSwapchain__configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+
     uint32_t i;
-    err = demo->fpCreateSwapchainKHR(demo->device, &swapchain_ci, NULL, &demo->swapchain);
-    assert(!err);
+    //err = demo->fpCreateSwapchainKHR(demo->device, &swapchain_ci, NULL, &DEMO_SWAPCHAIN);
+    //assert(!err);
 
     // If we just re-created an existing swapchain, we should destroy the old
     // swapchain at this point.
     // Note: destroying the swapchain also cleans up all its associated
     // presentable images once the platform is done with them.
-    if (oldSwapchain != VK_NULL_HANDLE) {
-        demo->fpDestroySwapchainKHR(demo->device, oldSwapchain, NULL);
-    }
+    //if (oldSwapchain != VK_NULL_HANDLE) {
+    //    demo->fpDestroySwapchainKHR(demo->device, oldSwapchain, NULL);
+    //}
 
-    err = demo->fpGetSwapchainImagesKHR(demo->device, demo->swapchain, &demo->swapchainImageCount, NULL);
+    err = demo->fpGetSwapchainImagesKHR(demo->device, DEMO_SWAPCHAIN, &demo->swapchainImageCount, NULL);
     assert(!err);
 
     VkImage *swapchainImages = (VkImage *)malloc(demo->swapchainImageCount * sizeof(VkImage));
     assert(swapchainImages);
-    err = demo->fpGetSwapchainImagesKHR(demo->device, demo->swapchain, &demo->swapchainImageCount, swapchainImages);
+    err = demo->fpGetSwapchainImagesKHR(demo->device, DEMO_SWAPCHAIN, &demo->swapchainImageCount, swapchainImages);
     assert(!err);
 
     demo->swapchain_image_resources =
@@ -1457,7 +1478,7 @@ static void demo_prepare_buffers(struct demo *demo) {
 
     if (demo->VK_GOOGLE_display_timing_enabled) {
         VkRefreshCycleDurationGOOGLE rc_dur;
-        err = demo->fpGetRefreshCycleDurationGOOGLE(demo->device, demo->swapchain, &rc_dur);
+        err = demo->fpGetRefreshCycleDurationGOOGLE(demo->device, DEMO_SWAPCHAIN, &rc_dur);
         assert(!err);
         demo->refresh_duration = rc_dur.refreshDuration;
 
@@ -2405,12 +2426,12 @@ static void demo_cleanup(struct demo *demo) {
 
     // Wait for fences from present operations
     for (i = 0; i < FRAME_LAG; i++) {
-        vkWaitForFences(demo->device, 1, &demo->fences[i], VK_TRUE, UINT64_MAX);
-        vkDestroyFence(demo->device, demo->fences[i], NULL);
-        vkDestroySemaphore(demo->device, demo->image_acquired_semaphores[i], NULL);
-        vkDestroySemaphore(demo->device, demo->draw_complete_semaphores[i], NULL);
+        vkWaitForFences(demo->device, 1, &DEMO_FENCE, VK_TRUE, UINT64_MAX);
+        vkDestroyFence(demo->device, DEMO_FENCE, NULL);
+        vkDestroySemaphore(demo->device, DEMO_IMAGE_ACQUIRED_SEMAPHORE, NULL);
+        vkDestroySemaphore(demo->device, DEMO_DRAW_COMPLETE_SEMAPHORE, NULL);
         if (demo->separate_present_queue) {
-            vkDestroySemaphore(demo->device, demo->image_ownership_semaphores[i], NULL);
+            vkDestroySemaphore(demo->device, DEMO_IMAGE_OWNERSHIP_SEMAPHORE, NULL);
         }
     }
 
@@ -2433,7 +2454,7 @@ static void demo_cleanup(struct demo *demo) {
             vkFreeMemory(demo->device, demo->textures[i].mem, NULL);
             vkDestroySampler(demo->device, demo->textures[i].sampler, NULL);
         }
-        demo->fpDestroySwapchainKHR(demo->device, demo->swapchain, NULL);
+        demo->fpDestroySwapchainKHR(demo->device, DEMO_SWAPCHAIN, NULL);
 
         vkDestroyImageView(demo->device, demo->depth.view, NULL);
         vkDestroyImage(demo->device, demo->depth.image, NULL);
@@ -2457,9 +2478,9 @@ static void demo_cleanup(struct demo *demo) {
     vkDeviceWaitIdle(demo->device);
     vkDestroyDevice(demo->device, NULL);
     if (demo->validate) {
-        demo->DestroyDebugUtilsMessengerEXT(demo->inst, demo->dbg_messenger, NULL);
+        demo->DestroyDebugUtilsMessengerEXT(DEMO_INSTANCE, demo->dbg_messenger, NULL);
     }
-    vkDestroySurfaceKHR(demo->inst, demo->surface, NULL);
+    vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     XDestroyWindow(demo->display, demo->xlib_window);
@@ -2489,7 +2510,7 @@ static void demo_cleanup(struct demo *demo) {
     demo->dfb->Release(demo->dfb);
 #endif
 
-    vkDestroyInstance(demo->inst, NULL);
+    vkDestroyInstance(DEMO_INSTANCE, NULL);
 }
 
 static void demo_resize(struct demo *demo) {
@@ -2559,6 +2580,7 @@ static void demo_run(struct demo *demo) {
 
     demo_draw(demo);
     demo->curFrame++;
+    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
     if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
         PostQuitMessage(validation_error);
     }
@@ -2746,6 +2768,7 @@ static void demo_run_xlib(struct demo *demo) {
 
         demo_draw(demo);
         demo->curFrame++;
+        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
     }
 }
@@ -2811,6 +2834,7 @@ static void demo_run_xcb(struct demo *demo) {
 
         demo_draw(demo);
         demo->curFrame++;
+        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
     }
 }
@@ -2855,6 +2879,7 @@ static void demo_run(struct demo *demo) {
             wl_display_dispatch_pending(demo->display);  // don't block
             demo_draw(demo);
             demo->curFrame++;
+            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
             if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
         }
     }
@@ -3000,6 +3025,7 @@ static void demo_run_directfb(struct demo *demo) {
 
             demo_draw(demo);
             demo->curFrame++;
+            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
             if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
         }
     }
@@ -3010,11 +3036,13 @@ static void demo_run(struct demo *demo) {
 
     demo_draw(demo);
     demo->curFrame++;
+    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 }
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 static void demo_run(struct demo *demo) {
     demo_draw(demo);
     demo->curFrame++;
+    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
     if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
         demo->quit = TRUE;
     }
@@ -3146,13 +3174,14 @@ static VkResult demo_create_display_surface(struct demo *demo) {
     create_info.globalAlpha = 1.0f;
     create_info.imageExtent = image_extent;
 
-    return vkCreateDisplayPlaneSurfaceKHR(demo->inst, &create_info, NULL, &demo->surface);
+    return vkCreateDisplayPlaneSurfaceKHR(DEMO_INSTANCE, &create_info, NULL, &DEMO_SURFACE);
 }
 
 static void demo_run_display(struct demo *demo) {
     while (!demo->quit) {
         demo_draw(demo);
         demo->curFrame++;
+        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
             demo->quit = true;
@@ -3205,6 +3234,7 @@ int find_display_gpu(int gpu_number, uint32_t gpu_count, VkPhysicalDevice *physi
         return -1;
 }
 #endif
+
 static void demo_init_vk(struct demo *demo) {
     VkResult err;
     uint32_t instance_extension_count = 0;
@@ -3215,234 +3245,9 @@ static void demo_init_vk(struct demo *demo) {
     demo->is_minimized = false;
     demo->cmd_pool = VK_NULL_HANDLE;
 
-    // Look for validation layers
-    VkBool32 validation_found = 0;
-    if (demo->validate) {
-        err = vkEnumerateInstanceLayerProperties(&instance_layer_count, NULL);
-        assert(!err);
-
-        if (instance_layer_count > 0) {
-            VkLayerProperties *instance_layers = malloc(sizeof(VkLayerProperties) * instance_layer_count);
-            err = vkEnumerateInstanceLayerProperties(&instance_layer_count, instance_layers);
-            assert(!err);
-
-            validation_found = demo_check_layers(ARRAY_SIZE(instance_validation_layers), instance_validation_layers,
-                                                 instance_layer_count, instance_layers);
-            if (validation_found) {
-                demo->enabled_layer_count = ARRAY_SIZE(instance_validation_layers);
-                demo->enabled_layers[0] = "VK_LAYER_KHRONOS_validation";
-            }
-            free(instance_layers);
-        }
-
-        if (!validation_found) {
-            ERR_EXIT(
-                "vkEnumerateInstanceLayerProperties failed to find required validation layer.\n\n"
-                "Please look at the Getting Started guide for additional information.\n",
-                "vkCreateInstance Failure");
-        }
-    }
-
-    /* Look for instance extensions */
-    VkBool32 surfaceExtFound = 0;
-    VkBool32 platformSurfaceExtFound = 0;
-    bool portabilityEnumerationActive = false;
-    memset(demo->extension_names, 0, sizeof(demo->extension_names));
-
-    err = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
-    assert(!err);
-
-    if (instance_extension_count > 0) {
-        VkExtensionProperties *instance_extensions = malloc(sizeof(VkExtensionProperties) * instance_extension_count);
-        err = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, instance_extensions);
-        assert(!err);
-        for (uint32_t i = 0; i < instance_extension_count; i++) {
-            if (!strcmp(VK_KHR_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                surfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_SURFACE_EXTENSION_NAME;
-            }
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-            if (!strcmp(VK_KHR_WIN32_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-            if (!strcmp(VK_KHR_XLIB_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-            if (!strcmp(VK_KHR_XCB_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_XCB_SURFACE_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-            if (!strcmp(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_DIRECTFB_EXT)
-            if (!strcmp(VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_DISPLAY_KHR)
-            if (!strcmp(VK_KHR_DISPLAY_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_DISPLAY_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-            if (!strcmp(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_ANDROID_SURFACE_EXTENSION_NAME;
-            }
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-            if (!strcmp(VK_EXT_METAL_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                platformSurfaceExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_EXT_METAL_SURFACE_EXTENSION_NAME;
-            }
-#endif
-            if (!strcmp(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
-            }
-            if (!strcmp(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                if (demo->validate) {
-                    demo->extension_names[demo->enabled_extension_count++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-                }
-            }
-            // We want cube to be able to enumerate drivers that support the portability_subset extension, so we have to enable the
-            // portability enumeration extension.
-            if (!strcmp(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                portabilityEnumerationActive = true;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
-            }
-            assert(demo->enabled_extension_count < 64);
-        }
-
-        free(instance_extensions);
-    }
-
-    if (!surfaceExtFound) {
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-    }
-    if (!platformSurfaceExtFound) {
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_EXT_METAL_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_XCB_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_DISPLAY_KHR)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_DISPLAY_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_XLIB_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#elif defined(VK_USE_PLATFORM_DIRECTFB_EXT)
-        ERR_EXIT("vkEnumerateInstanceExtensionProperties failed to find the " VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME
-                 " extension.\n\n"
-                 "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-#endif
-    }
-    const VkApplicationInfo app = {
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pNext = NULL,
-        .pApplicationName = APP_SHORT_NAME,
-        .applicationVersion = 0,
-        .pEngineName = APP_SHORT_NAME,
-        .engineVersion = 0,
-        .apiVersion = VK_API_VERSION_1_0,
-    };
-    VkInstanceCreateInfo inst_info = {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = (portabilityEnumerationActive ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0),
-        .pApplicationInfo = &app,
-        .enabledLayerCount = demo->enabled_layer_count,
-        .ppEnabledLayerNames = (const char *const *)instance_validation_layers,
-        .enabledExtensionCount = demo->enabled_extension_count,
-        .ppEnabledExtensionNames = (const char *const *)demo->extension_names,
-    };
-
-    /*
-     * This is info for a temp callback to use during CreateInstance.
-     * After the instance is created, we use the instance-based
-     * function to register the final callback.
-     */
-    VkDebugUtilsMessengerCreateInfoEXT dbg_messenger_create_info;
-    if (demo->validate) {
-        // VK_EXT_debug_utils style
-        dbg_messenger_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        dbg_messenger_create_info.pNext = NULL;
-        dbg_messenger_create_info.flags = 0;
-        dbg_messenger_create_info.messageSeverity =
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        dbg_messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        dbg_messenger_create_info.pfnUserCallback = debug_messenger_callback;
-        dbg_messenger_create_info.pUserData = demo;
-        inst_info.pNext = &dbg_messenger_create_info;
-    }
-
-    err = vkCreateInstance(&inst_info, NULL, &demo->inst);
-    if (err == VK_ERROR_INCOMPATIBLE_DRIVER) {
-        ERR_EXIT(
-            "Cannot find a compatible Vulkan installable client driver (ICD).\n\n"
-            "Please look at the Getting Started guide for additional information.\n",
-            "vkCreateInstance Failure");
-    } else if (err == VK_ERROR_EXTENSION_NOT_PRESENT) {
-        ERR_EXIT(
-            "Cannot find a specified extension library.\n"
-            "Make sure your layers path is set appropriately.\n",
-            "vkCreateInstance Failure");
-    } else if (err) {
-        ERR_EXIT(
-            "vkCreateInstance failed.\n\n"
-            "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-            "Please look at the Getting Started guide for additional information.\n",
-            "vkCreateInstance Failure");
-    }
-
     /* Make initial call to query gpu_count, then second call for gpu info */
     uint32_t gpu_count = 0;
-    err = vkEnumeratePhysicalDevices(demo->inst, &gpu_count, NULL);
+    err = vkEnumeratePhysicalDevices(DEMO_INSTANCE, &gpu_count, NULL);
     assert(!err);
 
     if (gpu_count <= 0) {
@@ -3454,21 +3259,13 @@ static void demo_init_vk(struct demo *demo) {
     }
 
     VkPhysicalDevice *physical_devices = malloc(sizeof(VkPhysicalDevice) * gpu_count);
-    err = vkEnumeratePhysicalDevices(demo->inst, &gpu_count, physical_devices);
+    err = vkEnumeratePhysicalDevices(DEMO_INSTANCE, &gpu_count, physical_devices);
     assert(!err);
     if (demo->invalid_gpu_selection || (demo->gpu_number >= 0 && !((uint32_t)demo->gpu_number < gpu_count))) {
         fprintf(stderr, "GPU %d specified is not present, GPU count = %u\n", demo->gpu_number, gpu_count);
         ERR_EXIT("Specified GPU number is not present", "User Error");
     }
 
-#if defined(VK_USE_PLATFORM_DISPLAY_KHR)
-    demo->gpu_number = find_display_gpu(demo->gpu_number, gpu_count, physical_devices);
-    if (demo->gpu_number < 0) {
-        printf("Cannot find any display!\n");
-        fflush(stdout);
-        exit(1);
-    }
-#else
     /* Try to auto select most suitable device */
     if (demo->gpu_number == -1) {
         uint32_t count_device_type[VK_PHYSICAL_DEVICE_TYPE_CPU + 1];
@@ -3502,7 +3299,7 @@ static void demo_init_vk(struct demo *demo) {
             }
         }
     }
-#endif
+
     assert(demo->gpu_number >= 0);
     demo->gpu = physical_devices[demo->gpu_number];
     {
@@ -3512,6 +3309,12 @@ static void demo_init_vk(struct demo *demo) {
                 to_string(physicalDeviceProperties.deviceType));
     }
     free(physical_devices);
+
+    PlasmacoreVulkanRenderer__configure_gpu__VKNativeGPU_RogueInt32(
+      ROGUE_SINGLETON( PlasmacoreVulkanRenderer ),
+      (VKNativeGPU){demo->gpu},
+      demo->gpu_number
+    );
 
     /* Look for device extensions */
     uint32_t device_extension_count = 0;
@@ -3586,42 +3389,6 @@ static void demo_init_vk(struct demo *demo) {
                  "vkCreateInstance Failure");
     }
 
-    if (demo->validate) {
-        // Setup VK_EXT_debug_utils function pointers always (we use them for
-        // debug labels and names).
-        demo->CreateDebugUtilsMessengerEXT =
-            (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(demo->inst, "vkCreateDebugUtilsMessengerEXT");
-        demo->DestroyDebugUtilsMessengerEXT =
-            (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(demo->inst, "vkDestroyDebugUtilsMessengerEXT");
-        demo->SubmitDebugUtilsMessageEXT =
-            (PFN_vkSubmitDebugUtilsMessageEXT)vkGetInstanceProcAddr(demo->inst, "vkSubmitDebugUtilsMessageEXT");
-        demo->CmdBeginDebugUtilsLabelEXT =
-            (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(demo->inst, "vkCmdBeginDebugUtilsLabelEXT");
-        demo->CmdEndDebugUtilsLabelEXT =
-            (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(demo->inst, "vkCmdEndDebugUtilsLabelEXT");
-        demo->CmdInsertDebugUtilsLabelEXT =
-            (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(demo->inst, "vkCmdInsertDebugUtilsLabelEXT");
-        demo->SetDebugUtilsObjectNameEXT =
-            (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(demo->inst, "vkSetDebugUtilsObjectNameEXT");
-        if (NULL == demo->CreateDebugUtilsMessengerEXT || NULL == demo->DestroyDebugUtilsMessengerEXT ||
-            NULL == demo->SubmitDebugUtilsMessageEXT || NULL == demo->CmdBeginDebugUtilsLabelEXT ||
-            NULL == demo->CmdEndDebugUtilsLabelEXT || NULL == demo->CmdInsertDebugUtilsLabelEXT ||
-            NULL == demo->SetDebugUtilsObjectNameEXT) {
-            ERR_EXIT("GetProcAddr: Failed to init VK_EXT_debug_utils\n", "GetProcAddr: Failure");
-        }
-
-        err = demo->CreateDebugUtilsMessengerEXT(demo->inst, &dbg_messenger_create_info, NULL, &demo->dbg_messenger);
-        switch (err) {
-            case VK_SUCCESS:
-                break;
-            case VK_ERROR_OUT_OF_HOST_MEMORY:
-                ERR_EXIT("CreateDebugUtilsMessengerEXT: out of host memory\n", "CreateDebugUtilsMessengerEXT Failure");
-                break;
-            default:
-                ERR_EXIT("CreateDebugUtilsMessengerEXT: unknown failure\n", "CreateDebugUtilsMessengerEXT Failure");
-                break;
-        }
-    }
     vkGetPhysicalDeviceProperties(demo->gpu, &demo->gpu_props);
 
     /* Call with NULL data to get count */
@@ -3637,11 +3404,11 @@ static void demo_init_vk(struct demo *demo) {
     VkPhysicalDeviceFeatures physDevFeatures;
     vkGetPhysicalDeviceFeatures(demo->gpu, &physDevFeatures);
 
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfaceSupportKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfaceFormatsKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfacePresentModesKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetSwapchainImagesKHR);
+    GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceSupportKHR);
+    GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+    GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceFormatsKHR);
+    GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfacePresentModesKHR);
+    GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetSwapchainImagesKHR);
 }
 
 static void demo_create_device(struct demo *demo) {
@@ -3677,77 +3444,18 @@ static void demo_create_device(struct demo *demo) {
     }
     err = vkCreateDevice(demo->gpu, &device, NULL, &demo->device);
     assert(!err);
+
+    PlasmacoreVulkanRenderer__configure_device__VKNativeDevice(
+      ROGUE_SINGLETON(PlasmacoreVulkanRenderer),
+      (VKNativeDevice){demo->device}
+    );
 }
 
 static void demo_create_surface(struct demo *demo) {
-    VkResult U_ASSERT_ONLY err;
+printf( "---- create surface\n" );
 
-// Create a WSI surface for the window:
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    VkWin32SurfaceCreateInfoKHR createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.hinstance = demo->connection;
-    createInfo.hwnd = demo->window;
-
-    err = vkCreateWin32SurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-    VkWaylandSurfaceCreateInfoKHR createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.display = demo->display;
-    createInfo.surface = demo->window;
-
-    err = vkCreateWaylandSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    VkAndroidSurfaceCreateInfoKHR createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.window = (struct ANativeWindow *)(demo->window);
-
-    err = vkCreateAndroidSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    VkXlibSurfaceCreateInfoKHR createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.dpy = demo->display;
-    createInfo.window = demo->xlib_window;
-
-    err = vkCreateXlibSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-    VkXcbSurfaceCreateInfoKHR createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.connection = demo->connection;
-    createInfo.window = demo->xcb_window;
-
-    err = vkCreateXcbSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_DIRECTFB_EXT)
-    VkDirectFBSurfaceCreateInfoEXT createInfo;
-    createInfo.sType = VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT;
-    createInfo.pNext = NULL;
-    createInfo.flags = 0;
-    createInfo.dfb = demo->dfb;
-    createInfo.surface = demo->window;
-
-    err = vkCreateDirectFBSurfaceEXT(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_DISPLAY_KHR)
-    err = demo_create_display_surface(demo);
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    VkMetalSurfaceCreateInfoEXT surface;
-    surface.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
-    surface.pNext = NULL;
-    surface.flags = 0;
-    surface.pLayer = demo->caMetalLayer;
-
-    err = vkCreateMetalSurfaceEXT(demo->inst, &surface, NULL, &demo->surface);
-#endif
-    assert(!err);
+    PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer);
+    PlasmacoreMoltenVKRenderer__create_surface( renderer );
 }
 
 static VkSurfaceFormatKHR pick_surface_format(const VkSurfaceFormatKHR *surfaceFormats, uint32_t count) {
@@ -3771,12 +3479,14 @@ static VkSurfaceFormatKHR pick_surface_format(const VkSurfaceFormatKHR *surfaceF
 static void demo_init_vk_swapchain(struct demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
+printf("----demo_init_vk_swapchain\n");
     demo_create_surface(demo);
 
+//TODO
     // Iterate over each queue to learn whether it supports presenting:
     VkBool32 *supportsPresent = (VkBool32 *)malloc(demo->queue_family_count * sizeof(VkBool32));
     for (uint32_t i = 0; i < demo->queue_family_count; i++) {
-        demo->fpGetPhysicalDeviceSurfaceSupportKHR(demo->gpu, i, demo->surface, &supportsPresent[i]);
+        demo->fpGetPhysicalDeviceSurfaceSupportKHR(demo->gpu, i, DEMO_SURFACE, &supportsPresent[i]);
     }
 
     // Search for a graphics and a present queue in the array of queue
@@ -3840,10 +3550,10 @@ static void demo_init_vk_swapchain(struct demo *demo) {
 
     // Get the list of VkFormat's that are supported:
     uint32_t formatCount;
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, demo->surface, &formatCount, NULL);
+    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, DEMO_SURFACE, &formatCount, NULL);
     assert(!err);
     VkSurfaceFormatKHR *surfFormats = (VkSurfaceFormatKHR *)malloc(formatCount * sizeof(VkSurfaceFormatKHR));
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, demo->surface, &formatCount, surfFormats);
+    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, DEMO_SURFACE, &formatCount, surfFormats);
     assert(!err);
     VkSurfaceFormatKHR surfaceFormat = pick_surface_format(surfFormats, formatCount);
     demo->format = surfaceFormat.format;
@@ -3853,37 +3563,7 @@ static void demo_init_vk_swapchain(struct demo *demo) {
     demo->quit = false;
     demo->curFrame = 0;
 
-    // Create semaphores to synchronize acquiring presentable buffers before
-    // rendering and waiting for drawing to be complete before presenting
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-    };
-
-    // Create fences that we can use to throttle if we get too far
-    // ahead of the image presents
-    VkFenceCreateInfo fence_ci = {
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .pNext = NULL, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
-    for (uint32_t i = 0; i < FRAME_LAG; i++) {
-        err = vkCreateFence(demo->device, &fence_ci, NULL, &demo->fences[i]);
-        assert(!err);
-
-        err = vkCreateSemaphore(demo->device, &semaphoreCreateInfo, NULL, &demo->image_acquired_semaphores[i]);
-        assert(!err);
-        demo_name_object(demo, VK_OBJECT_TYPE_SEMAPHORE, (uint64_t)demo->image_acquired_semaphores[i], "AcquireSem(%u)", i);
-
-        err = vkCreateSemaphore(demo->device, &semaphoreCreateInfo, NULL, &demo->draw_complete_semaphores[i]);
-        assert(!err);
-        demo_name_object(demo, VK_OBJECT_TYPE_SEMAPHORE, (uint64_t)demo->draw_complete_semaphores[i], "DrawCompleteSem(%u)", i);
-
-        if (demo->separate_present_queue) {
-            err = vkCreateSemaphore(demo->device, &semaphoreCreateInfo, NULL, &demo->image_ownership_semaphores[i]);
-            assert(!err);
-            demo_name_object(demo, VK_OBJECT_TYPE_SEMAPHORE, (uint64_t)demo->image_ownership_semaphores[i], "ImageOwnerSem(%u)", i);
-        }
-    }
-    demo->frame_index = 0;
+    PlasmacorePVKSwapchain__create_semaphores( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 
     // Get Memory information and properties
     vkGetPhysicalDeviceMemoryProperties(demo->gpu, &demo->memory_properties);

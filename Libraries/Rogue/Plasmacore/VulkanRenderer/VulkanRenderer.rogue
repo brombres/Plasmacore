@@ -2,81 +2,44 @@ module Plasmacore
 
 uses Vulkan
 
+$include VulkanRenderer/PVKSwapchain
+
+
 class VulkanRenderer : Renderer [essential abstract singleton]
   PROPERTIES
-    instance   : VKInstance
+    context    = VKContext()
 
-    native "VkPresentModeKHR present_mode;"
-
-    surface    : VKSurface
-
-    gpu        : VKPhysicalDevice
-    gpu_number = -1
-    device     : VKDevice
+    swapchain  = PVKSwapchain( this )
 
     uses_separate_presentation_queue : Logical
 
     graphics_queue_family            : VKQueueFamily
     presentation_queue_family        : VKQueueFamily
     surface_format                   : VKSurfaceFormat
-    swapchain                        : VKSwapchain
+    #swapchain                        : VKSwapchain
 
-    surface_formats : VKSurfaceFormat[]
-
-    # VkInstance functions
-    native "PFN_vkGetDeviceProcAddr                       vkGetDeviceProcAddr;"
-    native "PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;"
-    native "PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;"
-    native "PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;"
-    native "PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;"
-
-    # VkDevice functions
-    native "PFN_vkCreateSwapchainKHR    vkCreateSwapchainKHR;"
-    native "PFN_vkDestroySwapchainKHR   vkDestroySwapchainKHR;"
-    native "PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR;"
-    native "PFN_vkAcquireNextImageKHR   vkAcquireNextImageKHR;"
-    native "PFN_vkQueuePresentKHR       vkQueuePresentKHR;"
-
+    #surface_formats : VKSurfaceFormat[]
 
   METHODS
-    method init_object
-      native @|$this->present_mode = VK_PRESENT_MODE_FIFO_KHR;
-
     method begin_render [override]
-      swapchain.prepare
-      swapchain.block_until_ready
+      #swapchain.prepare
+      #swapchain.block_until_ready
 
     method configure [api]
 trace "----"
-if (true) return
       # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
       local app_name = "Plasmacore App"
       local app_version_code = 1
 
       local app_info = VKApplicationInfo( app_name, app_version_code, "Plasmacore2023", Plasmacore.VERSION_CODE )
 
-      local create_info = VKInstanceCreateInfo( app_info )
+      local create_info = VKInstanceCreateInfo( context, app_info )
       create_info.enable_extension( "VK_KHR_get_physical_device_properties2" )
       create_info.enable_extension( "VK_KHR_surface" )
       create_info.enable_extension( "VK_EXT_metal_surface" )
       create_info.enable_extension( "VK_KHR_portability_enumeration" )
 
-      instance = VKInstance( create_info )
-
-      local fn = instance.procedure_address( "vkGetDeviceProcAddr" )
-      native @|$this->vkGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr) $fn.value;
-
-      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfaceSupportKHR" )
-      native @|$this->vkGetPhysicalDeviceSurfaceSupportKHR = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR) $fn.value;
-
-      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfaceCapabilitiesKHR" )
-      native @|$this->vkGetPhysicalDeviceSurfaceCapabilitiesKHR = (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR) $fn.value;
-
-      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfaceFormatsKHR" )
-      native @|$this->vkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR) $fn.value;
-
-      fn = instance.procedure_address( "vkGetPhysicalDeviceSurfacePresentModesKHR" )
-      native @|$this->vkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR) $fn.value;
+      context.instance = VKInstance( create_info )
 
       local preferred_device_order =
       [
@@ -87,23 +50,29 @@ if (true) return
         VKDeviceType.OTHER
       ]
 
-      local devices = instance.physical_devices
+      local devices = context.instance.physical_devices
+      trace devices
+
+      #{
       forEach (search_type in preferred_device_order)
         if local found_device = devices.first( (device) => (device.type == search_type) )
-          gpu = found_device
+          context.gpu = found_device
           gpu_number = found_device.index
           escapeForEach
         endIf
       endForEach
 
-      if (gpu)
-        log.println "[Vulkan] Using GPU $"(gpu)
+      if (context.gpu)
+        log.println "[Vulkan] Using GPU $"(context.gpu)
       else
         error.println "[Vulkan] ERROR: no GPU found"
       endIf
+      }#
 
-    method create_device [api]
+    method configure_device( native_device:VKNativeDevice ) [api]
 trace "----"
+      context.device = VKDevice( context, native_device )
+#{
       if (not gpu) return
 
       local config = VKDeviceCreateInfo( gpu )
@@ -146,12 +115,18 @@ trace "----"
         surface_format = surface_formats.first
       endBlock
 
-      swapchain = VKSwapchain( this, 3, 2 )
+      #swapchain = VKSwapchain( this, 3, 2 )
+}#
+
+    method configure_gpu( native_gpu:VKNativeGPU, gpu_number:Int32 ) [api]
+trace "----"
+      context.gpu = VKPhysicalDevice( context, native_gpu, gpu_number )
 
     method create_surface [abstract api]
 
     method end_render [override]
-      swapchain.advance_frame
+      trace "----"
+      #swapchain.advance_frame
 
     method find_queue_families
       block
@@ -183,6 +158,7 @@ trace "----"
 
       uses_separate_presentation_queue = (graphics_queue_family.index != presentation_queue_family.index)
 
+      #{
     method surface_formats->VKSurfaceFormat[]
       if (@surface_formats) return @surface_formats
 
@@ -207,4 +183,5 @@ trace "----"
 
          @surface_formats = result
          return @surface_formats
+         }#
 endClass

@@ -2,21 +2,20 @@ module Vulkan
 
 class VKPhysicalDevice
   PROPERTIES
+    context              : VKContext
+    native_gpu           : VKNativeGPU
     index                : Int32
     name                 : String
     queue_families       : VKQueueFamily[]
-    native "VkPhysicalDevice                 device_value;"
     native "VkPhysicalDeviceFeatures         features;"
     native "VkPhysicalDeviceMemoryProperties memory_properties;"
     native "VkPhysicalDeviceProperties       properties;"
 
   METHODS
-    method init( index )
-
-    method configure
-      native @|vkGetPhysicalDeviceProperties( $this->device_value, &$this->properties );
-              |vkGetPhysicalDeviceFeatures( $this->device_value, &$this->features );
-              |vkGetPhysicalDeviceMemoryProperties( $this->device_value, &$this->memory_properties );
+    method init( context, native_gpu, index )
+      native @|vkGetPhysicalDeviceProperties( $this->native_gpu.value, &$this->properties );
+              |vkGetPhysicalDeviceFeatures( $this->native_gpu.value, &$this->features );
+              |vkGetPhysicalDeviceMemoryProperties( $this->native_gpu.value, &$this->memory_properties );
 
     method name->String
       if (not @name)
@@ -30,12 +29,12 @@ class VKPhysicalDevice
       local result = VKQueueFamily[]
       native
         @|uint32_t count = 0;
-         |vkGetPhysicalDeviceQueueFamilyProperties( $this->device_value, &count, NULL );
+         |vkGetPhysicalDeviceQueueFamilyProperties( $this->native_gpu.value, &count, NULL );
          |if (count && count < 64)
          |{
          |  VkQueueFamilyProperties properties[64];
          |  int i;
-         |  vkGetPhysicalDeviceQueueFamilyProperties( $this->device_value, &count, properties );
+         |  vkGetPhysicalDeviceQueueFamilyProperties( $this->native_gpu.value, &count, properties );
          |  for (i=0; i<count; ++i)
          |  {
               local family : VKQueueFamily

@@ -2,7 +2,8 @@ module Vulkan
 
 class VKInstance
   PROPERTIES
-    native "VkInstance instance_value;"
+    context         : VKContext
+    native_instance : VKNativeInstance
 
   GLOBAL METHODS
     method instance_extensions->String[]
@@ -49,12 +50,20 @@ class VKInstance
 
   METHODS
     method init( create_info:VKInstanceCreateInfo )
+      context = create_info.context
+
       native
-        @|vkCreateInstance( &$create_info->info_value, NULL, &$this->instance_value);
+        @|vkCreateInstance( &$create_info->info_value, NULL, &$native_instance.value );
+
+      SET_NATIVE_PROCEDURE<<context,this,vkGetDeviceProcAddr>>
+      SET_NATIVE_PROCEDURE<<context,this,vkGetPhysicalDeviceSurfaceSupportKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkGetPhysicalDeviceSurfaceCapabilitiesKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkGetPhysicalDeviceSurfaceFormatsKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkGetPhysicalDeviceSurfacePresentModesKHR>>
 
     method procedure_address( name:String )->RogueVoidPointer
       local result : RogueVoidPointer
-      native @|$result.value = vkGetInstanceProcAddr( $this->instance_value, $name->data->as_utf8 );
+      native @|$result.value = vkGetInstanceProcAddr( $native_instance.value, $name->data->as_utf8 );
       return result
 
     method physical_devices->VKPhysicalDevice[]
@@ -63,14 +72,13 @@ class VKInstance
 
       native
         @|VkPhysicalDevice devices[64];
-         |vkEnumeratePhysicalDevices( $this->instance_value, (uint32_t*)&$count, NULL );
+         |vkEnumeratePhysicalDevices( $native_instance.value, (uint32_t*)&$count, NULL );
 
       if (count and count <= 64)
-        native @|vkEnumeratePhysicalDevices( $this->instance_value, (uint32_t*)&$count, devices );
+        native @|vkEnumeratePhysicalDevices( $native_instance.value, (uint32_t*)&$count, devices );
         forEach (i in 0..<count)
-          local device = VKPhysicalDevice( i )
-          native @|$device->device_value = devices[$i];
-          device.configure
+          local native_gpu = native("(VKNativeGPU){devices[$i]}")->VKNativeGPU
+          local device = VKPhysicalDevice( context, native_gpu, i )
           result.add( device );
         endForEach
       endIf
