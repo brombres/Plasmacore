@@ -53,11 +53,9 @@ trace "----"
       local gpus = context.instance.gpus
       trace gpus
 
-      #{
       forEach (search_type in preferred_device_order)
         if local found_device = gpus.first( (device) => (device.type == search_type) )
           context.gpu = found_device
-          gpu_number = found_device.index
           escapeForEach
         endIf
       endForEach
@@ -67,7 +65,6 @@ trace "----"
       else
         error.println "[Vulkan] ERROR: no GPU found"
       endIf
-      }#
 
     method configure_device( native_device:VKNativeDevice ) [api]
 trace "----"
@@ -117,10 +114,6 @@ trace "----"
 
       #swapchain = VKSwapchain( this, 3, 2 )
 }#
-
-    method configure_gpu( native_gpu:VKNativeGPU, gpu_number:Int32 ) [api]
-trace "----"
-      context.gpu = VKGPU( context, native_gpu, gpu_number )
 
     method create_surface [abstract api]
 

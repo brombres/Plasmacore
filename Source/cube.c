@@ -153,8 +153,10 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
         }                                                                                                        \
     }
 
-#define DEMO_INSTANCE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->instance->native_instance.value)
-#define DEMO_SWAPCHAIN (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->swapchain_value)
+#define DEMO_INSTANCE   (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->instance->native_instance.value)
+#define DEMO_GPU        (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->gpu->native_gpu.value)
+#define DEMO_GPU_NUMBER (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->gpu->index)
+#define DEMO_SWAPCHAIN  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->swapchain_value)
 
 #define DEMO_FENCE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->fence)
 #define DEMO_IMAGE_ACQUIRED_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->image_acquired_semaphore)
@@ -375,7 +377,6 @@ struct demo {
     bool separate_present_queue;
     bool is_minimized;
     bool invalid_gpu_selection;
-    int32_t gpu_number;
 
     bool VK_KHR_incremental_present_enabled;
 
@@ -389,7 +390,6 @@ struct demo {
     uint32_t last_early_id;  // 0 if no early images
     uint32_t last_late_id;   // 0 if no late images
 
-    VkPhysicalDevice gpu;
     VkDevice device;
     VkQueue graphics_queue;
     VkQueue present_queue;
@@ -1235,7 +1235,7 @@ PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)
     } else if (err == VK_SUBOPTIMAL_KHR) {
         // SUBOPTIMAL could be due to a resize
         VkSurfaceCapabilitiesKHR surfCapabilities;
-        err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(demo->gpu, DEMO_SURFACE, &surfCapabilities);
+        err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(DEMO_GPU, DEMO_SURFACE, &surfCapabilities);
         assert(!err);
         if (surfCapabilities.currentExtent.width != (uint32_t)demo->width ||
             surfCapabilities.currentExtent.height != (uint32_t)demo->height) {
@@ -1258,15 +1258,15 @@ static void demo_prepare_buffers(struct demo *demo)
 
     // Check the surface capabilities and formats
     VkSurfaceCapabilitiesKHR surfCapabilities;
-    err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(demo->gpu, DEMO_SURFACE, &surfCapabilities);
+    err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(DEMO_GPU, DEMO_SURFACE, &surfCapabilities);
     assert(!err);
 
     uint32_t presentModeCount;
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(demo->gpu, DEMO_SURFACE, &presentModeCount, NULL);
+    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(DEMO_GPU, DEMO_SURFACE, &presentModeCount, NULL);
     assert(!err);
     VkPresentModeKHR *presentModes = (VkPresentModeKHR *)malloc(presentModeCount * sizeof(VkPresentModeKHR));
     assert(presentModes);
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(demo->gpu, DEMO_SURFACE, &presentModeCount, presentModes);
+    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(DEMO_GPU, DEMO_SURFACE, &presentModeCount, presentModes);
     assert(!err);
 
     VkExtent2D swapchainExtent;
@@ -1757,7 +1757,7 @@ static void demo_prepare_textures(struct demo *demo) {
     VkFormatProperties props;
     uint32_t i;
 
-    vkGetPhysicalDeviceFormatProperties(demo->gpu, tex_format, &props);
+    vkGetPhysicalDeviceFormatProperties(DEMO_GPU, tex_format, &props);
 
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         VkResult U_ASSERT_ONLY err;
@@ -3064,13 +3064,13 @@ static VkResult demo_create_display_surface(struct demo *demo) {
 
     // Get the first display
     display_count = 1;
-    err = vkGetPhysicalDeviceDisplayPropertiesKHR(demo->gpu, &display_count, &display_props);
+    err = vkGetPhysicalDeviceDisplayPropertiesKHR(DEMO_GPU, &display_count, &display_props);
     assert(!err || (err == VK_INCOMPLETE));
 
     display = display_props.display;
 
     // Get the first mode of the display
-    err = vkGetDisplayModePropertiesKHR(demo->gpu, display, &mode_count, NULL);
+    err = vkGetDisplayModePropertiesKHR(DEMO_GPU, display, &mode_count, NULL);
     assert(!err);
 
     if (mode_count == 0) {
@@ -3080,11 +3080,11 @@ static VkResult demo_create_display_surface(struct demo *demo) {
     }
 
     mode_count = 1;
-    err = vkGetDisplayModePropertiesKHR(demo->gpu, display, &mode_count, &mode_props);
+    err = vkGetDisplayModePropertiesKHR(DEMO_GPU, display, &mode_count, &mode_props);
     assert(!err || (err == VK_INCOMPLETE));
 
     // Get the list of planes
-    err = vkGetPhysicalDeviceDisplayPlanePropertiesKHR(demo->gpu, &plane_count, NULL);
+    err = vkGetPhysicalDeviceDisplayPlanePropertiesKHR(DEMO_GPU, &plane_count, NULL);
     assert(!err);
 
     if (plane_count == 0) {
@@ -3096,7 +3096,7 @@ static VkResult demo_create_display_surface(struct demo *demo) {
     plane_props = malloc(sizeof(VkDisplayPlanePropertiesKHR) * plane_count);
     assert(plane_props);
 
-    err = vkGetPhysicalDeviceDisplayPlanePropertiesKHR(demo->gpu, &plane_count, plane_props);
+    err = vkGetPhysicalDeviceDisplayPlanePropertiesKHR(DEMO_GPU, &plane_count, plane_props);
     assert(!err);
 
     // Find a plane compatible with the display
@@ -3109,7 +3109,7 @@ static VkResult demo_create_display_surface(struct demo *demo) {
             continue;
         }
 
-        err = vkGetDisplayPlaneSupportedDisplaysKHR(demo->gpu, plane_index, &supported_count, NULL);
+        err = vkGetDisplayPlaneSupportedDisplaysKHR(DEMO_GPU, plane_index, &supported_count, NULL);
         assert(!err);
 
         if (supported_count == 0) {
@@ -3119,7 +3119,7 @@ static VkResult demo_create_display_surface(struct demo *demo) {
         supported_displays = malloc(sizeof(VkDisplayKHR) * supported_count);
         assert(supported_displays);
 
-        err = vkGetDisplayPlaneSupportedDisplaysKHR(demo->gpu, plane_index, &supported_count, supported_displays);
+        err = vkGetDisplayPlaneSupportedDisplaysKHR(DEMO_GPU, plane_index, &supported_count, supported_displays);
         assert(!err);
 
         for (uint32_t i = 0; i < supported_count; i++) {
@@ -3145,7 +3145,7 @@ static VkResult demo_create_display_surface(struct demo *demo) {
     free(plane_props);
 
     VkDisplayPlaneCapabilitiesKHR planeCaps;
-    vkGetDisplayPlaneCapabilitiesKHR(demo->gpu, mode_props.displayMode, plane_index, &planeCaps);
+    vkGetDisplayPlaneCapabilitiesKHR(DEMO_GPU, mode_props.displayMode, plane_index, &planeCaps);
     // Find a supported alpha mode
     VkDisplayPlaneAlphaFlagBitsKHR alphaMode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
     VkDisplayPlaneAlphaFlagBitsKHR alphaModes[4] = {
@@ -3245,89 +3245,18 @@ static void demo_init_vk(struct demo *demo) {
     demo->is_minimized = false;
     demo->cmd_pool = VK_NULL_HANDLE;
 
-    /* Make initial call to query gpu_count, then second call for gpu info */
-    uint32_t gpu_count = 0;
-    err = vkEnumeratePhysicalDevices(DEMO_INSTANCE, &gpu_count, NULL);
-    assert(!err);
-
-    if (gpu_count <= 0) {
-        ERR_EXIT(
-            "vkEnumeratePhysicalDevices reported zero accessible devices.\n\n"
-            "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-            "Please look at the Getting Started guide for additional information.\n",
-            "vkEnumeratePhysicalDevices Failure");
-    }
-
-    VkPhysicalDevice *physical_devices = malloc(sizeof(VkPhysicalDevice) * gpu_count);
-    err = vkEnumeratePhysicalDevices(DEMO_INSTANCE, &gpu_count, physical_devices);
-    assert(!err);
-    if (demo->invalid_gpu_selection || (demo->gpu_number >= 0 && !((uint32_t)demo->gpu_number < gpu_count))) {
-        fprintf(stderr, "GPU %d specified is not present, GPU count = %u\n", demo->gpu_number, gpu_count);
-        ERR_EXIT("Specified GPU number is not present", "User Error");
-    }
-
-    /* Try to auto select most suitable device */
-    if (demo->gpu_number == -1) {
-        uint32_t count_device_type[VK_PHYSICAL_DEVICE_TYPE_CPU + 1];
-        memset(count_device_type, 0, sizeof(count_device_type));
-
-        VkPhysicalDeviceProperties physicalDeviceProperties;
-        for (uint32_t i = 0; i < gpu_count; i++) {
-            vkGetPhysicalDeviceProperties(physical_devices[i], &physicalDeviceProperties);
-            assert(physicalDeviceProperties.deviceType <= VK_PHYSICAL_DEVICE_TYPE_CPU);
-            count_device_type[physicalDeviceProperties.deviceType]++;
-        }
-
-        VkPhysicalDeviceType search_for_device_type = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-        if (count_device_type[VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU]) {
-            search_for_device_type = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-        } else if (count_device_type[VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU]) {
-            search_for_device_type = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-        } else if (count_device_type[VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU]) {
-            search_for_device_type = VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
-        } else if (count_device_type[VK_PHYSICAL_DEVICE_TYPE_CPU]) {
-            search_for_device_type = VK_PHYSICAL_DEVICE_TYPE_CPU;
-        } else if (count_device_type[VK_PHYSICAL_DEVICE_TYPE_OTHER]) {
-            search_for_device_type = VK_PHYSICAL_DEVICE_TYPE_OTHER;
-        }
-
-        for (uint32_t i = 0; i < gpu_count; i++) {
-            vkGetPhysicalDeviceProperties(physical_devices[i], &physicalDeviceProperties);
-            if (physicalDeviceProperties.deviceType == search_for_device_type) {
-                demo->gpu_number = i;
-                break;
-            }
-        }
-    }
-
-    assert(demo->gpu_number >= 0);
-    demo->gpu = physical_devices[demo->gpu_number];
-    {
-        VkPhysicalDeviceProperties physicalDeviceProperties;
-        vkGetPhysicalDeviceProperties(demo->gpu, &physicalDeviceProperties);
-        fprintf(stderr, "Selected GPU %d: %s, type: %s\n", demo->gpu_number, physicalDeviceProperties.deviceName,
-                to_string(physicalDeviceProperties.deviceType));
-    }
-    free(physical_devices);
-
-    PlasmacoreVulkanRenderer__configure_gpu__VKNativeGPU_RogueInt32(
-      ROGUE_SINGLETON( PlasmacoreVulkanRenderer ),
-      (VKNativeGPU){demo->gpu},
-      demo->gpu_number
-    );
-
     /* Look for device extensions */
     uint32_t device_extension_count = 0;
     VkBool32 swapchainExtFound = 0;
     demo->enabled_extension_count = 0;
     memset(demo->extension_names, 0, sizeof(demo->extension_names));
 
-    err = vkEnumerateDeviceExtensionProperties(demo->gpu, NULL, &device_extension_count, NULL);
+    err = vkEnumerateDeviceExtensionProperties(DEMO_GPU, NULL, &device_extension_count, NULL);
     assert(!err);
 
     if (device_extension_count > 0) {
         VkExtensionProperties *device_extensions = malloc(sizeof(VkExtensionProperties) * device_extension_count);
-        err = vkEnumerateDeviceExtensionProperties(demo->gpu, NULL, &device_extension_count, device_extensions);
+        err = vkEnumerateDeviceExtensionProperties(DEMO_GPU, NULL, &device_extension_count, device_extensions);
         assert(!err);
 
         for (uint32_t i = 0; i < device_extension_count; i++) {
@@ -3389,20 +3318,20 @@ static void demo_init_vk(struct demo *demo) {
                  "vkCreateInstance Failure");
     }
 
-    vkGetPhysicalDeviceProperties(demo->gpu, &demo->gpu_props);
+    //vkGetPhysicalDeviceProperties(DEMO_GPU, &DEMO_GPU_props);
 
     /* Call with NULL data to get count */
-    vkGetPhysicalDeviceQueueFamilyProperties(demo->gpu, &demo->queue_family_count, NULL);
+    vkGetPhysicalDeviceQueueFamilyProperties(DEMO_GPU, &demo->queue_family_count, NULL);
     assert(demo->queue_family_count >= 1);
 
     demo->queue_props = (VkQueueFamilyProperties *)malloc(demo->queue_family_count * sizeof(VkQueueFamilyProperties));
-    vkGetPhysicalDeviceQueueFamilyProperties(demo->gpu, &demo->queue_family_count, demo->queue_props);
+    vkGetPhysicalDeviceQueueFamilyProperties(DEMO_GPU, &demo->queue_family_count, demo->queue_props);
 
     // Query fine-grained feature support for this device.
     //  If app has specific feature requirements it should check supported
     //  features based on this query
     VkPhysicalDeviceFeatures physDevFeatures;
-    vkGetPhysicalDeviceFeatures(demo->gpu, &physDevFeatures);
+    vkGetPhysicalDeviceFeatures(DEMO_GPU, &physDevFeatures);
 
     GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceSupportKHR);
     GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceCapabilitiesKHR);
@@ -3442,7 +3371,7 @@ static void demo_create_device(struct demo *demo) {
         queues[1].flags = 0;
         device.queueCreateInfoCount = 2;
     }
-    err = vkCreateDevice(demo->gpu, &device, NULL, &demo->device);
+    err = vkCreateDevice(DEMO_GPU, &device, NULL, &demo->device);
     assert(!err);
 
     PlasmacoreVulkanRenderer__configure_device__VKNativeDevice(
@@ -3454,7 +3383,7 @@ static void demo_create_device(struct demo *demo) {
 static void demo_create_surface(struct demo *demo) {
 printf( "---- create surface\n" );
 
-    PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer);
+    PlasmacoreMoltenVKRenderer* renderer = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer);
     PlasmacoreMoltenVKRenderer__create_surface( renderer );
 }
 
@@ -3486,7 +3415,7 @@ printf("----demo_init_vk_swapchain\n");
     // Iterate over each queue to learn whether it supports presenting:
     VkBool32 *supportsPresent = (VkBool32 *)malloc(demo->queue_family_count * sizeof(VkBool32));
     for (uint32_t i = 0; i < demo->queue_family_count; i++) {
-        demo->fpGetPhysicalDeviceSurfaceSupportKHR(demo->gpu, i, DEMO_SURFACE, &supportsPresent[i]);
+        demo->fpGetPhysicalDeviceSurfaceSupportKHR(DEMO_GPU, i, DEMO_SURFACE, &supportsPresent[i]);
     }
 
     // Search for a graphics and a present queue in the array of queue
@@ -3550,10 +3479,10 @@ printf("----demo_init_vk_swapchain\n");
 
     // Get the list of VkFormat's that are supported:
     uint32_t formatCount;
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, DEMO_SURFACE, &formatCount, NULL);
+    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(DEMO_GPU, DEMO_SURFACE, &formatCount, NULL);
     assert(!err);
     VkSurfaceFormatKHR *surfFormats = (VkSurfaceFormatKHR *)malloc(formatCount * sizeof(VkSurfaceFormatKHR));
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, DEMO_SURFACE, &formatCount, surfFormats);
+    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(DEMO_GPU, DEMO_SURFACE, &formatCount, surfFormats);
     assert(!err);
     VkSurfaceFormatKHR surfaceFormat = pick_surface_format(surfFormats, formatCount);
     demo->format = surfaceFormat.format;
@@ -3566,7 +3495,7 @@ printf("----demo_init_vk_swapchain\n");
     PlasmacorePVKSwapchain__create_semaphores( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 
     // Get Memory information and properties
-    vkGetPhysicalDeviceMemoryProperties(demo->gpu, &demo->memory_properties);
+    vkGetPhysicalDeviceMemoryProperties(DEMO_GPU, &demo->memory_properties);
 }
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
@@ -3731,7 +3660,7 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
     demo->presentMode = VK_PRESENT_MODE_FIFO_KHR;
     demo->frameCount = INT32_MAX;
     /* Autodetect suitable / best GPU by default */
-    demo->gpu_number = -1;
+    DEMO_GPU_NUMBER = -1;
     demo->width = 500;
     demo->height = 500;
 
@@ -3802,8 +3731,8 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
             continue;
         }
         if ((strcmp(argv[i], "--gpu_number") == 0) && (i < argc - 1)) {
-            demo->gpu_number = atoi(argv[i + 1]);
-            if (demo->gpu_number < 0) demo->invalid_gpu_selection = true;
+            DEMO_GPU_NUMBER = atoi(argv[i + 1]);
+            if (DEMO_GPU_NUMBER < 0) demo->invalid_gpu_selection = true;
             i++;
             continue;
         }
