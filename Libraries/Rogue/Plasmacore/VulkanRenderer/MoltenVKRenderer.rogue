@@ -34,6 +34,9 @@ trace "----"
          |);
          |
 
-      #find_queue_families
+      find_queue_families
+
+      trace "----" graphics_queue_family
+      trace "----" presentation_queue_family
 
 endClass

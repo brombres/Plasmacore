@@ -39,7 +39,8 @@ class VKGPU
          |  {
               local family : VKQueueFamily
       native
-        @|    $family.gpu        = $this;
+        @|    $family.context    = $context;
+         |    $family.gpu        = $this;
          |    $family.index      = (RogueInt32) i;
          |    $family.properties = properties[i];
       result.add( family );

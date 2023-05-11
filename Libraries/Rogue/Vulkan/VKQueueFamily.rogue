@@ -1,8 +1,8 @@
 module Vulkan
 
 class VKQueueFamily [compound]
-  #{
   PROPERTIES
+    context             : VKContext
     gpu                 : VKGPU
     index               : Int32
     supports_presenting : Logical?
@@ -16,13 +16,12 @@ class VKQueueFamily [compound]
       if (@supports_presenting) return @supports_presenting.value
 
       local result : Logical
-      local renderer = Plasmacore::VulkanRenderer
       native
         @|VkBool32 supports_presenting;
-         |$renderer->vkGetPhysicalDeviceSurfaceSupportKHR(
-         |  $gpu->device_value,
+         |$context->vkGetPhysicalDeviceSurfaceSupportKHR.value(
+         |  $gpu->native_gpu.value,
          |  $this.index,
-         |  $renderer->surface->value,
+         |  $context->surface->native_surface.value,
          |  &supports_presenting
          |);
          |$result = (RogueLogical) supports_presenting;
@@ -32,7 +31,6 @@ class VKQueueFamily [compound]
 
     method to->String
       return "($ supports_graphics:$ supports_presenting:$)"(index,supports_graphics,supports_presenting)
-      }#
 
 endClass
 

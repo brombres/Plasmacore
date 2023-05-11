@@ -51,7 +51,6 @@ trace "----"
       ]
 
       local gpus = context.instance.gpus
-      trace gpus
 
       forEach (search_type in preferred_device_order)
         if local found_device = gpus.first( (device) => (device.type == search_type) )
@@ -124,7 +123,7 @@ trace "----"
     method find_queue_families
       block
         # Find a queue family that supports both graphics and presentation
-        forEach (family in gpu.queue_families)
+        forEach (family in context.gpu.queue_families)
           if (family.supports_graphics and family.supports_presenting)
             graphics_queue_family = family
             presentation_queue_family = family
@@ -133,14 +132,14 @@ trace "----"
         endForEach
 
         # Find separate queue families for graphics and for presentation
-        forEach (family in gpu.queue_families)
+        forEach (family in context.gpu.queue_families)
           if (family.supports_graphics)
             graphics_queue_family = family
             escapeForEach
           endIf
         endForEach
 
-        forEach (family in gpu.queue_families)
+        forEach (family in context.gpu.queue_families)
           if (family.supports_presenting)
             presentation_queue_family = family
             escapeBlock
