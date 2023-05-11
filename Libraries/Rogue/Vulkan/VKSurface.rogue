@@ -5,7 +5,7 @@ class VKSurface
     context        : VKContext
 
     native_surface : VKNativeSurface
-    gpu            : VKPhysicalDevice
+    gpu            : VKGPU
     capabilities   : VKNativeSurfaceCapabilities
     is_cleaned_up  : Logical
 

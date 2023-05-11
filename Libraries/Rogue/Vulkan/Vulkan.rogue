@@ -14,7 +14,7 @@ $include Vulkan/VKDeviceCreateInfo
 $include Vulkan/VKDeviceType
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceCreateInfo
-$include Vulkan/VKPhysicalDevice
+$include Vulkan/VKGPU
 
 $include Vulkan/VKBitFormat
 $include Vulkan/VKColorSpace

@@ -120,7 +120,7 @@ trace "----"
 
     method configure_gpu( native_gpu:VKNativeGPU, gpu_number:Int32 ) [api]
 trace "----"
-      context.gpu = VKPhysicalDevice( context, native_gpu, gpu_number )
+      context.gpu = VKGPU( context, native_gpu, gpu_number )
 
     method create_surface [abstract api]
 

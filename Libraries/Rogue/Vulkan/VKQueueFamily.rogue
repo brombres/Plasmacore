@@ -3,7 +3,7 @@ module Vulkan
 class VKQueueFamily [compound]
   #{
   PROPERTIES
-    gpu                 : VKPhysicalDevice
+    gpu                 : VKGPU
     index               : Int32
     supports_presenting : Logical?
     native "VkQueueFamilyProperties properties;"

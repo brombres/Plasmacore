@@ -3,7 +3,7 @@ module Vulkan
 class VKContext
   PROPERTIES
     instance : VKInstance
-    gpu      : VKPhysicalDevice
+    gpu      : VKGPU
     surface  : VKSurface
     device   : VKDevice
 

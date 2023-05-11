@@ -66,9 +66,9 @@ class VKInstance
       native @|$result.value = vkGetInstanceProcAddr( $native_instance.value, $name->data->as_utf8 );
       return result
 
-    method physical_devices->VKPhysicalDevice[]
+    method physical_devices->VKGPU[]
       local count : Int32
-      local result = VKPhysicalDevice[]
+      local result = VKGPU[]
 
       native
         @|VkPhysicalDevice devices[64];
@@ -78,7 +78,7 @@ class VKInstance
         native @|vkEnumeratePhysicalDevices( $native_instance.value, (uint32_t*)&$count, devices );
         forEach (i in 0..<count)
           local native_gpu = native("(VKNativeGPU){devices[$i]}")->VKNativeGPU
-          local device = VKPhysicalDevice( context, native_gpu, i )
+          local device = VKGPU( context, native_gpu, i )
           result.add( device );
         endForEach
       endIf

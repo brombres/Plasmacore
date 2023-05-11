@@ -1,6 +1,6 @@
 module Vulkan
 
-class VKPhysicalDevice
+class VKGPU
   PROPERTIES
     context              : VKContext
     native_gpu           : VKNativeGPU

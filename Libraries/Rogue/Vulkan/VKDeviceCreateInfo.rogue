@@ -2,7 +2,7 @@ module Vulkan
 
 class VKDeviceCreateInfo
   PROPERTIES
-    gpu                  : VKPhysicalDevice
+    gpu                  : VKGPU
     available_extensions : String[]
     enabled_extensions   = String[]
 
