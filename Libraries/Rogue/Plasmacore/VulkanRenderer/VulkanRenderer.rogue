@@ -50,12 +50,12 @@ trace "----"
         VKDeviceType.OTHER
       ]
 
-      local devices = context.instance.physical_devices
-      trace devices
+      local gpus = context.instance.gpus
+      trace gpus
 
       #{
       forEach (search_type in preferred_device_order)
-        if local found_device = devices.first( (device) => (device.type == search_type) )
+        if local found_device = gpus.first( (device) => (device.type == search_type) )
           context.gpu = found_device
           gpu_number = found_device.index
           escapeForEach
