@@ -49,7 +49,7 @@ class VKInstance
       return result
 
   METHODS
-    method init( create_info:VKInstanceCreateInfo )
+    method init( create_info:VKInstanceConfig )
       context = create_info.context
 
       native

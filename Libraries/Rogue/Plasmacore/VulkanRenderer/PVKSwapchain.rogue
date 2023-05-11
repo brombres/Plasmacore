@@ -101,7 +101,7 @@ class PVKFrameControl
          |
          |vkCreateSemaphore( device, &sephamore_config, NULL, &$this->image_acquired_semaphore );
          |vkCreateSemaphore( device, &sephamore_config, NULL, &$this->draw_complete_semaphore );
-         |if ($renderer->uses_separate_presentation_queue)
+         |if ($renderer->context->uses_separate_presentation_queue)
          |{
          |  vkCreateSemaphore( device, &sephamore_config, NULL, &$this->image_ownership_semaphore );
          |}

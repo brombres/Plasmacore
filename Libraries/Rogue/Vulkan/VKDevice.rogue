@@ -5,27 +5,12 @@ class VKDevice
     context       : VKContext
     native_device : VKNativeDevice
 
-    #native "VkQueue graphics_queue;"
-    #native "VkQueue presentation_queue;"
+    native "VkQueue graphics_queue;"
+    native "VkQueue presentation_queue;"
 
   METHODS
-    method init( context, native_device )
-      SET_NATIVE_PROCEDURE<<context,this,vkCreateSwapchainKHR>>
-      SET_NATIVE_PROCEDURE<<context,this,vkDestroySwapchainKHR>>
-      SET_NATIVE_PROCEDURE<<context,this,vkGetSwapchainImagesKHR>>
-      SET_NATIVE_PROCEDURE<<context,this,vkAcquireNextImageKHR>>
-      SET_NATIVE_PROCEDURE<<context,this,vkQueuePresentKHR>>
-
-      native
-      @|printf( "---- vkCreateSwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkCreateSwapchainKHR.value );
-       |printf( "---- vkDestroySwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkDestroySwapchainKHR.value );
-       |printf( "---- vkGetSwapchainImagesKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkGetSwapchainImagesKHR.value );
-       |printf( "---- vkAcquireNextImageKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkAcquireNextImageKHR.value );
-       |printf( "---- vkQueuePresentKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkQueuePresentKHR.value );
-
-    #{
-    method init( config:VKDeviceCreateInfo )
-      local renderer = VulkanRenderer
+    method init( config:VKDeviceConfig )
+      context = config.context
 
       native
         @|float queue_priorities[1] = {0.0};
@@ -34,7 +19,7 @@ class VKDevice
          |VkDeviceQueueCreateInfo queues[2];
          |queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
          |queues[0].pNext = NULL;
-         |queues[0].queueFamilyIndex = $renderer->graphics_queue_family.index;
+         |queues[0].queueFamilyIndex = $context->graphics_queue_family.index;
          |queues[0].queueCount = 1;
          |queues[0].pQueuePriorities = queue_priorities;
          |queues[0].flags = 0;
@@ -58,32 +43,45 @@ class VKDevice
          |  .pEnabledFeatures = NULL,  // If specific features are required, pass them in here
          |};
          |
-         |if ($renderer->uses_separate_presentation_queue)
+         |if ($context->uses_separate_presentation_queue)
          |{
          |  queues[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
          |  queues[1].pNext = NULL;
-         |  queues[1].queueFamilyIndex = $renderer->presentation_queue_family.index;
+         |  queues[1].queueFamilyIndex = $context->presentation_queue_family.index;
          |  queues[1].queueCount = 1;
          |  queues[1].pQueuePriorities = queue_priorities;
          |  queues[1].flags = 0;
          |  device_info.queueCreateInfoCount = 2;
          |}
          |
-         |vkCreateDevice( $renderer->gpu->device_value, &device_info, NULL, &$this->device_value );
+         |vkCreateDevice( $context->gpu->native_gpu.value, &device_info, NULL, &$this->native_device.value );
          |
 
       native
         @|
-         |vkGetDeviceQueue( $this->device_value, $renderer->graphics_queue_family.index, 0, &$this->graphics_queue );
-         |if ($renderer->uses_separate_presentation_queue)
+         |vkGetDeviceQueue( $this->native_device.value, $context->graphics_queue_family.index, 0, &$this->graphics_queue );
+         |if ($context->uses_separate_presentation_queue)
          |{
-         |  vkGetDeviceQueue( $this->device_value, $renderer->presentation_queue_family.index, 0, &$this->presentation_queue );
+         |  vkGetDeviceQueue( $this->native_device.value, $context->presentation_queue_family.index, 0, &$this->presentation_queue );
          |}
          |else
          |{
          |  $this->presentation_queue = $this->graphics_queue;
          |}
-      }#
+
+      SET_NATIVE_PROCEDURE<<context,this,vkCreateSwapchainKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkDestroySwapchainKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkGetSwapchainImagesKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkAcquireNextImageKHR>>
+      SET_NATIVE_PROCEDURE<<context,this,vkQueuePresentKHR>>
+
+      native
+      @|printf( "---- vkCreateSwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkCreateSwapchainKHR.value );
+       |printf( "---- vkDestroySwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkDestroySwapchainKHR.value );
+       |printf( "---- vkGetSwapchainImagesKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkGetSwapchainImagesKHR.value );
+       |printf( "---- vkAcquireNextImageKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkAcquireNextImageKHR.value );
+       |printf( "---- vkQueuePresentKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkQueuePresentKHR.value );
+
 
     method procedure_address( name:String )->RogueVoidPointer
       local result : RogueVoidPointer

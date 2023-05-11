@@ -10,10 +10,10 @@ $endMacro
 
 $include Vulkan/VKApplicationInfo
 $include Vulkan/VKContext
-$include Vulkan/VKDeviceCreateInfo
+$include Vulkan/VKDeviceConfig
 $include Vulkan/VKDeviceType
 $include Vulkan/VKInstance
-$include Vulkan/VKInstanceCreateInfo
+$include Vulkan/VKInstanceConfig
 $include Vulkan/VKGPU
 
 $include Vulkan/VKBitFormat

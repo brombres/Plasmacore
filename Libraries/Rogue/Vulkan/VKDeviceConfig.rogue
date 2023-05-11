@@ -1,13 +1,13 @@
 module Vulkan
 
-class VKDeviceCreateInfo
+class VKDeviceConfig
   PROPERTIES
-    gpu                  : VKGPU
+    context              : VKContext
     available_extensions : String[]
     enabled_extensions   = String[]
 
   METHODS
-    method init( gpu )
+    method init( context )
 
     method available_extensions->String[]
       if (@available_extensions) return @available_extensions
@@ -16,12 +16,12 @@ class VKDeviceCreateInfo
 
       native
         @|uint32_t count = 0;
-         |vkEnumerateDeviceExtensionProperties( $gpu->device_value, NULL, &count, NULL );
+         |vkEnumerateDeviceExtensionProperties( $context->gpu->native_gpu.value, NULL, &count, NULL );
          |
          |if (count > 0 && count <= 256)
          |{
          |  VkExtensionProperties extensions[256];
-         |  vkEnumerateDeviceExtensionProperties( $gpu->device_value, NULL, &count, extensions );
+         |  vkEnumerateDeviceExtensionProperties( $context->gpu->native_gpu.value, NULL, &count, extensions );
          |  for (uint32_t i = 0; i < count; i++)
          |  {
       result.add( native("RogueString_create(extensions[i].extensionName)")->String )

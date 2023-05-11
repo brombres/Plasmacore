@@ -11,10 +11,6 @@ class VulkanRenderer : Renderer [essential abstract singleton]
 
     swapchain  = PVKSwapchain( this )
 
-    uses_separate_presentation_queue : Logical
-
-    graphics_queue_family            : VKQueueFamily
-    presentation_queue_family        : VKQueueFamily
     surface_format                   : VKSurfaceFormat
     #swapchain                        : VKSwapchain
 
@@ -33,7 +29,7 @@ trace "----"
 
       local app_info = VKApplicationInfo( app_name, app_version_code, "Plasmacore2023", Plasmacore.VERSION_CODE )
 
-      local create_info = VKInstanceCreateInfo( context, app_info )
+      local create_info = VKInstanceConfig( context, app_info )
       create_info.enable_extension( "VK_KHR_get_physical_device_properties2" )
       create_info.enable_extension( "VK_KHR_surface" )
       create_info.enable_extension( "VK_EXT_metal_surface" )
@@ -65,14 +61,12 @@ trace "----"
         error.println "[Vulkan] ERROR: no GPU found"
       endIf
 
-    method configure_device( native_device:VKNativeDevice ) [api]
-trace "----"
-      context.device = VKDevice( context, native_device )
 #{
       if (not gpu) return
 
-      local config = VKDeviceCreateInfo( gpu )
+      local config = VKDeviceConfig( gpu )
       config.enable_extension( "VK_KHR_swapchain" )
+      config.enable_extension( "VK_KHR_incremental_present" )
       config.enable_extension( "VK_KHR_portability_subset" )
 
       device = VKDevice( config )
@@ -114,41 +108,21 @@ trace "----"
       #swapchain = VKSwapchain( this, 3, 2 )
 }#
 
+    method create_device [api]
+      trace "----"
+
+      local config = VKDeviceConfig( context )
+      config.enable_extension( "VK_KHR_swapchain" )
+      config.enable_extension( "VK_KHR_incremental_present" )
+      config.enable_extension( "VK_KHR_portability_subset" )
+      context.device = VKDevice( config )
+
     method create_surface [abstract api]
 
     method end_render [override]
       trace "----"
       #swapchain.advance_frame
 
-    method find_queue_families
-      block
-        # Find a queue family that supports both graphics and presentation
-        forEach (family in context.gpu.queue_families)
-          if (family.supports_graphics and family.supports_presenting)
-            graphics_queue_family = family
-            presentation_queue_family = family
-            escapeBlock
-          endIf
-        endForEach
-
-        # Find separate queue families for graphics and for presentation
-        forEach (family in context.gpu.queue_families)
-          if (family.supports_graphics)
-            graphics_queue_family = family
-            escapeForEach
-          endIf
-        endForEach
-
-        forEach (family in context.gpu.queue_families)
-          if (family.supports_presenting)
-            presentation_queue_family = family
-            escapeBlock
-          endIf
-        endForEach
-
-      endBlock
-
-      uses_separate_presentation_queue = (graphics_queue_family.index != presentation_queue_family.index)
 
       #{
     method surface_formats->VKSurfaceFormat[]

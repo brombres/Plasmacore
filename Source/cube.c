@@ -165,9 +165,13 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define DEMO_SURFACE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface->native_surface.value)
 
 
-#define DEMO_GRAPHICS_QUEUE_FAMILY_INDEX (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->graphics_queue_family.index)
-#define DEMO_PRESENT_QUEUE_FAMILY_INDEX (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->presentation_queue_family.index)
-#define DEMO_SEPARATE_PRESENT_QUEUE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->uses_separate_presentation_queue)
+#define DEMO_GRAPHICS_QUEUE_FAMILY_INDEX (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->graphics_queue_family.index)
+#define DEMO_PRESENT_QUEUE_FAMILY_INDEX (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->presentation_queue_family.index)
+#define DEMO_SEPARATE_PRESENT_QUEUE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->uses_separate_presentation_queue)
+
+#define DEMO_DEVICE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->device->native_device.value)
+#define DEMO_GRAPHICS_QUEUE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->device->graphics_queue)
+#define DEMO_PRESENT_QUEUE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->device->presentation_queue)
 
 /*
  * structure to track all objects related to a texture.
@@ -379,7 +383,6 @@ struct demo {
     VkSurfaceKHR surface;
     bool prepared;
     bool use_staging_buffer;
-    bool separate_present_queue;
     bool is_minimized;
     bool invalid_gpu_selection;
 
@@ -665,7 +668,7 @@ static void demo_name_object(struct demo *demo, VkObjectType object_type, uint64
         .objectHandle = vulkan_handle,
         .pObjectName = name,
     };
-    err = demo->SetDebugUtilsObjectNameEXT(demo->device, &obj_name);
+    err = demo->SetDebugUtilsObjectNameEXT(DEMO_DEVICE, &obj_name);
     assert(!err);
 }
 
@@ -732,7 +735,7 @@ static void demo_flush_init_cmd(struct demo *demo) {
         // Remove sType to intentionally force validation layer errors.
         fence_ci.sType = 0;
     }
-    err = vkCreateFence(demo->device, &fence_ci, NULL, &fence);
+    err = vkCreateFence(DEMO_DEVICE, &fence_ci, NULL, &fence);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_FENCE, (uint64_t)fence, "InitFence");
 
@@ -747,14 +750,14 @@ static void demo_flush_init_cmd(struct demo *demo) {
                                 .signalSemaphoreCount = 0,
                                 .pSignalSemaphores = NULL};
 
-    err = vkQueueSubmit(demo->graphics_queue, 1, &submit_info, fence);
+    err = vkQueueSubmit(DEMO_GRAPHICS_QUEUE, 1, &submit_info, fence);
     assert(!err);
 
-    err = vkWaitForFences(demo->device, 1, &fence, VK_TRUE, UINT64_MAX);
+    err = vkWaitForFences(DEMO_DEVICE, 1, &fence, VK_TRUE, UINT64_MAX);
     assert(!err);
 
-    vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, cmd_bufs);
-    vkDestroyFence(demo->device, fence, NULL);
+    vkFreeCommandBuffers(DEMO_DEVICE, demo->cmd_pool, 1, cmd_bufs);
+    vkDestroyFence(DEMO_DEVICE, fence, NULL);
     demo->cmd = VK_NULL_HANDLE;
 }
 
@@ -961,12 +964,12 @@ void DemoUpdateTargetIPD(struct demo *demo) {
     VkPastPresentationTimingGOOGLE *past = NULL;
     uint32_t count = 0;
 
-    err = demo->fpGetPastPresentationTimingGOOGLE(demo->device, DEMO_SWAPCHAIN, &count, NULL);
+    err = demo->fpGetPastPresentationTimingGOOGLE(DEMO_DEVICE, DEMO_SWAPCHAIN, &count, NULL);
     assert(!err);
     if (count) {
         past = (VkPastPresentationTimingGOOGLE *)malloc(sizeof(VkPastPresentationTimingGOOGLE) * count);
         assert(past);
-        err = demo->fpGetPastPresentationTimingGOOGLE(demo->device, DEMO_SWAPCHAIN, &count, past);
+        err = demo->fpGetPastPresentationTimingGOOGLE(DEMO_DEVICE, DEMO_SWAPCHAIN, &count, past);
         assert(!err);
 
         bool early = false;
@@ -1074,13 +1077,13 @@ static void demo_draw(struct demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
     // Ensure no more than FRAME_LAG renderings are outstanding
-    vkWaitForFences(demo->device, 1, &DEMO_FENCE, VK_TRUE, UINT64_MAX);
-    vkResetFences(demo->device, 1, &DEMO_FENCE);
+    vkWaitForFences(DEMO_DEVICE, 1, &DEMO_FENCE, VK_TRUE, UINT64_MAX);
+    vkResetFences(DEMO_DEVICE, 1, &DEMO_FENCE);
 
     do {
         // Get the index of the next available swapchain image:
         err =
-            demo->fpAcquireNextImageKHR(demo->device, DEMO_SWAPCHAIN, UINT64_MAX,
+            demo->fpAcquireNextImageKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, UINT64_MAX,
                                         DEMO_IMAGE_ACQUIRED_SEMAPHORE, VK_NULL_HANDLE, &demo->current_buffer);
 
         if (err == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1131,7 +1134,7 @@ printf("-------------surface lost 1\n");
     submit_info.pCommandBuffers = &demo->swapchain_image_resources[demo->current_buffer].cmd;
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &DEMO_DRAW_COMPLETE_SEMAPHORE;
-    err = vkQueueSubmit(demo->graphics_queue, 1, &submit_info, DEMO_FENCE);
+    err = vkQueueSubmit(DEMO_GRAPHICS_QUEUE, 1, &submit_info, DEMO_FENCE);
     assert(!err);
 
     if (DEMO_SEPARATE_PRESENT_QUEUE) {
@@ -1146,7 +1149,7 @@ printf("-------------surface lost 1\n");
         submit_info.pCommandBuffers = &demo->swapchain_image_resources[demo->current_buffer].graphics_to_present_cmd;
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = &DEMO_IMAGE_OWNERSHIP_SEMAPHORE;
-        err = vkQueueSubmit(demo->present_queue, 1, &submit_info, nullFence);
+        err = vkQueueSubmit(DEMO_PRESENT_QUEUE, 1, &submit_info, nullFence);
         assert(!err);
     }
 
@@ -1227,7 +1230,7 @@ printf("-------------surface lost 1\n");
         }
     }
 
-    err = demo->fpQueuePresentKHR(demo->present_queue, &present);
+    err = demo->fpQueuePresentKHR(DEMO_PRESENT_QUEUE, &present);
 PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1424,7 +1427,7 @@ static void demo_prepare_buffers(struct demo *demo)
     PlasmacorePVKSwapchain__configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
 
     uint32_t i;
-    //err = demo->fpCreateSwapchainKHR(demo->device, &swapchain_ci, NULL, &DEMO_SWAPCHAIN);
+    //err = demo->fpCreateSwapchainKHR(DEMO_DEVICE, &swapchain_ci, NULL, &DEMO_SWAPCHAIN);
     //assert(!err);
 
     // If we just re-created an existing swapchain, we should destroy the old
@@ -1432,15 +1435,15 @@ static void demo_prepare_buffers(struct demo *demo)
     // Note: destroying the swapchain also cleans up all its associated
     // presentable images once the platform is done with them.
     //if (oldSwapchain != VK_NULL_HANDLE) {
-    //    demo->fpDestroySwapchainKHR(demo->device, oldSwapchain, NULL);
+    //    demo->fpDestroySwapchainKHR(DEMO_DEVICE, oldSwapchain, NULL);
     //}
 
-    err = demo->fpGetSwapchainImagesKHR(demo->device, DEMO_SWAPCHAIN, &demo->swapchainImageCount, NULL);
+    err = demo->fpGetSwapchainImagesKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, &demo->swapchainImageCount, NULL);
     assert(!err);
 
     VkImage *swapchainImages = (VkImage *)malloc(demo->swapchainImageCount * sizeof(VkImage));
     assert(swapchainImages);
-    err = demo->fpGetSwapchainImagesKHR(demo->device, DEMO_SWAPCHAIN, &demo->swapchainImageCount, swapchainImages);
+    err = demo->fpGetSwapchainImagesKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, &demo->swapchainImageCount, swapchainImages);
     assert(!err);
 
     demo->swapchain_image_resources =
@@ -1472,7 +1475,7 @@ static void demo_prepare_buffers(struct demo *demo)
 
         color_image_view.image = demo->swapchain_image_resources[i].image;
 
-        err = vkCreateImageView(demo->device, &color_image_view, NULL, &demo->swapchain_image_resources[i].view);
+        err = vkCreateImageView(DEMO_DEVICE, &color_image_view, NULL, &demo->swapchain_image_resources[i].view);
         assert(!err);
         demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->swapchain_image_resources[i].view, "SwapchainView(%u)",
                          i);
@@ -1480,7 +1483,7 @@ static void demo_prepare_buffers(struct demo *demo)
 
     if (demo->VK_GOOGLE_display_timing_enabled) {
         VkRefreshCycleDurationGOOGLE rc_dur;
-        err = demo->fpGetRefreshCycleDurationGOOGLE(demo->device, DEMO_SWAPCHAIN, &rc_dur);
+        err = demo->fpGetRefreshCycleDurationGOOGLE(DEMO_DEVICE, DEMO_SWAPCHAIN, &rc_dur);
         assert(!err);
         demo->refresh_duration = rc_dur.refreshDuration;
 
@@ -1540,11 +1543,11 @@ static void demo_prepare_depth(struct demo *demo) {
     demo->depth.format = depth_format;
 
     /* create image */
-    err = vkCreateImage(demo->device, &image, NULL, &demo->depth.image);
+    err = vkCreateImage(DEMO_DEVICE, &image, NULL, &demo->depth.image);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_IMAGE, (uint64_t)demo->depth.image, "DepthImage");
 
-    vkGetImageMemoryRequirements(demo->device, demo->depth.image, &mem_reqs);
+    vkGetImageMemoryRequirements(DEMO_DEVICE, demo->depth.image, &mem_reqs);
     assert(!err);
 
     demo->depth.mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1557,17 +1560,17 @@ static void demo_prepare_depth(struct demo *demo) {
     assert(pass);
 
     /* allocate memory */
-    err = vkAllocateMemory(demo->device, &demo->depth.mem_alloc, NULL, &demo->depth.mem);
+    err = vkAllocateMemory(DEMO_DEVICE, &demo->depth.mem_alloc, NULL, &demo->depth.mem);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)demo->depth.mem, "DepthMem");
 
     /* bind memory */
-    err = vkBindImageMemory(demo->device, demo->depth.image, demo->depth.mem, 0);
+    err = vkBindImageMemory(DEMO_DEVICE, demo->depth.image, demo->depth.mem, 0);
     assert(!err);
 
     /* create image view */
     view.image = demo->depth.image;
-    err = vkCreateImageView(demo->device, &view, NULL, &demo->depth.view);
+    err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->depth.view);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->depth.view, "DepthView");
 }
@@ -1629,12 +1632,12 @@ static void demo_prepare_texture_buffer(struct demo *demo, const char *filename,
                                                    .queueFamilyIndexCount = 0,
                                                    .pQueueFamilyIndices = NULL};
 
-    err = vkCreateBuffer(demo->device, &buffer_create_info, NULL, &tex_obj->buffer);
+    err = vkCreateBuffer(DEMO_DEVICE, &buffer_create_info, NULL, &tex_obj->buffer);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_BUFFER, (uint64_t)tex_obj->buffer, "TexBuffer(%s)", filename);
 
     VkMemoryRequirements mem_reqs;
-    vkGetBufferMemoryRequirements(demo->device, tex_obj->buffer, &mem_reqs);
+    vkGetBufferMemoryRequirements(DEMO_DEVICE, tex_obj->buffer, &mem_reqs);
 
     tex_obj->mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     tex_obj->mem_alloc.pNext = NULL;
@@ -1645,12 +1648,12 @@ static void demo_prepare_texture_buffer(struct demo *demo, const char *filename,
     pass = memory_type_from_properties(demo, mem_reqs.memoryTypeBits, requirements, &tex_obj->mem_alloc.memoryTypeIndex);
     assert(pass);
 
-    err = vkAllocateMemory(demo->device, &tex_obj->mem_alloc, NULL, &(tex_obj->mem));
+    err = vkAllocateMemory(DEMO_DEVICE, &tex_obj->mem_alloc, NULL, &(tex_obj->mem));
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)tex_obj->mem, "TexBufMemory(%s)", filename);
 
     /* bind memory */
-    err = vkBindBufferMemory(demo->device, tex_obj->buffer, tex_obj->mem, 0);
+    err = vkBindBufferMemory(DEMO_DEVICE, tex_obj->buffer, tex_obj->mem, 0);
     assert(!err);
 
     VkSubresourceLayout layout;
@@ -1658,14 +1661,14 @@ static void demo_prepare_texture_buffer(struct demo *demo, const char *filename,
     layout.rowPitch = tex_width * 4;
 
     void *data;
-    err = vkMapMemory(demo->device, tex_obj->mem, 0, tex_obj->mem_alloc.allocationSize, 0, &data);
+    err = vkMapMemory(DEMO_DEVICE, tex_obj->mem, 0, tex_obj->mem_alloc.allocationSize, 0, &data);
     assert(!err);
 
     if (!loadTexture(filename, data, &layout, &tex_width, &tex_height)) {
         fprintf(stderr, "Error loading texture: %s\n", filename);
     }
 
-    vkUnmapMemory(demo->device, tex_obj->mem);
+    vkUnmapMemory(DEMO_DEVICE, tex_obj->mem);
 }
 
 static void demo_prepare_texture_image(struct demo *demo, const char *filename, struct texture_object *tex_obj,
@@ -1700,11 +1703,11 @@ static void demo_prepare_texture_image(struct demo *demo, const char *filename, 
 
     VkMemoryRequirements mem_reqs;
 
-    err = vkCreateImage(demo->device, &image_create_info, NULL, &tex_obj->image);
+    err = vkCreateImage(DEMO_DEVICE, &image_create_info, NULL, &tex_obj->image);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_IMAGE, (uint64_t)tex_obj->image, "TexImage(%s)", filename);
 
-    vkGetImageMemoryRequirements(demo->device, tex_obj->image, &mem_reqs);
+    vkGetImageMemoryRequirements(DEMO_DEVICE, tex_obj->image, &mem_reqs);
 
     tex_obj->mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     tex_obj->mem_alloc.pNext = NULL;
@@ -1715,12 +1718,12 @@ static void demo_prepare_texture_image(struct demo *demo, const char *filename, 
     assert(pass);
 
     /* allocate memory */
-    err = vkAllocateMemory(demo->device, &tex_obj->mem_alloc, NULL, &(tex_obj->mem));
+    err = vkAllocateMemory(DEMO_DEVICE, &tex_obj->mem_alloc, NULL, &(tex_obj->mem));
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)tex_obj->mem, "TexImageMem(%s)", filename);
 
     /* bind memory */
-    err = vkBindImageMemory(demo->device, tex_obj->image, tex_obj->mem, 0);
+    err = vkBindImageMemory(DEMO_DEVICE, tex_obj->image, tex_obj->mem, 0);
     assert(!err);
 
     if (required_props & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
@@ -1732,16 +1735,16 @@ static void demo_prepare_texture_image(struct demo *demo, const char *filename, 
         VkSubresourceLayout layout;
         void *data;
 
-        vkGetImageSubresourceLayout(demo->device, tex_obj->image, &subres, &layout);
+        vkGetImageSubresourceLayout(DEMO_DEVICE, tex_obj->image, &subres, &layout);
 
-        err = vkMapMemory(demo->device, tex_obj->mem, 0, tex_obj->mem_alloc.allocationSize, 0, &data);
+        err = vkMapMemory(DEMO_DEVICE, tex_obj->mem, 0, tex_obj->mem_alloc.allocationSize, 0, &data);
         assert(!err);
 
         if (!loadTexture(filename, data, &layout, &tex_width, &tex_height)) {
             fprintf(stderr, "Error loading texture: %s\n", filename);
         }
 
-        vkUnmapMemory(demo->device, tex_obj->mem);
+        vkUnmapMemory(DEMO_DEVICE, tex_obj->mem);
     }
 
     tex_obj->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -1749,9 +1752,9 @@ static void demo_prepare_texture_image(struct demo *demo, const char *filename, 
 
 static void demo_destroy_texture(struct demo *demo, struct texture_object *tex_objs) {
     /* clean up staging resources */
-    vkFreeMemory(demo->device, tex_objs->mem, NULL);
-    if (tex_objs->image) vkDestroyImage(demo->device, tex_objs->image, NULL);
-    if (tex_objs->buffer) vkDestroyBuffer(demo->device, tex_objs->buffer, NULL);
+    vkFreeMemory(DEMO_DEVICE, tex_objs->mem, NULL);
+    if (tex_objs->image) vkDestroyImage(DEMO_DEVICE, tex_objs->image, NULL);
+    if (tex_objs->buffer) vkDestroyBuffer(DEMO_DEVICE, tex_objs->buffer, NULL);
 }
 
 static void demo_prepare_textures(struct demo *demo) {
@@ -1853,13 +1856,13 @@ static void demo_prepare_textures(struct demo *demo) {
         };
 
         /* create sampler */
-        err = vkCreateSampler(demo->device, &sampler, NULL, &demo->textures[i].sampler);
+        err = vkCreateSampler(DEMO_DEVICE, &sampler, NULL, &demo->textures[i].sampler);
         assert(!err);
         demo_name_object(demo, VK_OBJECT_TYPE_SAMPLER, (uint64_t)demo->textures[i].sampler, "Sampler(%u)", i);
 
         /* create image view */
         view.image = demo->textures[i].image;
-        err = vkCreateImageView(demo->device, &view, NULL, &demo->textures[i].view);
+        err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
         demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
         assert(!err);
     }
@@ -1896,12 +1899,12 @@ void demo_prepare_cube_data_buffers(struct demo *demo) {
     buf_info.size = sizeof(data);
 
     for (unsigned int i = 0; i < demo->swapchainImageCount; i++) {
-        err = vkCreateBuffer(demo->device, &buf_info, NULL, &demo->swapchain_image_resources[i].uniform_buffer);
+        err = vkCreateBuffer(DEMO_DEVICE, &buf_info, NULL, &demo->swapchain_image_resources[i].uniform_buffer);
         assert(!err);
         demo_name_object(demo, VK_OBJECT_TYPE_BUFFER, (uint64_t)demo->swapchain_image_resources[i].uniform_buffer,
                          "SwapchainUniformBuf(%u)", i);
 
-        vkGetBufferMemoryRequirements(demo->device, demo->swapchain_image_resources[i].uniform_buffer, &mem_reqs);
+        vkGetBufferMemoryRequirements(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_buffer, &mem_reqs);
 
         mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         mem_alloc.pNext = NULL;
@@ -1913,18 +1916,18 @@ void demo_prepare_cube_data_buffers(struct demo *demo) {
                                            &mem_alloc.memoryTypeIndex);
         assert(pass);
 
-        err = vkAllocateMemory(demo->device, &mem_alloc, NULL, &demo->swapchain_image_resources[i].uniform_memory);
+        err = vkAllocateMemory(DEMO_DEVICE, &mem_alloc, NULL, &demo->swapchain_image_resources[i].uniform_memory);
         assert(!err);
         demo_name_object(demo, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)demo->swapchain_image_resources[i].uniform_memory,
                          "SwapchainUniformMem(%u)", i);
 
-        err = vkMapMemory(demo->device, demo->swapchain_image_resources[i].uniform_memory, 0, VK_WHOLE_SIZE, 0,
+        err = vkMapMemory(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_memory, 0, VK_WHOLE_SIZE, 0,
                           &demo->swapchain_image_resources[i].uniform_memory_ptr);
         assert(!err);
 
         memcpy(demo->swapchain_image_resources[i].uniform_memory_ptr, &data, sizeof data);
 
-        err = vkBindBufferMemory(demo->device, demo->swapchain_image_resources[i].uniform_buffer,
+        err = vkBindBufferMemory(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_buffer,
                                  demo->swapchain_image_resources[i].uniform_memory, 0);
         assert(!err);
     }
@@ -1957,7 +1960,7 @@ static void demo_prepare_descriptor_layout(struct demo *demo) {
     };
     VkResult U_ASSERT_ONLY err;
 
-    err = vkCreateDescriptorSetLayout(demo->device, &descriptor_layout, NULL, &demo->desc_layout);
+    err = vkCreateDescriptorSetLayout(DEMO_DEVICE, &descriptor_layout, NULL, &demo->desc_layout);
     assert(!err);
 
     const VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = {
@@ -1967,7 +1970,7 @@ static void demo_prepare_descriptor_layout(struct demo *demo) {
         .pSetLayouts = &demo->desc_layout,
     };
 
-    err = vkCreatePipelineLayout(demo->device, &pPipelineLayoutCreateInfo, NULL, &demo->pipeline_layout);
+    err = vkCreatePipelineLayout(DEMO_DEVICE, &pPipelineLayoutCreateInfo, NULL, &demo->pipeline_layout);
     assert(!err);
 }
 
@@ -2065,7 +2068,7 @@ static void demo_prepare_render_pass(struct demo *demo) {
     };
     VkResult U_ASSERT_ONLY err;
 
-    err = vkCreateRenderPass(demo->device, &rp_info, NULL, &demo->render_pass);
+    err = vkCreateRenderPass(DEMO_DEVICE, &rp_info, NULL, &demo->render_pass);
     assert(!err);
 }
 
@@ -2080,7 +2083,7 @@ static VkShaderModule demo_prepare_shader_module(const char *name, struct demo *
     moduleCreateInfo.codeSize = size;
     moduleCreateInfo.pCode = code;
 
-    err = vkCreateShaderModule(demo->device, &moduleCreateInfo, NULL, &module);
+    err = vkCreateShaderModule(DEMO_DEVICE, &moduleCreateInfo, NULL, &module);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_SHADER_MODULE, (uint64_t)module, "%s", name);
 
@@ -2196,7 +2199,7 @@ static void demo_prepare_pipeline(struct demo *demo) {
     memset(&pipelineCache, 0, sizeof(pipelineCache));
     pipelineCache.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 
-    err = vkCreatePipelineCache(demo->device, &pipelineCache, NULL, &demo->pipelineCache);
+    err = vkCreatePipelineCache(DEMO_DEVICE, &pipelineCache, NULL, &demo->pipelineCache);
     assert(!err);
 
     pipeline.pVertexInputState = &vi;
@@ -2213,11 +2216,11 @@ static void demo_prepare_pipeline(struct demo *demo) {
 
     pipeline.renderPass = demo->render_pass;
 
-    err = vkCreateGraphicsPipelines(demo->device, demo->pipelineCache, 1, &pipeline, NULL, &demo->pipeline);
+    err = vkCreateGraphicsPipelines(DEMO_DEVICE, demo->pipelineCache, 1, &pipeline, NULL, &demo->pipeline);
     assert(!err);
 
-    vkDestroyShaderModule(demo->device, demo->frag_shader_module, NULL);
-    vkDestroyShaderModule(demo->device, demo->vert_shader_module, NULL);
+    vkDestroyShaderModule(DEMO_DEVICE, demo->frag_shader_module, NULL);
+    vkDestroyShaderModule(DEMO_DEVICE, demo->vert_shader_module, NULL);
 }
 
 static void demo_prepare_descriptor_pool(struct demo *demo) {
@@ -2242,7 +2245,7 @@ static void demo_prepare_descriptor_pool(struct demo *demo) {
     };
     VkResult U_ASSERT_ONLY err;
 
-    err = vkCreateDescriptorPool(demo->device, &descriptor_pool, NULL, &demo->desc_pool);
+    err = vkCreateDescriptorPool(DEMO_DEVICE, &descriptor_pool, NULL, &demo->desc_pool);
     assert(!err);
 }
 
@@ -2282,12 +2285,12 @@ static void demo_prepare_descriptor_set(struct demo *demo) {
     writes[1].pImageInfo = tex_descs;
 
     for (unsigned int i = 0; i < demo->swapchainImageCount; i++) {
-        err = vkAllocateDescriptorSets(demo->device, &alloc_info, &demo->swapchain_image_resources[i].descriptor_set);
+        err = vkAllocateDescriptorSets(DEMO_DEVICE, &alloc_info, &demo->swapchain_image_resources[i].descriptor_set);
         assert(!err);
         buffer_info.buffer = demo->swapchain_image_resources[i].uniform_buffer;
         writes[0].dstSet = demo->swapchain_image_resources[i].descriptor_set;
         writes[1].dstSet = demo->swapchain_image_resources[i].descriptor_set;
-        vkUpdateDescriptorSets(demo->device, 2, writes, 0, NULL);
+        vkUpdateDescriptorSets(DEMO_DEVICE, 2, writes, 0, NULL);
     }
 }
 
@@ -2310,7 +2313,7 @@ static void demo_prepare_framebuffers(struct demo *demo) {
 
     for (i = 0; i < demo->swapchainImageCount; i++) {
         attachments[0] = demo->swapchain_image_resources[i].view;
-        err = vkCreateFramebuffer(demo->device, &fb_info, NULL, &demo->swapchain_image_resources[i].framebuffer);
+        err = vkCreateFramebuffer(DEMO_DEVICE, &fb_info, NULL, &demo->swapchain_image_resources[i].framebuffer);
         assert(!err);
         demo_name_object(demo, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)demo->swapchain_image_resources[i].framebuffer,
                          "Framebuffer(%u)", i);
@@ -2333,7 +2336,7 @@ static void demo_prepare(struct demo *demo) {
             .queueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX,
             .flags = 0,
         };
-        err = vkCreateCommandPool(demo->device, &cmd_pool_info, NULL, &demo->cmd_pool);
+        err = vkCreateCommandPool(DEMO_DEVICE, &cmd_pool_info, NULL, &demo->cmd_pool);
         assert(!err);
     }
 
@@ -2344,7 +2347,7 @@ static void demo_prepare(struct demo *demo) {
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1,
     };
-    err = vkAllocateCommandBuffers(demo->device, &cmd, &demo->cmd);
+    err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &demo->cmd);
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)demo->cmd, "PrepareCB");
     VkCommandBufferBeginInfo cmd_buf_info = {
@@ -2366,7 +2369,7 @@ static void demo_prepare(struct demo *demo) {
     demo_prepare_pipeline(demo);
 
     for (uint32_t i = 0; i < demo->swapchainImageCount; i++) {
-        err = vkAllocateCommandBuffers(demo->device, &cmd, &demo->swapchain_image_resources[i].cmd);
+        err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &demo->swapchain_image_resources[i].cmd);
         assert(!err);
     }
 
@@ -2377,7 +2380,7 @@ static void demo_prepare(struct demo *demo) {
             .queueFamilyIndex = DEMO_PRESENT_QUEUE_FAMILY_INDEX,
             .flags = 0,
         };
-        err = vkCreateCommandPool(demo->device, &present_cmd_pool_info, NULL, &demo->present_cmd_pool);
+        err = vkCreateCommandPool(DEMO_DEVICE, &present_cmd_pool_info, NULL, &demo->present_cmd_pool);
         assert(!err);
         const VkCommandBufferAllocateInfo present_cmd_info = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -2387,7 +2390,7 @@ static void demo_prepare(struct demo *demo) {
             .commandBufferCount = 1,
         };
         for (uint32_t i = 0; i < demo->swapchainImageCount; i++) {
-            err = vkAllocateCommandBuffers(demo->device, &present_cmd_info,
+            err = vkAllocateCommandBuffers(DEMO_DEVICE, &present_cmd_info,
                                            &demo->swapchain_image_resources[i].graphics_to_present_cmd);
             assert(!err);
             demo_build_image_ownership_cmd(demo, i);
@@ -2424,60 +2427,60 @@ static void demo_cleanup(struct demo *demo) {
     uint32_t i;
 
     demo->prepared = false;
-    vkDeviceWaitIdle(demo->device);
+    vkDeviceWaitIdle(DEMO_DEVICE);
 
     // Wait for fences from present operations
     for (i = 0; i < FRAME_LAG; i++) {
-        vkWaitForFences(demo->device, 1, &DEMO_FENCE, VK_TRUE, UINT64_MAX);
-        vkDestroyFence(demo->device, DEMO_FENCE, NULL);
-        vkDestroySemaphore(demo->device, DEMO_IMAGE_ACQUIRED_SEMAPHORE, NULL);
-        vkDestroySemaphore(demo->device, DEMO_DRAW_COMPLETE_SEMAPHORE, NULL);
+        vkWaitForFences(DEMO_DEVICE, 1, &DEMO_FENCE, VK_TRUE, UINT64_MAX);
+        vkDestroyFence(DEMO_DEVICE, DEMO_FENCE, NULL);
+        vkDestroySemaphore(DEMO_DEVICE, DEMO_IMAGE_ACQUIRED_SEMAPHORE, NULL);
+        vkDestroySemaphore(DEMO_DEVICE, DEMO_DRAW_COMPLETE_SEMAPHORE, NULL);
         if (DEMO_SEPARATE_PRESENT_QUEUE) {
-            vkDestroySemaphore(demo->device, DEMO_IMAGE_OWNERSHIP_SEMAPHORE, NULL);
+            vkDestroySemaphore(DEMO_DEVICE, DEMO_IMAGE_OWNERSHIP_SEMAPHORE, NULL);
         }
     }
 
     // If the window is currently minimized, demo_resize has already done some cleanup for us.
     if (!demo->is_minimized) {
         for (i = 0; i < demo->swapchainImageCount; i++) {
-            vkDestroyFramebuffer(demo->device, demo->swapchain_image_resources[i].framebuffer, NULL);
+            vkDestroyFramebuffer(DEMO_DEVICE, demo->swapchain_image_resources[i].framebuffer, NULL);
         }
-        vkDestroyDescriptorPool(demo->device, demo->desc_pool, NULL);
+        vkDestroyDescriptorPool(DEMO_DEVICE, demo->desc_pool, NULL);
 
-        vkDestroyPipeline(demo->device, demo->pipeline, NULL);
-        vkDestroyPipelineCache(demo->device, demo->pipelineCache, NULL);
-        vkDestroyRenderPass(demo->device, demo->render_pass, NULL);
-        vkDestroyPipelineLayout(demo->device, demo->pipeline_layout, NULL);
-        vkDestroyDescriptorSetLayout(demo->device, demo->desc_layout, NULL);
+        vkDestroyPipeline(DEMO_DEVICE, demo->pipeline, NULL);
+        vkDestroyPipelineCache(DEMO_DEVICE, demo->pipelineCache, NULL);
+        vkDestroyRenderPass(DEMO_DEVICE, demo->render_pass, NULL);
+        vkDestroyPipelineLayout(DEMO_DEVICE, demo->pipeline_layout, NULL);
+        vkDestroyDescriptorSetLayout(DEMO_DEVICE, demo->desc_layout, NULL);
 
         for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-            vkDestroyImageView(demo->device, demo->textures[i].view, NULL);
-            vkDestroyImage(demo->device, demo->textures[i].image, NULL);
-            vkFreeMemory(demo->device, demo->textures[i].mem, NULL);
-            vkDestroySampler(demo->device, demo->textures[i].sampler, NULL);
+            vkDestroyImageView(DEMO_DEVICE, demo->textures[i].view, NULL);
+            vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
+            vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
+            vkDestroySampler(DEMO_DEVICE, demo->textures[i].sampler, NULL);
         }
-        demo->fpDestroySwapchainKHR(demo->device, DEMO_SWAPCHAIN, NULL);
+        demo->fpDestroySwapchainKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, NULL);
 
-        vkDestroyImageView(demo->device, demo->depth.view, NULL);
-        vkDestroyImage(demo->device, demo->depth.image, NULL);
-        vkFreeMemory(demo->device, demo->depth.mem, NULL);
+        vkDestroyImageView(DEMO_DEVICE, demo->depth.view, NULL);
+        vkDestroyImage(DEMO_DEVICE, demo->depth.image, NULL);
+        vkFreeMemory(DEMO_DEVICE, demo->depth.mem, NULL);
 
         for (i = 0; i < demo->swapchainImageCount; i++) {
-            vkDestroyImageView(demo->device, demo->swapchain_image_resources[i].view, NULL);
-            vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, &demo->swapchain_image_resources[i].cmd);
-            vkDestroyBuffer(demo->device, demo->swapchain_image_resources[i].uniform_buffer, NULL);
-            vkUnmapMemory(demo->device, demo->swapchain_image_resources[i].uniform_memory);
-            vkFreeMemory(demo->device, demo->swapchain_image_resources[i].uniform_memory, NULL);
+            vkDestroyImageView(DEMO_DEVICE, demo->swapchain_image_resources[i].view, NULL);
+            vkFreeCommandBuffers(DEMO_DEVICE, demo->cmd_pool, 1, &demo->swapchain_image_resources[i].cmd);
+            vkDestroyBuffer(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_buffer, NULL);
+            vkUnmapMemory(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_memory);
+            vkFreeMemory(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_memory, NULL);
         }
         free(demo->swapchain_image_resources);
-        vkDestroyCommandPool(demo->device, demo->cmd_pool, NULL);
+        vkDestroyCommandPool(DEMO_DEVICE, demo->cmd_pool, NULL);
 
         if (DEMO_SEPARATE_PRESENT_QUEUE) {
-            vkDestroyCommandPool(demo->device, demo->present_cmd_pool, NULL);
+            vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);
         }
     }
-    vkDeviceWaitIdle(demo->device);
-    vkDestroyDevice(demo->device, NULL);
+    vkDeviceWaitIdle(DEMO_DEVICE);
+    vkDestroyDevice(DEMO_DEVICE, NULL);
     if (demo->validate) {
         demo->DestroyDebugUtilsMessengerEXT(DEMO_INSTANCE, demo->dbg_messenger, NULL);
     }
@@ -2529,41 +2532,41 @@ static void demo_resize(struct demo *demo) {
     //
     // First, perform part of the demo_cleanup() function:
     demo->prepared = false;
-    vkDeviceWaitIdle(demo->device);
+    vkDeviceWaitIdle(DEMO_DEVICE);
 
     for (i = 0; i < demo->swapchainImageCount; i++) {
-        vkDestroyFramebuffer(demo->device, demo->swapchain_image_resources[i].framebuffer, NULL);
+        vkDestroyFramebuffer(DEMO_DEVICE, demo->swapchain_image_resources[i].framebuffer, NULL);
     }
-    vkDestroyDescriptorPool(demo->device, demo->desc_pool, NULL);
+    vkDestroyDescriptorPool(DEMO_DEVICE, demo->desc_pool, NULL);
 
-    vkDestroyPipeline(demo->device, demo->pipeline, NULL);
-    vkDestroyPipelineCache(demo->device, demo->pipelineCache, NULL);
-    vkDestroyRenderPass(demo->device, demo->render_pass, NULL);
-    vkDestroyPipelineLayout(demo->device, demo->pipeline_layout, NULL);
-    vkDestroyDescriptorSetLayout(demo->device, demo->desc_layout, NULL);
+    vkDestroyPipeline(DEMO_DEVICE, demo->pipeline, NULL);
+    vkDestroyPipelineCache(DEMO_DEVICE, demo->pipelineCache, NULL);
+    vkDestroyRenderPass(DEMO_DEVICE, demo->render_pass, NULL);
+    vkDestroyPipelineLayout(DEMO_DEVICE, demo->pipeline_layout, NULL);
+    vkDestroyDescriptorSetLayout(DEMO_DEVICE, demo->desc_layout, NULL);
 
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-        vkDestroyImageView(demo->device, demo->textures[i].view, NULL);
-        vkDestroyImage(demo->device, demo->textures[i].image, NULL);
-        vkFreeMemory(demo->device, demo->textures[i].mem, NULL);
-        vkDestroySampler(demo->device, demo->textures[i].sampler, NULL);
+        vkDestroyImageView(DEMO_DEVICE, demo->textures[i].view, NULL);
+        vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
+        vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
+        vkDestroySampler(DEMO_DEVICE, demo->textures[i].sampler, NULL);
     }
 
-    vkDestroyImageView(demo->device, demo->depth.view, NULL);
-    vkDestroyImage(demo->device, demo->depth.image, NULL);
-    vkFreeMemory(demo->device, demo->depth.mem, NULL);
+    vkDestroyImageView(DEMO_DEVICE, demo->depth.view, NULL);
+    vkDestroyImage(DEMO_DEVICE, demo->depth.image, NULL);
+    vkFreeMemory(DEMO_DEVICE, demo->depth.mem, NULL);
 
     for (i = 0; i < demo->swapchainImageCount; i++) {
-        vkDestroyImageView(demo->device, demo->swapchain_image_resources[i].view, NULL);
-        vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, &demo->swapchain_image_resources[i].cmd);
-        vkDestroyBuffer(demo->device, demo->swapchain_image_resources[i].uniform_buffer, NULL);
-        vkUnmapMemory(demo->device, demo->swapchain_image_resources[i].uniform_memory);
-        vkFreeMemory(demo->device, demo->swapchain_image_resources[i].uniform_memory, NULL);
+        vkDestroyImageView(DEMO_DEVICE, demo->swapchain_image_resources[i].view, NULL);
+        vkFreeCommandBuffers(DEMO_DEVICE, demo->cmd_pool, 1, &demo->swapchain_image_resources[i].cmd);
+        vkDestroyBuffer(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_buffer, NULL);
+        vkUnmapMemory(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_memory);
+        vkFreeMemory(DEMO_DEVICE, demo->swapchain_image_resources[i].uniform_memory, NULL);
     }
-    vkDestroyCommandPool(demo->device, demo->cmd_pool, NULL);
+    vkDestroyCommandPool(DEMO_DEVICE, demo->cmd_pool, NULL);
     demo->cmd_pool = VK_NULL_HANDLE;
     if (DEMO_SEPARATE_PRESENT_QUEUE) {
-        vkDestroyCommandPool(demo->device, demo->present_cmd_pool, NULL);
+        vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);
     }
     free(demo->swapchain_image_resources);
 
@@ -3238,15 +3241,13 @@ int find_display_gpu(int gpu_number, uint32_t gpu_count, VkPhysicalDevice *physi
 
 static void demo_init_vk(struct demo *demo) {
     VkResult err;
-    uint32_t instance_extension_count = 0;
-    uint32_t instance_layer_count = 0;
-    char *instance_validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
     demo->enabled_extension_count = 0;
     demo->enabled_layer_count = 0;
     demo->is_minimized = false;
     demo->cmd_pool = VK_NULL_HANDLE;
 
     /* Look for device extensions */
+    /*
     uint32_t device_extension_count = 0;
     VkBool32 swapchainExtFound = 0;
     demo->enabled_extension_count = 0;
@@ -3318,12 +3319,13 @@ static void demo_init_vk(struct demo *demo) {
                  "Please look at the Getting Started guide for additional information.\n",
                  "vkCreateInstance Failure");
     }
+*/
 
     // Query fine-grained feature support for this device.
     //  If app has specific feature requirements it should check supported
     //  features based on this query
-    VkPhysicalDeviceFeatures physDevFeatures;
-    vkGetPhysicalDeviceFeatures(DEMO_GPU, &physDevFeatures);
+    //VkPhysicalDeviceFeatures physDevFeatures;
+    //vkGetPhysicalDeviceFeatures(DEMO_GPU, &physDevFeatures);
 
     GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceSupportKHR);
     GET_INSTANCE_PROC_ADDR(DEMO_INSTANCE, GetPhysicalDeviceSurfaceCapabilitiesKHR);
@@ -3333,6 +3335,7 @@ static void demo_init_vk(struct demo *demo) {
 }
 
 static void demo_create_device(struct demo *demo) {
+  /*
     VkResult U_ASSERT_ONLY err;
     float queue_priorities[1] = {0.0};
     VkDeviceQueueCreateInfo queues[2];
@@ -3363,13 +3366,17 @@ static void demo_create_device(struct demo *demo) {
         queues[1].flags = 0;
         device.queueCreateInfoCount = 2;
     }
-    err = vkCreateDevice(DEMO_GPU, &device, NULL, &demo->device);
+    err = vkCreateDevice(DEMO_GPU, &device, NULL, &DEMO_DEVICE);
     assert(!err);
+    */
 
-    PlasmacoreVulkanRenderer__configure_device__VKNativeDevice(
-      ROGUE_SINGLETON(PlasmacoreVulkanRenderer),
-      (VKNativeDevice){demo->device}
-    );
+    PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreVulkanRenderer);
+    PlasmacoreVulkanRenderer__create_device( renderer );
+
+    //PlasmacoreVulkanRenderer__configure_device__VKNativeDevice(
+    //  ROGUE_SINGLETON(PlasmacoreVulkanRenderer),
+    //  (VKNativeDevice){DEMO_DEVICE}
+    //);
 }
 
 static void demo_create_surface(struct demo *demo) {
@@ -3406,23 +3413,26 @@ printf("----demo_init_vk_swapchain\n");
 //TODO
     demo_create_device(demo);
 
-    GET_DEVICE_PROC_ADDR(demo->device, CreateSwapchainKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, DestroySwapchainKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, GetSwapchainImagesKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, AcquireNextImageKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, QueuePresentKHR);
+    GET_DEVICE_PROC_ADDR(DEMO_DEVICE, CreateSwapchainKHR);
+    GET_DEVICE_PROC_ADDR(DEMO_DEVICE, DestroySwapchainKHR);
+    GET_DEVICE_PROC_ADDR(DEMO_DEVICE, GetSwapchainImagesKHR);
+    GET_DEVICE_PROC_ADDR(DEMO_DEVICE, AcquireNextImageKHR);
+    GET_DEVICE_PROC_ADDR(DEMO_DEVICE, QueuePresentKHR);
+
+    /*
     if (demo->VK_GOOGLE_display_timing_enabled) {
-        GET_DEVICE_PROC_ADDR(demo->device, GetRefreshCycleDurationGOOGLE);
-        GET_DEVICE_PROC_ADDR(demo->device, GetPastPresentationTimingGOOGLE);
+        GET_DEVICE_PROC_ADDR(DEMO_DEVICE, GetRefreshCycleDurationGOOGLE);
+        GET_DEVICE_PROC_ADDR(DEMO_DEVICE, GetPastPresentationTimingGOOGLE);
     }
 
-    vkGetDeviceQueue(demo->device, DEMO_GRAPHICS_QUEUE_FAMILY_INDEX, 0, &demo->graphics_queue);
+    vkGetDeviceQueue(DEMO_DEVICE, DEMO_GRAPHICS_QUEUE_FAMILY_INDEX, 0, &DEMO_GRAPHICS_QUEUE);
 
     if (!DEMO_SEPARATE_PRESENT_QUEUE) {
-        demo->present_queue = demo->graphics_queue;
+        DEMO_PRESENT_QUEUE = DEMO_GRAPHICS_QUEUE;
     } else {
-        vkGetDeviceQueue(demo->device, DEMO_PRESENT_QUEUE_FAMILY_INDEX, 0, &demo->present_queue);
+        vkGetDeviceQueue(DEMO_DEVICE, DEMO_PRESENT_QUEUE_FAMILY_INDEX, 0, &DEMO_PRESENT_QUEUE);
     }
+    */
 
     // Get the list of VkFormat's that are supported:
     uint32_t formatCount;

@@ -1,6 +1,6 @@
 module Vulkan
 
-class VKInstanceCreateInfo
+class VKInstanceConfig
   PROPERTIES
     context : VKContext
 
