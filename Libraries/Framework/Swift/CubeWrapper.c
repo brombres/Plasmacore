@@ -21,3 +21,8 @@ void call_demo_draw( void )
 {
   demo_draw( &cube_demo );
 }
+
+void call_demo_prepare( void )
+{
+  demo_prepare( &cube_demo );
+}

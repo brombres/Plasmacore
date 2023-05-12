@@ -25,9 +25,15 @@ class PlasmacoreViewController : NSViewController
       (displayLink:CVDisplayLink, inNow:UnsafePointer<CVTimeStamp>, inOutputTime:UnsafePointer<CVTimeStamp>,
           flagsIn:CVOptionFlags, flagsOut:UnsafeMutablePointer<CVOptionFlags>,
           displayLinkContext:UnsafeMutableRawPointer?) -> CVReturn in
-      //my_function_which_takes_voidpointer_for_VkMetalSurfaceCreateInfoEXT(target);
-      //CVDisplayLinkStop( displayLink )
-      CubeInterface_render()
+
+      guard let view_pointer = displayLinkContext else { return kCVReturnSuccess }
+      let view = unsafeBitCast( view_pointer, to:PlasmacoreViewController.self )
+      objc_sync_enter( view ); defer { objc_sync_exit(view) }   // @synchronized (view)
+
+      DispatchQueue.main.async
+      {
+        CubeInterface_render()
+      }
       return kCVReturnSuccess
     }
 
@@ -40,10 +46,11 @@ class PlasmacoreViewController : NSViewController
     }
 
 		CVDisplayLinkCreateWithActiveCGDisplays( &display_link )
+
 		CVDisplayLinkSetOutputCallback(
       display_link!,
       displayLinkOutputCallback,
-      Unmanaged.passUnretained(view.layer!).toOpaque()
+      Unmanaged.passUnretained(view).toOpaque()
     )
 		CVDisplayLinkStart( display_link! )
 	}
