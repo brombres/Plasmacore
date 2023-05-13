@@ -1,15 +1,12 @@
-module Plasmacore
+module Vulkan
 
-class VKSurfaceFormat [compound]
-  PROPERTIES
-    native "VkSurfaceFormatKHR value;"
-
+class VKSurfaceFormat( native_format:VKNativeSurfaceFormat ) [compound]
   METHODS
     method bit_format->VKBitFormat
-      return VKBitFormat( native("$this.value.format")->Int32 )
+      return VKBitFormat( native("$native_format.value.format")->Int32 )
 
     method color_space->VKColorSpace
-      return VKColorSpace( native("$this.value.colorSpace")->Int32 )
+      return VKColorSpace( native("$native_format.value.colorSpace")->Int32 )
 
     method to->String
       return "($ $)"(bit_format,color_space)

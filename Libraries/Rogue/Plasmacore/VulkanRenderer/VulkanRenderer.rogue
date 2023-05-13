@@ -7,14 +7,9 @@ $include VulkanRenderer/PVKSwapchain
 
 class VulkanRenderer : Renderer [essential abstract singleton]
   PROPERTIES
-    context    = VKContext()
-
-    swapchain  = PVKSwapchain( this )
-
-    surface_format                   : VKSurfaceFormat
+    context        = VKContext()
+    swapchain      = PVKSwapchain( this )
     #swapchain                        : VKSwapchain
-
-    #surface_formats : VKSurfaceFormat[]
 
   METHODS
     method begin_render [override]
@@ -61,30 +56,39 @@ trace "----"
         error.println "[Vulkan] ERROR: no GPU found"
       endIf
 
-#{
-      if (not gpu) return
+    method configure_surface
+      block
+        # Find a queue family that supports both graphics and presentation
+        forEach (family in context.gpu.queue_families)
+          if (family.supports_graphics and family.supports_presenting)
+            context.graphics_queue_family = family
+            context.presentation_queue_family = family
+            escapeBlock
+          endIf
+        endForEach
 
-      local config = VKDeviceConfig( gpu )
-      config.enable_extension( "VK_KHR_swapchain" )
-      config.enable_extension( "VK_KHR_incremental_present" )
-      config.enable_extension( "VK_KHR_portability_subset" )
+        # Find separate queue families for graphics and for presentation
+        forEach (family in context.gpu.queue_families)
+          if (family.supports_graphics)
+            context.graphics_queue_family = family
+            escapeForEach
+          endIf
+        endForEach
 
-      device = VKDevice( config )
+        forEach (family in context.gpu.queue_families)
+          if (family.supports_presenting)
+            context.presentation_queue_family = family
+            escapeBlock
+          endIf
+        endForEach
 
-      local fn = device.procedure_address( "vkCreateSwapchainKHR" )
-      native @|$this->vkCreateSwapchainKHR    = (PFN_vkCreateSwapchainKHR) $fn.value;
+      endBlock
 
-      fn = device.procedure_address( "vkDestroySwapchainKHR" )
-      native @|$this->vkDestroySwapchainKHR   = (PFN_vkDestroySwapchainKHR) $fn.value;
+      context.uses_separate_presentation_queue =
+          (context.graphics_queue_family.index != context.presentation_queue_family.index)
 
-      fn = device.procedure_address( "vkGetSwapchainImagesKHR" )
-      native @|$this->vkGetSwapchainImagesKHR = (PFN_vkGetSwapchainImagesKHR) $fn.value;
-
-      fn = device.procedure_address( "vkAcquireNextImageKHR" )
-      native @|$this->vkAcquireNextImageKHR   = (PFN_vkAcquireNextImageKHR) $fn.value;
-
-      fn = device.procedure_address( "vkQueuePresentKHR" )
-      native @|$this->vkQueuePresentKHR       = (PFN_vkQueuePresentKHR) $fn.value;
+      trace "----" context.graphics_queue_family
+      trace "----" context.presentation_queue_family
 
       block
         local desired_formats =
@@ -96,17 +100,14 @@ trace "----"
           VKBitFormat.R16G16B16A16_SFLOAT
         ]
         forEach (desired_format in desired_formats)
-          if local format = surface_formats.first( $.bit_format == desired_format )
-            surface_format = format
+          if local format = context.surface.formats.first( $.bit_format == desired_format )
+            context.surface_format = format
             escapeBlock
           endIf
         endForEach
 
-        surface_format = surface_formats.first
+        context.surface_format = context.surface.formats.first
       endBlock
-
-      #swapchain = VKSwapchain( this, 3, 2 )
-}#
 
     method create_device [api]
       trace "----"
@@ -117,37 +118,16 @@ trace "----"
       config.enable_extension( "VK_KHR_portability_subset" )
       context.device = VKDevice( config )
 
-    method create_surface [abstract api]
+      #swapchain = VKSwapchain( this, 3, 2 )
+
+    method create_surface
 
     method end_render [override]
       trace "----"
       #swapchain.advance_frame
 
+    method handle_create_surface [api]
+      create_surface
+      configure_surface
 
-      #{
-    method surface_formats->VKSurfaceFormat[]
-      if (@surface_formats) return @surface_formats
-
-      local result = VKSurfaceFormat[]
-      native
-        @|uint32_t count = 0;
-         |$this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu->device_value, $this->surface->value, &count, NULL);
-         |if (count && count < 200)
-         |{
-         |  VkSurfaceFormatKHR formats[200];
-         |  int i;
-         |  $this->vkGetPhysicalDeviceSurfaceFormatsKHR( $gpu->device_value, $this->surface->value, &count, formats);
-         |  for (i=0; i<count; ++i)
-         |  {
-              local format : VKSurfaceFormat
-      native
-        @|    $format.value = formats[i];
-              result.add( format )
-      native
-        @|  }
-         |}
-
-         @surface_formats = result
-         return @surface_formats
-         }#
 endClass

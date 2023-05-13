@@ -9,23 +9,23 @@ $macro SET_NATIVE_PROCEDURE<<$var_context,$source_context,$procedure_name>>
 $endMacro
 
 $include Vulkan/VKApplicationInfo
+$include Vulkan/VKBitFormat
+$include Vulkan/VKColorSpace
+$include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKContext
+$include Vulkan/VKDevice
 $include Vulkan/VKDeviceConfig
 $include Vulkan/VKDeviceType
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceConfig
 $include Vulkan/VKGPU
-
-$include Vulkan/VKBitFormat
-$include Vulkan/VKColorSpace
-$include Vulkan/VKCompositeAlphaType
-$include Vulkan/VKDevice
 $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
-$include Vulkan/VKRenderBuffer
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
 $include Vulkan/VKSurfaceTransform
+
+$include Vulkan/VKRenderBuffer
 $include Vulkan/VKSwapchain
 
 nativeHeader
@@ -36,6 +36,7 @@ nativeType<<"VkDevice">>                 VKNativeDevice
 nativeType<<"VkPhysicalDevice">>         VKNativeGPU
 nativeType<<"VkInstance">>               VKNativeInstance
 nativeType<<"VkSurfaceKHR">>             VKNativeSurface
+nativeType<<"VkSurfaceFormatKHR">>       VKNativeSurfaceFormat
 nativeType<<"VkSurfaceCapabilitiesKHR">> VKNativeSurfaceCapabilities
 
 class VKNativeProcedure<<$NativeType>> [compound]

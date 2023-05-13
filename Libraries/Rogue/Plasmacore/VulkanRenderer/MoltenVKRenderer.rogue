@@ -19,7 +19,7 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
 trace "----"
       if (context.surface) context.surface.destroy
 
-      context.surface = VKSurface( context )
+      local native_surface : VKNativeSurface
 
       native
         @|VkMetalSurfaceCreateInfoEXT surface_info = { 0 };
@@ -30,10 +30,10 @@ trace "----"
          |  $this->context->instance->native_instance.value,
          |  &surface_info,
          |  NULL,
-         |  &$context->surface->native_surface.value
+         |  &$native_surface.value
          |);
          |
 
-      context.find_queue_families
+      context.surface = VKSurface( context, native_surface )
 
 endClass

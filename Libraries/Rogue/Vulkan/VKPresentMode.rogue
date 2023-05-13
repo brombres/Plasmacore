@@ -1,4 +1,4 @@
-module Plasmacore
+module Vulkan
 
 enum VKPresentMode
   IMMEDIATE                 = 0

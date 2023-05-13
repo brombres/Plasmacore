@@ -7,6 +7,8 @@ class VKContext
     surface  : VKSurface
     device   : VKDevice
 
+    surface_format : VKSurfaceFormat
+
     graphics_queue_family            : VKQueueFamily
     presentation_queue_family        : VKQueueFamily
     uses_separate_presentation_queue : Logical
@@ -24,39 +26,4 @@ class VKContext
     NATIVE_PROCEDURE<<vkGetSwapchainImagesKHR>>
     NATIVE_PROCEDURE<<vkAcquireNextImageKHR>>
     NATIVE_PROCEDURE<<vkQueuePresentKHR>>
-
-  METHODS
-    method find_queue_families
-      block
-        # Find a queue family that supports both graphics and presentation
-        forEach (family in gpu.queue_families)
-          if (family.supports_graphics and family.supports_presenting)
-            graphics_queue_family = family
-            presentation_queue_family = family
-            escapeBlock
-          endIf
-        endForEach
-
-        # Find separate queue families for graphics and for presentation
-        forEach (family in gpu.queue_families)
-          if (family.supports_graphics)
-            graphics_queue_family = family
-            escapeForEach
-          endIf
-        endForEach
-
-        forEach (family in gpu.queue_families)
-          if (family.supports_presenting)
-            presentation_queue_family = family
-            escapeBlock
-          endIf
-        endForEach
-
-      endBlock
-
-      uses_separate_presentation_queue = (graphics_queue_family.index != presentation_queue_family.index)
-
-      trace "----" graphics_queue_family
-      trace "----" presentation_queue_family
-
 endClass

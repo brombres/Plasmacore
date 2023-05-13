@@ -2,103 +2,71 @@ module Vulkan
 
 class VKSurface
   PROPERTIES
+    is_cleaned_up  : Logical
+
     context        : VKContext
 
     native_surface : VKNativeSurface
-    gpu            : VKGPU
     capabilities   : VKNativeSurfaceCapabilities
-    is_cleaned_up  : Logical
 
-  #{
-    renderer      : VulkanRenderer
-
-    native "VkSurfaceKHR surface_value;"
-
-    present_modes : VKPresentMode[]
-    }#
+    formats        : VKSurfaceFormat[]
+    present_modes  : VKPresentMode[]
 
   METHODS
-    method init( context )
-
-      #|  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-      #|    $renderer->gpu->device_value, $this->surface_value, &capabilities
-      #|  );
-
-    #{
-    method init( renderer )
+    method init( context, native_surface )
+      native
+        @|$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &$capabilities.value
+         |);
 
     method current_transform->VKSurfaceTransform
-      local result : Int32
-      local renderer = VulkanRenderer
-      native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $result = (RogueInt32) capabilities.currentTransform;
-         |}
-      return VKSurfaceTransform( result )
-      }#
+      return VKSurfaceTransform( native("(RogueInt32)$capabilities.value.currentTransform")->Int32 )
 
     method destroy
       on_cleanup
 
-      #{
-    method max_buffer_count->Int32
-      local result : Int32
-      local renderer = VulkanRenderer
+    method formats->VKSurfaceFormat[]
+      if (@formats) return @formats
+
+      local result = VKSurfaceFormat[]
       native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $result = (RogueInt32) capabilities.maxImageCount;
+        @|uint32_t count = 0;
+         |PFN_vkGetPhysicalDeviceSurfaceFormatsKHR get_formats = $context->vkGetPhysicalDeviceSurfaceFormatsKHR.value;
+         |get_formats( $context->gpu->native_gpu.value, $native_surface.value, &count, NULL);
+         |if (count && count <= 200)
+         |{
+         |  VkSurfaceFormatKHR formats[200];
+         |  int i;
+         |  get_formats( $context->gpu->native_gpu.value, $native_surface.value, &count, formats);
+         |  for (i=0; i<count; ++i)
+         |  {
+              result.add( VKSurfaceFormat( native("(VKNativeSurfaceFormat){formats[i]}")->VKNativeSurfaceFormat ) )
+      native
+        @|  }
          |}
-      return result
+
+         @formats = result
+         return @formats
+
+    method max_buffer_count->Int32
+      return VKSurfaceTransform( native("(RogueInt32)$capabilities.value.maxImageCount")->Int32 )
 
     method max_size->XY
       local w, h : Int32
-      local renderer = VulkanRenderer
       native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $w = (RogueInt32) capabilities.maxImageExtent.width;
-         |  $h = (RogueInt32) capabilities.maxImageExtent.height;
-         |}
-       return XY( w, h )
+        @|$w = (RogueInt32) $capabilities.value.maxImageExtent.width;
+         |$h = (RogueInt32) $capabilities.value.maxImageExtent.height;
+      return XY( w, h )
 
     method min_buffer_count->Int32
-      local result : Int32
-      local renderer = VulkanRenderer
-      native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $result = (RogueInt32) capabilities.minImageCount;
-         |}
-      return result
+      return VKSurfaceTransform( native("(RogueInt32)$capabilities.value.minImageCount")->Int32 )
 
     method min_size->XY
       local w, h : Int32
-      local renderer = VulkanRenderer
       native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $w = (RogueInt32) capabilities.minImageExtent.width;
-         |  $h = (RogueInt32) capabilities.minImageExtent.height;
-         |}
-       return XY( w, h )
-       }#
+        @|$w = (RogueInt32) $capabilities.value.minImageExtent.width;
+         |$h = (RogueInt32) $capabilities.value.minImageExtent.height;
+      return XY( w, h )
 
     method on_cleanup
       if (is_cleaned_up) return
@@ -106,23 +74,21 @@ class VKSurface
 trace "----"
       native @|vkDestroySurfaceKHR( $context->instance->native_instance.value, $this->native_surface.value, NULL );
 
-        #{
     method present_modes->VKPresentMode[]
       if (@present_modes) return @present_modes
 
-      local vk_instance = VulkanRenderer
       local result = VKPresentMode[]
       native
         @|{
-         |  PFN_vkGetPhysicalDeviceSurfacePresentModesKHR get_modes = $vk_instance->vkGetPhysicalDeviceSurfacePresentModesKHR;
+         |  PFN_vkGetPhysicalDeviceSurfacePresentModesKHR get_modes = $context->vkGetPhysicalDeviceSurfacePresentModesKHR.value;
          |  uint32_t count = 0;
          |
-         |  get_modes( $renderer->gpu->device_value, $this->surface_value, &count, NULL );
-         |  if (count && count < 32)
+         |  get_modes( $context->gpu->native_gpu.value, $native_surface.value, &count, NULL );
+         |  if (count && count <= 32)
          |  {
          |    VkPresentModeKHR modes[32];
          |    int i;
-         |    get_modes( $renderer->gpu->device_value, $this->surface_value, &count, modes );
+         |    get_modes( $context->gpu->native_gpu.value, $native_surface.value, &count, modes );
          |    for (i=0; i<count; ++i)
          |    {
                 local mode : Int32
@@ -140,43 +106,15 @@ trace "----"
 
     method size->XY
       local w, h : Int32
-      local renderer = VulkanRenderer
       native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $w = (RogueInt32) capabilities.currentExtent.width;
-         |  $h = (RogueInt32) capabilities.currentExtent.height;
-         |}
-       return XY( w, h )
+        @|$w = (RogueInt32) $capabilities.value.currentExtent.width;
+         |$h = (RogueInt32) $capabilities.value.currentExtent.height;
+      return XY( w, h )
 
     method supports_composite_alpha_type( type:VKCompositeAlphaType )->Logical
-      local supported_alpha : Int32
-      local renderer = VulkanRenderer
-      native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $supported_alpha = (RogueInt32) capabilities.supportedCompositeAlpha;
-         |}
-      return (supported_alpha & type->Int32)?
+      return (type->Int32 & native("(RogueInt32)$capabilities.supportedCompositeAlpha")->Int32)?
 
     method supports_transform( transform:VKSurfaceTransform )->Logical
-      local supported_transforms : Int32
-      local renderer = VulkanRenderer
-      native
-        @|{
-         |  VkSurfaceCapabilitiesKHR capabilities;
-         |  $renderer->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-         |    $renderer->gpu->device_value, $this->surface_value, &capabilities
-         |  );
-         |  $supported_transforms = (RogueInt32) capabilities.supportedTransforms;
-         |}
-      return (supported_transforms & transform->Int32)?
-      }#
+      return (transform->Int32 & native("(RogueInt32)$capabilities.supportedTransforms")->Int32)?
 
 endClass

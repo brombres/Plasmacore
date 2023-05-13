@@ -173,6 +173,9 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define DEMO_GRAPHICS_QUEUE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->device->graphics_queue)
 #define DEMO_PRESENT_QUEUE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->device->presentation_queue)
 
+#define DEMO_FORMAT (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface_format.native_format.value.format)
+#define DEMO_COLOR_SPACE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface_format.native_format.value.colorSpace)
+
 /*
  * structure to track all objects related to a texture.
  */
@@ -1390,8 +1393,8 @@ static void demo_prepare_buffers(struct demo *demo)
     //TODO
     PlasmacorePVKSwapchain* swapchain = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain;
     swapchain->buffer_count = (RogueInt32) desiredNumOfSwapchainImages;
-    swapchain->format = demo->format;
-    swapchain->color_space = demo->color_space;
+    swapchain->format = DEMO_FORMAT;
+    swapchain->color_space = DEMO_COLOR_SPACE;
     swapchain->buffer_size.x = (RogueInt32) swapchainExtent.width;
     swapchain->buffer_size.y = (RogueInt32) swapchainExtent.height;
     swapchain->pretransform  = preTransform;
@@ -1405,8 +1408,8 @@ static void demo_prepare_buffers(struct demo *demo)
     //    .pNext = NULL,
     //    .surface = DEMO_SURFACE,
     //    .minImageCount = desiredNumOfSwapchainImages,
-    //    .imageFormat = demo->format,
-    //    .imageColorSpace = demo->color_space,
+    //    .imageFormat = DEMO_FORMAT,
+    //    .imageColorSpace = DEMO_COLOR_SPACE,
     //    .imageExtent =
     //        {
     //            .width = swapchainExtent.width,
@@ -1457,7 +1460,7 @@ static void demo_prepare_buffers(struct demo *demo)
         VkImageViewCreateInfo color_image_view = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext = NULL,
-            .format = demo->format,
+            .format = DEMO_FORMAT,
             .components =
                 {
                     .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -1986,7 +1989,7 @@ static void demo_prepare_render_pass(struct demo *demo) {
     const VkAttachmentDescription attachments[2] = {
         [0] =
             {
-                .format = demo->format,
+                .format = DEMO_FORMAT,
                 .flags = 0,
                 .samples = VK_SAMPLE_COUNT_1_BIT,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -3246,81 +3249,6 @@ static void demo_init_vk(struct demo *demo) {
     demo->is_minimized = false;
     demo->cmd_pool = VK_NULL_HANDLE;
 
-    /* Look for device extensions */
-    /*
-    uint32_t device_extension_count = 0;
-    VkBool32 swapchainExtFound = 0;
-    demo->enabled_extension_count = 0;
-    memset(demo->extension_names, 0, sizeof(demo->extension_names));
-
-    err = vkEnumerateDeviceExtensionProperties(DEMO_GPU, NULL, &device_extension_count, NULL);
-    assert(!err);
-
-    if (device_extension_count > 0) {
-        VkExtensionProperties *device_extensions = malloc(sizeof(VkExtensionProperties) * device_extension_count);
-        err = vkEnumerateDeviceExtensionProperties(DEMO_GPU, NULL, &device_extension_count, device_extensions);
-        assert(!err);
-
-        for (uint32_t i = 0; i < device_extension_count; i++) {
-            if (!strcmp(VK_KHR_SWAPCHAIN_EXTENSION_NAME, device_extensions[i].extensionName)) {
-                swapchainExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
-            }
-            if (!strcmp("VK_KHR_portability_subset", device_extensions[i].extensionName)) {
-                demo->extension_names[demo->enabled_extension_count++] = "VK_KHR_portability_subset";
-            }
-            assert(demo->enabled_extension_count < 64);
-        }
-
-        if (demo->VK_KHR_incremental_present_enabled) {
-            // Even though the user "enabled" the extension via the command
-            // line, we must make sure that it's enumerated for use with the
-            // device.  Therefore, disable it here, and re-enable it again if
-            // enumerated.
-            demo->VK_KHR_incremental_present_enabled = false;
-            for (uint32_t i = 0; i < device_extension_count; i++) {
-                if (!strcmp(VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME, device_extensions[i].extensionName)) {
-                    demo->extension_names[demo->enabled_extension_count++] = VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME;
-                    demo->VK_KHR_incremental_present_enabled = true;
-                    DbgMsg("VK_KHR_incremental_present extension enabled\n");
-                }
-                assert(demo->enabled_extension_count < 64);
-            }
-            if (!demo->VK_KHR_incremental_present_enabled) {
-                DbgMsg("VK_KHR_incremental_present extension NOT AVAILABLE\n");
-            }
-        }
-
-        if (demo->VK_GOOGLE_display_timing_enabled) {
-            // Even though the user "enabled" the extension via the command
-            // line, we must make sure that it's enumerated for use with the
-            // device.  Therefore, disable it here, and re-enable it again if
-            // enumerated.
-            demo->VK_GOOGLE_display_timing_enabled = false;
-            for (uint32_t i = 0; i < device_extension_count; i++) {
-                if (!strcmp(VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME, device_extensions[i].extensionName)) {
-                    demo->extension_names[demo->enabled_extension_count++] = VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME;
-                    demo->VK_GOOGLE_display_timing_enabled = true;
-                    DbgMsg("VK_GOOGLE_display_timing extension enabled\n");
-                }
-                assert(demo->enabled_extension_count < 64);
-            }
-            if (!demo->VK_GOOGLE_display_timing_enabled) {
-                DbgMsg("VK_GOOGLE_display_timing extension NOT AVAILABLE\n");
-            }
-        }
-
-        free(device_extensions);
-    }
-
-    if (!swapchainExtFound) {
-        ERR_EXIT("vkEnumerateDeviceExtensionProperties failed to find the " VK_KHR_SWAPCHAIN_EXTENSION_NAME
-                 " extension.\n\nDo you have a compatible Vulkan installable client driver (ICD) installed?\n"
-                 "Please look at the Getting Started guide for additional information.\n",
-                 "vkCreateInstance Failure");
-    }
-*/
-
     // Query fine-grained feature support for this device.
     //  If app has specific feature requirements it should check supported
     //  features based on this query
@@ -3335,73 +3263,15 @@ static void demo_init_vk(struct demo *demo) {
 }
 
 static void demo_create_device(struct demo *demo) {
-  /*
-    VkResult U_ASSERT_ONLY err;
-    float queue_priorities[1] = {0.0};
-    VkDeviceQueueCreateInfo queues[2];
-    queues[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queues[0].pNext = NULL;
-    queues[0].queueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX;
-    queues[0].queueCount = 1;
-    queues[0].pQueuePriorities = queue_priorities;
-    queues[0].flags = 0;
-
-    VkDeviceCreateInfo device = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = NULL,
-        .queueCreateInfoCount = 1,
-        .pQueueCreateInfos = queues,
-        .enabledLayerCount = 0,
-        .ppEnabledLayerNames = NULL,
-        .enabledExtensionCount = demo->enabled_extension_count,
-        .ppEnabledExtensionNames = (const char *const *)demo->extension_names,
-        .pEnabledFeatures = NULL,  // If specific features are required, pass them in here
-    };
-    if (DEMO_SEPARATE_PRESENT_QUEUE) {
-        queues[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queues[1].pNext = NULL;
-        queues[1].queueFamilyIndex = DEMO_PRESENT_QUEUE_FAMILY_INDEX;
-        queues[1].queueCount = 1;
-        queues[1].pQueuePriorities = queue_priorities;
-        queues[1].flags = 0;
-        device.queueCreateInfoCount = 2;
-    }
-    err = vkCreateDevice(DEMO_GPU, &device, NULL, &DEMO_DEVICE);
-    assert(!err);
-    */
-
     PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreVulkanRenderer);
     PlasmacoreVulkanRenderer__create_device( renderer );
-
-    //PlasmacoreVulkanRenderer__configure_device__VKNativeDevice(
-    //  ROGUE_SINGLETON(PlasmacoreVulkanRenderer),
-    //  (VKNativeDevice){DEMO_DEVICE}
-    //);
 }
 
 static void demo_create_surface(struct demo *demo) {
 printf( "---- create surface\n" );
 
-    PlasmacoreMoltenVKRenderer* renderer = ROGUE_SINGLETON(PlasmacoreMoltenVKRenderer);
-    PlasmacoreMoltenVKRenderer__create_surface( renderer );
-}
-
-static VkSurfaceFormatKHR pick_surface_format(const VkSurfaceFormatKHR *surfaceFormats, uint32_t count) {
-    // Prefer non-SRGB formats...
-    for (uint32_t i = 0; i < count; i++) {
-        const VkFormat format = surfaceFormats[i].format;
-
-        if (format == VK_FORMAT_R8G8B8A8_UNORM || format == VK_FORMAT_B8G8R8A8_UNORM ||
-            format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32 ||
-            format == VK_FORMAT_R16G16B16A16_SFLOAT) {
-            return surfaceFormats[i];
-        }
-    }
-
-    printf("Can't find our preferred formats... Falling back to first exposed format. Rendering may be incorrect.\n");
-
-    assert(count >= 1);
-    return surfaceFormats[0];
+    PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreVulkanRenderer);
+    PlasmacoreVulkanRenderer__handle_create_surface( renderer );
 }
 
 static void demo_init_vk_swapchain(struct demo *demo) {
@@ -3418,33 +3288,6 @@ printf("----demo_init_vk_swapchain\n");
     GET_DEVICE_PROC_ADDR(DEMO_DEVICE, GetSwapchainImagesKHR);
     GET_DEVICE_PROC_ADDR(DEMO_DEVICE, AcquireNextImageKHR);
     GET_DEVICE_PROC_ADDR(DEMO_DEVICE, QueuePresentKHR);
-
-    /*
-    if (demo->VK_GOOGLE_display_timing_enabled) {
-        GET_DEVICE_PROC_ADDR(DEMO_DEVICE, GetRefreshCycleDurationGOOGLE);
-        GET_DEVICE_PROC_ADDR(DEMO_DEVICE, GetPastPresentationTimingGOOGLE);
-    }
-
-    vkGetDeviceQueue(DEMO_DEVICE, DEMO_GRAPHICS_QUEUE_FAMILY_INDEX, 0, &DEMO_GRAPHICS_QUEUE);
-
-    if (!DEMO_SEPARATE_PRESENT_QUEUE) {
-        DEMO_PRESENT_QUEUE = DEMO_GRAPHICS_QUEUE;
-    } else {
-        vkGetDeviceQueue(DEMO_DEVICE, DEMO_PRESENT_QUEUE_FAMILY_INDEX, 0, &DEMO_PRESENT_QUEUE);
-    }
-    */
-
-    // Get the list of VkFormat's that are supported:
-    uint32_t formatCount;
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(DEMO_GPU, DEMO_SURFACE, &formatCount, NULL);
-    assert(!err);
-    VkSurfaceFormatKHR *surfFormats = (VkSurfaceFormatKHR *)malloc(formatCount * sizeof(VkSurfaceFormatKHR));
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(DEMO_GPU, DEMO_SURFACE, &formatCount, surfFormats);
-    assert(!err);
-    VkSurfaceFormatKHR surfaceFormat = pick_surface_format(surfFormats, formatCount);
-    demo->format = surfaceFormat.format;
-    demo->color_space = surfaceFormat.colorSpace;
-    free(surfFormats);
 
     demo->quit = false;
     demo->curFrame = 0;

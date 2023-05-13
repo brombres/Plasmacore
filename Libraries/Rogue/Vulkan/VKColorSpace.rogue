@@ -1,4 +1,4 @@
-module Plasmacore
+module Vulkan
 
 enum VKColorSpace
   SRGB_NONLINEAR_KHR          = 0

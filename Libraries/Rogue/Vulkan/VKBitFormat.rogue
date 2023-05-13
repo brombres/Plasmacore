@@ -1,4 +1,4 @@
-module Plasmacore
+module Vulkan
 
 enum VKBitFormat
   # Most common/useful formats:

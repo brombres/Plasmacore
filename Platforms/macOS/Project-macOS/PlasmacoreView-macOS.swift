@@ -14,13 +14,10 @@ class PlasmacoreView : NSView
     return layer
   }
 
-  override func setFrameSize(_ newSize: NSSize)
-  {
-      super.setFrameSize(newSize)
-
-      //objc_sync_enter( self ); defer { objc_sync_exit(self) }   // @synchronized (self)
-      //CubeInterface_prepare()
-  }
+  //override func setFrameSize(_ newSize: NSSize)
+  //{
+  //    super.setFrameSize(newSize)
+  //}
 
   override func viewDidChangeBackingProperties()
   {

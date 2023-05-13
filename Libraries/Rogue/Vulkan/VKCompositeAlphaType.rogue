@@ -1,4 +1,4 @@
-module Plasmacore
+module Vulkan
 
 enum VKCompositeAlphaType
   OPAQUE          = 1
