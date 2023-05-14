@@ -11,6 +11,7 @@ $endMacro
 $include Vulkan/VKApplicationInfo
 $include Vulkan/VKBitFormat
 $include Vulkan/VKColorSpace
+$include Vulkan/VKCommandBuffer
 $include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKContext
 $include Vulkan/VKDevice
@@ -24,20 +25,27 @@ $include Vulkan/VKQueueFamily
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
 $include Vulkan/VKSurfaceTransform
+$include Vulkan/VKSwapchainImage
+#$include Vulkan/VKSwapchain
 
-$include Vulkan/VKRenderBuffer
-$include Vulkan/VKSwapchain
+#$include Vulkan/VKRenderBuffer
 
 nativeHeader
   @|#define VK_USE_PLATFORM_METAL_EXT 1
    |#include <vulkan/vulkan.h>
 
-nativeType<<"VkDevice">>                 VKNativeDevice
-nativeType<<"VkPhysicalDevice">>         VKNativeGPU
-nativeType<<"VkInstance">>               VKNativeInstance
-nativeType<<"VkSurfaceKHR">>             VKNativeSurface
-nativeType<<"VkSurfaceFormatKHR">>       VKNativeSurfaceFormat
-#nativeType<<"VkSurfaceCapabilitiesKHR">> VKNativeSurfaceCapabilities
+nativeType<<"VkBuffer">>           VKNativeBuffer
+nativeType<<"VkCommandBuffer">>    VKNativeCommandBuffer
+nativeType<<"VkDescriptorSet">>    VKNativeDescriptorSet
+nativeType<<"VkDevice">>           VKNativeDevice
+nativeType<<"VkDeviceMemory">>     VKNativeDeviceMemory
+nativeType<<"VkFramebuffer">>      VKNativeFramebuffer
+nativeType<<"VkPhysicalDevice">>   VKNativeGPU
+nativeType<<"VkImage">>            VKNativeImage
+nativeType<<"VkImageView">>        VKNativeImageView
+nativeType<<"VkInstance">>         VKNativeInstance
+nativeType<<"VkSurfaceKHR">>       VKNativeSurface
+nativeType<<"VkSurfaceFormatKHR">> VKNativeSurfaceFormat
 
 class VKNativeProcedure<<$NativeType>> [compound]
   PROPERTIES

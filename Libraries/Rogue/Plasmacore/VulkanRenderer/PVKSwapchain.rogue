@@ -46,7 +46,7 @@ trace size
 
       local present_mode = VKPresentMode.FIFO
 
-      local buffer_count = 3.clamped( context.surface.min_buffer_count, context.surface.max_buffer_count )
+      local image_count = 3.clamped( context.surface.min_swapchain_image_count, context.surface.max_swapchain_image_count )
 
       native
         @|VkSwapchainKHR old_swapchain = $this->swapchain_value;
@@ -56,7 +56,7 @@ trace size
          |  .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
          |  .pNext = NULL,
          |  .surface = $context->surface->native_surface.value,
-         |  .minImageCount = $buffer_count,
+         |  .minImageCount = $image_count,
          |  .imageFormat = $context->surface_format.native_format.value.format,
          |  .imageColorSpace = $context->surface_format.native_format.value.colorSpace,
          |  .imageExtent =

@@ -1,0 +1,16 @@
+module Vulkan
+
+class VKSwapchainImage
+  PROPERTIES
+    image                   : VKNativeImage
+    cmd                     : VKNativeCommandBuffer
+    cmd_graphics_to_present : VKNativeCommandBuffer
+    view                    : VKNativeImageView
+    uniform_buffer          : VKNativeBuffer
+    uniform_memory          : VKNativeDeviceMemory
+    uniform_memory_ptr      : RogueVoidPointer
+    framebuffer             : VKNativeFramebuffer
+    descriptor_set          : VKNativeDescriptorSet
+
+  METHODS
+endClass

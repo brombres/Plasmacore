@@ -1,0 +1,6 @@
+module Vulkan
+
+class VKCommandBuffer
+  PROPERTIES
+    native_buffer : VKNativeCommandBuffer
+endClass
