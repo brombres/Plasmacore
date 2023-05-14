@@ -4,7 +4,6 @@ class Display [singleton]
   PROPERTIES
     renderer     : Renderer
     size         : XY
-    is_minimized : Logical
 
   METHODS
     method init

@@ -8,10 +8,12 @@ $include VulkanRenderer/PVKSwapchain
 class VulkanRenderer : Renderer [essential abstract singleton]
   PROPERTIES
     context        = VKContext()
-    swapchain      = PVKSwapchain( this )
     #swapchain                        : VKSwapchain
 
   METHODS
+    method init_object
+      context.swapchain = PVKSwapchain( context )
+
     method begin_render [override]
       #swapchain.prepare
       #swapchain.block_until_ready
@@ -129,5 +131,38 @@ trace "----"
     method handle_create_surface [api]
       create_surface
       configure_surface
+
+      #{
+    method prepare_buffers [api]
+      if (context.surface.max_size.min == 0)
+        context.is_prepared = false
+        context.is_minimized = true
+        return
+      else
+        context.is_minimized = false
+      endIf
+
+      local size = Display.size
+      if (context.surface.size.x != -1) size = context.surface.size
+      size .= clamped( context.surface.min_size, context.surface.max_size )
+      Display.size = size
+
+      local pre_transform = VKSurfaceTransform.IDENTITY
+      if (not context.surface.supports_transform(pre_transform))
+        pre_transform = context.surface.current_transform
+      endIf
+
+      local composite_alpha_type : VKCompositeAlphaType
+      forEach (type in VKCompositeAlphaType.categories)
+        if (context.surface.supports_composite_alpha_type(type))
+          composite_alpha_type = type
+          escapeForEach
+        endIf
+      endForEach
+
+      local present_mode = VKPresentMode.FIFO
+
+      local buffer_count = 3.clamped( surface.min_buffer_count, surface.max_buffer_count )
+      }#
 
 endClass

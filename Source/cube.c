@@ -156,12 +156,12 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define DEMO_INSTANCE   (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->instance->native_instance.value)
 #define DEMO_GPU        (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->gpu->native_gpu.value)
 #define DEMO_GPU_NUMBER (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->gpu->index)
-#define DEMO_SWAPCHAIN  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->swapchain_value)
+#define DEMO_SWAPCHAIN  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->swapchain_value)
 
-#define DEMO_FENCE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->fence)
-#define DEMO_IMAGE_ACQUIRED_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->image_acquired_semaphore)
-#define DEMO_DRAW_COMPLETE_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->draw_complete_semaphore)
-#define DEMO_IMAGE_OWNERSHIP_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain->current_frame->image_ownership_semaphore)
+#define DEMO_FENCE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->current_frame->fence)
+#define DEMO_IMAGE_ACQUIRED_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->current_frame->image_acquired_semaphore)
+#define DEMO_DRAW_COMPLETE_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->current_frame->draw_complete_semaphore)
+#define DEMO_IMAGE_OWNERSHIP_SEMAPHORE  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->current_frame->image_ownership_semaphore)
 #define DEMO_SURFACE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface->native_surface.value)
 
 
@@ -175,6 +175,11 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 
 #define DEMO_FORMAT (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface_format.native_format.value.format)
 #define DEMO_COLOR_SPACE (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->surface_format.native_format.value.colorSpace)
+
+#define DEMO_IS_PREPARED  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->is_prepared)
+#define DEMO_IS_MINIMIZED (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->is_minimized)
+#define DEMO_WIDTH  (ROGUE_SINGLETON(PlasmacoreDisplay)->size.x)
+#define DEMO_HEIGHT (ROGUE_SINGLETON(PlasmacoreDisplay)->size.y)
 
 /*
  * structure to track all objects related to a texture.
@@ -432,7 +437,6 @@ struct demo {
     PFN_vkGetPastPresentationTimingGOOGLE fpGetPastPresentationTimingGOOGLE;
     uint32_t swapchainImageCount;
     SwapchainImageResources *swapchain_image_resources;
-    VkPresentModeKHR presentMode;
 
     VkCommandPool cmd_pool;
     VkCommandPool present_cmd_pool;
@@ -834,8 +838,8 @@ static void demo_draw_build_cmd(struct demo *demo, VkCommandBuffer cmd_buf) {
         .framebuffer = demo->swapchain_image_resources[demo->current_buffer].framebuffer,
         .renderArea.offset.x = 0,
         .renderArea.offset.y = 0,
-        .renderArea.extent.width = demo->width,
-        .renderArea.extent.height = demo->height,
+        .renderArea.extent.width = DEMO_WIDTH,
+        .renderArea.extent.height = DEMO_HEIGHT,
         .clearValueCount = 2,
         .pClearValues = clear_values,
     };
@@ -860,12 +864,12 @@ static void demo_draw_build_cmd(struct demo *demo, VkCommandBuffer cmd_buf) {
     VkViewport viewport;
     memset(&viewport, 0, sizeof(viewport));
     float viewport_dimension;
-    if (demo->width < demo->height) {
-        viewport_dimension = (float)demo->width;
-        viewport.y = (demo->height - demo->width) / 2.0f;
+    if (DEMO_WIDTH < DEMO_HEIGHT) {
+        viewport_dimension = (float)DEMO_WIDTH;
+        viewport.y = (DEMO_HEIGHT - DEMO_WIDTH) / 2.0f;
     } else {
-        viewport_dimension = (float)demo->height;
-        viewport.x = (demo->width - demo->height) / 2.0f;
+        viewport_dimension = (float)DEMO_HEIGHT;
+        viewport.x = (DEMO_WIDTH - DEMO_HEIGHT) / 2.0f;
     }
     viewport.height = viewport_dimension;
     viewport.width = viewport_dimension;
@@ -875,8 +879,8 @@ static void demo_draw_build_cmd(struct demo *demo, VkCommandBuffer cmd_buf) {
 
     VkRect2D scissor;
     memset(&scissor, 0, sizeof(scissor));
-    scissor.extent.width = demo->width;
-    scissor.extent.height = demo->height;
+    scissor.extent.width = DEMO_WIDTH;
+    scissor.extent.height = DEMO_HEIGHT;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
     vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
@@ -1092,6 +1096,7 @@ static void demo_draw(struct demo *demo) {
         if (err == VK_ERROR_OUT_OF_DATE_KHR) {
             // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
             // must be recreated:
+printf("-------------call demo resize 1\n");
             demo_resize(demo);
         } else if (err == VK_SUBOPTIMAL_KHR) {
             // DEMO_SWAPCHAIN is not as optimal as it could be, but the platform's
@@ -1101,6 +1106,7 @@ static void demo_draw(struct demo *demo) {
 printf("-------------surface lost 1\n");
             //vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
             demo_create_surface(demo);
+printf("-------------call demo resize 2\n");
             demo_resize(demo);
         } else {
             assert(!err);
@@ -1179,8 +1185,8 @@ printf("-------------surface lost 1\n");
         // work/power (by only copying the region in the hint).  The
         // implementation is free to ignore the hint though, and so we must
         // ensure that the entire image has the correctly-drawn content.
-        uint32_t eighthOfWidth = demo->width / 8;
-        uint32_t eighthOfHeight = demo->height / 8;
+        uint32_t eighthOfWidth = DEMO_WIDTH / 8;
+        uint32_t eighthOfHeight = DEMO_HEIGHT / 8;
 
         rect.offset.x = eighthOfWidth;
         rect.offset.y = eighthOfHeight;
@@ -1234,25 +1240,29 @@ printf("-------------surface lost 1\n");
     }
 
     err = demo->fpQueuePresentKHR(DEMO_PRESENT_QUEUE, &present);
-PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
         // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
         // must be recreated:
+printf("-------------call demo resize 3\n");
         demo_resize(demo);
     } else if (err == VK_SUBOPTIMAL_KHR) {
         // SUBOPTIMAL could be due to a resize
         VkSurfaceCapabilitiesKHR surfCapabilities;
         err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(DEMO_GPU, DEMO_SURFACE, &surfCapabilities);
         assert(!err);
-        if (surfCapabilities.currentExtent.width != (uint32_t)demo->width ||
-            surfCapabilities.currentExtent.height != (uint32_t)demo->height) {
+printf("-------------surfCapabilities.w:%d DEMO_WIDTH:%d\n",(int)surfCapabilities.currentExtent.width,DEMO_WIDTH);
+        if (surfCapabilities.currentExtent.width != (uint32_t)DEMO_WIDTH ||
+            surfCapabilities.currentExtent.height != (uint32_t)DEMO_HEIGHT) {
+printf("-------------call demo resize 4\n");
             demo_resize(demo);
         }
     } else if (err == VK_ERROR_SURFACE_LOST_KHR) {
 printf("-------------surface lost 2\n");
         //vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
         demo_create_surface(demo);
+printf("-------------call demo resize 5\n");
         demo_resize(demo);
     } else {
         assert(!err);
@@ -1262,172 +1272,10 @@ printf("-------------surface lost 2\n");
 static void demo_prepare_buffers(struct demo *demo)
 {
     VkResult U_ASSERT_ONLY err;
-    //VkSwapchainKHR oldSwapchain = DEMO_SWAPCHAIN;
-
-    // Check the surface capabilities and formats
-    VkSurfaceCapabilitiesKHR surfCapabilities;
-    err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(DEMO_GPU, DEMO_SURFACE, &surfCapabilities);
-    assert(!err);
-
-    uint32_t presentModeCount;
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(DEMO_GPU, DEMO_SURFACE, &presentModeCount, NULL);
-    assert(!err);
-    VkPresentModeKHR *presentModes = (VkPresentModeKHR *)malloc(presentModeCount * sizeof(VkPresentModeKHR));
-    assert(presentModes);
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(DEMO_GPU, DEMO_SURFACE, &presentModeCount, presentModes);
-    assert(!err);
-
-    VkExtent2D swapchainExtent;
-    // width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
-    if (surfCapabilities.currentExtent.width == 0xFFFFFFFF) {
-        // If the surface size is undefined, the size is set to the size
-        // of the images requested, which must fit within the minimum and
-        // maximum values.
-        swapchainExtent.width = demo->width;
-        swapchainExtent.height = demo->height;
-
-        if (swapchainExtent.width < surfCapabilities.minImageExtent.width) {
-            swapchainExtent.width = surfCapabilities.minImageExtent.width;
-        } else if (swapchainExtent.width > surfCapabilities.maxImageExtent.width) {
-            swapchainExtent.width = surfCapabilities.maxImageExtent.width;
-        }
-
-        if (swapchainExtent.height < surfCapabilities.minImageExtent.height) {
-            swapchainExtent.height = surfCapabilities.minImageExtent.height;
-        } else if (swapchainExtent.height > surfCapabilities.maxImageExtent.height) {
-            swapchainExtent.height = surfCapabilities.maxImageExtent.height;
-        }
-    } else {
-        // If the surface size is defined, the swap chain size must match
-        swapchainExtent = surfCapabilities.currentExtent;
-        demo->width = surfCapabilities.currentExtent.width;
-        demo->height = surfCapabilities.currentExtent.height;
-    }
-
-    if (surfCapabilities.maxImageExtent.width == 0 || surfCapabilities.maxImageExtent.height == 0) {
-        demo->is_minimized = true;
-        return;
-    } else {
-        demo->is_minimized = false;
-    }
-
-    // The FIFO present mode is guaranteed by the spec to be supported
-    // and to have no tearing.  It's a great default present mode to use.
-    VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-
-    //  There are times when you may wish to use another present mode.  The
-    //  following code shows how to select them, and the comments provide some
-    //  reasons you may wish to use them.
-    //
-    // It should be noted that Vulkan 1.0 doesn't provide a method for
-    // synchronizing rendering with the presentation engine's display.  There
-    // is a method provided for throttling rendering with the display, but
-    // there are some presentation engines for which this method will not work.
-    // If an application doesn't throttle its rendering, and if it renders much
-    // faster than the refresh rate of the display, this can waste power on
-    // mobile devices.  That is because power is being spent rendering images
-    // that may never be seen.
-
-    // VK_PRESENT_MODE_IMMEDIATE_KHR is for applications that don't care about
-    // tearing, or have some way of synchronizing their rendering with the
-    // display.
-    // VK_PRESENT_MODE_MAILBOX_KHR may be useful for applications that
-    // generally render a new presentable image every refresh cycle, but are
-    // occasionally early.  In this case, the application wants the new image
-    // to be displayed instead of the previously-queued-for-presentation image
-    // that has not yet been displayed.
-    // VK_PRESENT_MODE_FIFO_RELAXED_KHR is for applications that generally
-    // render a new presentable image every refresh cycle, but are occasionally
-    // late.  In this case (perhaps because of stuttering/latency concerns),
-    // the application wants the late image to be immediately displayed, even
-    // though that may mean some tearing.
-
-    if (demo->presentMode != swapchainPresentMode) {
-        for (size_t i = 0; i < presentModeCount; ++i) {
-            if (presentModes[i] == demo->presentMode) {
-                swapchainPresentMode = demo->presentMode;
-                break;
-            }
-        }
-    }
-    if (swapchainPresentMode != demo->presentMode) {
-        ERR_EXIT("Present mode specified is not supported\n", "Present mode unsupported");
-    }
-
-    // Determine the number of VkImages to use in the swap chain.
-    // Application desires to acquire 3 images at a time for triple
-    // buffering
-    uint32_t desiredNumOfSwapchainImages = 3;
-    if (desiredNumOfSwapchainImages < surfCapabilities.minImageCount) {
-        desiredNumOfSwapchainImages = surfCapabilities.minImageCount;
-    }
-    // If maxImageCount is 0, we can ask for as many images as we want;
-    // otherwise we're limited to maxImageCount
-    if ((surfCapabilities.maxImageCount > 0) && (desiredNumOfSwapchainImages > surfCapabilities.maxImageCount)) {
-        // Application must settle for fewer images than desired:
-        desiredNumOfSwapchainImages = surfCapabilities.maxImageCount;
-    }
-
-    VkSurfaceTransformFlagsKHR preTransform;
-    if (surfCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-        preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    } else {
-        preTransform = surfCapabilities.currentTransform;
-    }
-
-    // Find a supported composite alpha mode - one of these is guaranteed to be set
-    VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    VkCompositeAlphaFlagBitsKHR compositeAlphaFlags[4] = {
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
-        VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
-        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
-    };
-    for (uint32_t i = 0; i < ARRAY_SIZE(compositeAlphaFlags); i++) {
-        if (surfCapabilities.supportedCompositeAlpha & compositeAlphaFlags[i]) {
-            compositeAlpha = compositeAlphaFlags[i];
-            break;
-        }
-    }
+  printf("----prepare buffers\n");
 
     //TODO
-    PlasmacorePVKSwapchain* swapchain = ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain;
-    swapchain->buffer_count = (RogueInt32) desiredNumOfSwapchainImages;
-    swapchain->format = DEMO_FORMAT;
-    swapchain->color_space = DEMO_COLOR_SPACE;
-    swapchain->buffer_size.x = (RogueInt32) swapchainExtent.width;
-    swapchain->buffer_size.y = (RogueInt32) swapchainExtent.height;
-    swapchain->pretransform  = preTransform;
-    swapchain->composite_alpha = compositeAlpha;
-    swapchain->present_mode = swapchainPresentMode;
-    swapchain->vkCreateSwapchainKHR = demo->fpCreateSwapchainKHR;
-    swapchain->vkDestroySwapchainKHR = demo->fpDestroySwapchainKHR;
-
-    //VkSwapchainCreateInfoKHR swapchain_ci = {
-    //    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-    //    .pNext = NULL,
-    //    .surface = DEMO_SURFACE,
-    //    .minImageCount = desiredNumOfSwapchainImages,
-    //    .imageFormat = DEMO_FORMAT,
-    //    .imageColorSpace = DEMO_COLOR_SPACE,
-    //    .imageExtent =
-    //        {
-    //            .width = swapchainExtent.width,
-    //            .height = swapchainExtent.height,
-    //        },
-    //    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-    //    .preTransform = preTransform,
-    //    .compositeAlpha = compositeAlpha,
-    //    .imageArrayLayers = 1,
-    //    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    //    .queueFamilyIndexCount = 0,
-    //    .pQueueFamilyIndices = NULL,
-    //    .presentMode = swapchainPresentMode,
-    //    .oldSwapchain = oldSwapchain,
-    //    .clipped = true,
-    //};
-
-    PlasmacorePVKSwapchain__configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+    PlasmacorePVKSwapchain__configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
     uint32_t i;
     //err = demo->fpCreateSwapchainKHR(DEMO_DEVICE, &swapchain_ci, NULL, &DEMO_SWAPCHAIN);
@@ -1501,10 +1349,6 @@ static void demo_prepare_buffers(struct demo *demo)
     if (NULL != swapchainImages) {
         free(swapchainImages);
     }
-
-    if (NULL != presentModes) {
-        free(presentModes);
-    }
 }
 
 static void demo_prepare_depth(struct demo *demo) {
@@ -1514,7 +1358,7 @@ static void demo_prepare_depth(struct demo *demo) {
         .pNext = NULL,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = depth_format,
-        .extent = {demo->width, demo->height, 1},
+        .extent = {DEMO_WIDTH, DEMO_HEIGHT, 1},
         .mipLevels = 1,
         .arrayLayers = 1,
         .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -2307,8 +2151,8 @@ static void demo_prepare_framebuffers(struct demo *demo) {
         .renderPass = demo->render_pass,
         .attachmentCount = 2,
         .pAttachments = attachments,
-        .width = demo->width,
-        .height = demo->height,
+        .width = DEMO_WIDTH,
+        .height = DEMO_HEIGHT,
         .layers = 1,
     };
     VkResult U_ASSERT_ONLY err;
@@ -2326,8 +2170,8 @@ static void demo_prepare_framebuffers(struct demo *demo) {
 static void demo_prepare(struct demo *demo) {
     demo_prepare_buffers(demo);
 
-    if (demo->is_minimized) {
-        demo->prepared = false;
+    if (DEMO_IS_MINIMIZED) {
+        DEMO_IS_PREPARED = false;
         return;
     }
 
@@ -2423,13 +2267,13 @@ static void demo_prepare(struct demo *demo) {
     }
 
     demo->current_buffer = 0;
-    demo->prepared = true;
+    DEMO_IS_PREPARED = true;
 }
 
 static void demo_cleanup(struct demo *demo) {
     uint32_t i;
 
-    demo->prepared = false;
+    DEMO_IS_PREPARED = false;
     vkDeviceWaitIdle(DEMO_DEVICE);
 
     // Wait for fences from present operations
@@ -2444,7 +2288,7 @@ static void demo_cleanup(struct demo *demo) {
     }
 
     // If the window is currently minimized, demo_resize has already done some cleanup for us.
-    if (!demo->is_minimized) {
+    if (!DEMO_IS_MINIMIZED) {
         for (i = 0; i < demo->swapchainImageCount; i++) {
             vkDestroyFramebuffer(DEMO_DEVICE, demo->swapchain_image_resources[i].framebuffer, NULL);
         }
@@ -2522,10 +2366,10 @@ static void demo_cleanup(struct demo *demo) {
 
 static void demo_resize(struct demo *demo) {
     uint32_t i;
-
+printf("----demo_resize\n");
     // Don't react to resize until after first initialization.
-    if (!demo->prepared) {
-        if (demo->is_minimized) {
+    if (!DEMO_IS_PREPARED) {
+        if (DEMO_IS_MINIMIZED) {
             demo_prepare(demo);
         }
         return;
@@ -2534,7 +2378,7 @@ static void demo_resize(struct demo *demo) {
     // AND redo the command buffers, etc.
     //
     // First, perform part of the demo_cleanup() function:
-    demo->prepared = false;
+    DEMO_IS_PREPARED = false;
     vkDeviceWaitIdle(DEMO_DEVICE);
 
     for (i = 0; i < demo->swapchainImageCount; i++) {
@@ -2575,6 +2419,7 @@ static void demo_resize(struct demo *demo) {
 
     // Second, re-perform the demo_prepare() function, which will re-create the
     // swapchain:
+printf("----call demo_prepare 5\n");
     demo_prepare(demo);
 }
 
@@ -2583,11 +2428,11 @@ struct demo demo;
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 static void demo_run(struct demo *demo) {
-    if (!demo->prepared) return;
+    if (!DEMO_IS_PREPARED) return;
 
     demo_draw(demo);
     demo->curFrame++;
-    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
     if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
         PostQuitMessage(validation_error);
     }
@@ -2619,6 +2464,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             if (wParam != SIZE_MINIMIZED) {
                 demo.width = lParam & 0xffff;
                 demo.height = (lParam & 0xffff0000) >> 16;
+printf("-------------call demo resize 6\n");
                 demo_resize(&demo);
             }
             break;
@@ -2668,7 +2514,7 @@ static void demo_create_window(struct demo *demo) {
         exit(1);
     }
     // Create window with the registered class:
-    RECT wr = {0, 0, demo->width, demo->height};
+    RECT wr = {0, 0, DEMO_WIDTH, DEMO_HEIGHT};
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
     demo->window = CreateWindowEx(0,
                                   demo->name,            // class name
@@ -2718,8 +2564,8 @@ static void demo_create_xlib_window(struct demo *demo) {
     windowAttributes.border_pixel = 0;
     windowAttributes.event_mask = KeyPressMask | KeyReleaseMask | StructureNotifyMask | ExposureMask;
 
-    demo->xlib_window = XCreateWindow(demo->display, RootWindow(demo->display, vInfoTemplate.screen), 0, 0, demo->width,
-                                      demo->height, 0, visualInfo->depth, InputOutput, visualInfo->visual,
+    demo->xlib_window = XCreateWindow(demo->display, RootWindow(demo->display, vInfoTemplate.screen), 0, 0, DEMO_WIDTH,
+                                      DEMO_HEIGHT, 0, visualInfo->depth, InputOutput, visualInfo->visual,
                                       CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &windowAttributes);
 
     XSelectInput(demo->display, demo->xlib_window, ExposureMask | KeyPressMask);
@@ -2749,9 +2595,10 @@ static void demo_handle_xlib_event(struct demo *demo, const XEvent *event) {
             }
             break;
         case ConfigureNotify:
-            if ((demo->width != event->xconfigure.width) || (demo->height != event->xconfigure.height)) {
-                demo->width = event->xconfigure.width;
-                demo->height = event->xconfigure.height;
+            if ((DEMO_WIDTH != event->xconfigure.width) || (DEMO_HEIGHT != event->xconfigure.height)) {
+                DEMO_WIDTH = event->xconfigure.width;
+                DEMO_HEIGHT = event->xconfigure.height;
+printf("-------------call demo resize 7\n");
                 demo_resize(demo);
             }
             break;
@@ -2775,7 +2622,7 @@ static void demo_run_xlib(struct demo *demo) {
 
         demo_draw(demo);
         demo->curFrame++;
-        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
     }
 }
@@ -2811,9 +2658,10 @@ static void demo_handle_xcb_event(struct demo *demo, const xcb_generic_event_t *
         } break;
         case XCB_CONFIGURE_NOTIFY: {
             const xcb_configure_notify_event_t *cfg = (const xcb_configure_notify_event_t *)event;
-            if ((demo->width != cfg->width) || (demo->height != cfg->height)) {
-                demo->width = cfg->width;
-                demo->height = cfg->height;
+            if ((DEMO_WIDTH != cfg->width) || (DEMO_HEIGHT != cfg->height)) {
+                DEMO_WIDTH = cfg->width;
+                DEMO_HEIGHT = cfg->height;
+printf("-------------call demo resize 8\n");
                 demo_resize(demo);
             }
         } break;
@@ -2841,7 +2689,7 @@ static void demo_run_xcb(struct demo *demo) {
 
         demo_draw(demo);
         demo->curFrame++;
-        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
     }
 }
@@ -2855,7 +2703,7 @@ static void demo_create_xcb_window(struct demo *demo) {
     value_list[0] = demo->screen->black_pixel;
     value_list[1] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
-    xcb_create_window(demo->connection, XCB_COPY_FROM_PARENT, demo->xcb_window, demo->screen->root, 0, 0, demo->width, demo->height,
+    xcb_create_window(demo->connection, XCB_COPY_FROM_PARENT, demo->xcb_window, demo->screen->root, 0, 0, DEMO_WIDTH, DEMO_HEIGHT,
                       0, XCB_WINDOW_CLASS_INPUT_OUTPUT, demo->screen->root_visual, value_mask, value_list);
 
     /* Magic code that will send notification when window is destroyed */
@@ -2886,7 +2734,7 @@ static void demo_run(struct demo *demo) {
             wl_display_dispatch_pending(demo->display);  // don't block
             demo_draw(demo);
             demo->curFrame++;
-            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
             if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
         }
     }
@@ -2896,6 +2744,7 @@ static void handle_surface_configure(void *data, struct xdg_surface *xdg_surface
     struct demo *demo = (struct demo *)data;
     xdg_surface_ack_configure(xdg_surface, serial);
     if (demo->xdg_surface_has_been_configured) {
+printf("-------------call demo resize 9\n");
         demo_resize(demo);
     }
     demo->xdg_surface_has_been_configured = 1;
@@ -2909,10 +2758,10 @@ static void handle_toplevel_configure(void *data, struct xdg_toplevel *xdg_tople
     /* zero values imply the program may choose its own size, so in that case
      * stay with the existing value (which on startup is the default) */
     if (width > 0) {
-        demo->width = width;
+        DEMO_WIDTH = width;
     }
     if (height > 0) {
-        demo->height = height;
+        DEMO_HEIGHT = height;
     }
     /* This should be followed by a surface configure */
 }
@@ -2983,8 +2832,8 @@ static void demo_create_directfb_window(struct demo *demo) {
     DFBSurfaceDescription desc;
     desc.flags = DSDESC_CAPS | DSDESC_WIDTH | DSDESC_HEIGHT;
     desc.caps = DSCAPS_PRIMARY;
-    desc.width = demo->width;
-    desc.height = demo->height;
+    desc.width = DEMO_WIDTH;
+    desc.height = DEMO_HEIGHT;
     ret = demo->dfb->CreateSurface(demo->dfb, &desc, &demo->window);
     if (ret) {
         printf("CreateSurface failed to create DirectFB surface interface!\n");
@@ -3032,24 +2881,24 @@ static void demo_run_directfb(struct demo *demo) {
 
             demo_draw(demo);
             demo->curFrame++;
-            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
             if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
         }
     }
 }
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
 static void demo_run(struct demo *demo) {
-    if (!demo->prepared) return;
+    if (!DEMO_IS_PREPARED) return;
 
     demo_draw(demo);
     demo->curFrame++;
-    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 }
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 static void demo_run(struct demo *demo) {
     demo_draw(demo);
     demo->curFrame++;
-    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
     if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
         demo->quit = TRUE;
     }
@@ -3188,7 +3037,7 @@ static void demo_run_display(struct demo *demo) {
     while (!demo->quit) {
         demo_draw(demo);
         demo->curFrame++;
-        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
             demo->quit = true;
@@ -3246,7 +3095,7 @@ static void demo_init_vk(struct demo *demo) {
     VkResult err;
     demo->enabled_extension_count = 0;
     demo->enabled_layer_count = 0;
-    demo->is_minimized = false;
+    DEMO_IS_MINIMIZED = false;
     demo->cmd_pool = VK_NULL_HANDLE;
 
     // Query fine-grained feature support for this device.
@@ -3292,7 +3141,7 @@ printf("----demo_init_vk_swapchain\n");
     demo->quit = false;
     demo->curFrame = 0;
 
-    PlasmacorePVKSwapchain__create_semaphores( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->swapchain );
+    PlasmacorePVKSwapchain__create_semaphores( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
     // Get Memory information and properties
     vkGetPhysicalDeviceMemoryProperties(DEMO_GPU, &demo->memory_properties);
@@ -3457,12 +3306,11 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
     vec3 up = {0.0f, 1.0f, 0.0};
 
     memset(demo, 0, sizeof(*demo));
-    demo->presentMode = VK_PRESENT_MODE_FIFO_KHR;
     demo->frameCount = INT32_MAX;
     /* Autodetect suitable / best GPU by default */
     DEMO_GPU_NUMBER = -1;
-    demo->width = 500;
-    demo->height = 500;
+    DEMO_WIDTH = 500;
+    DEMO_HEIGHT = 500;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--use_staging") == 0) {
@@ -3470,7 +3318,7 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
             continue;
         }
         if ((strcmp(argv[i], "--present_mode") == 0) && (i < argc - 1)) {
-            demo->presentMode = atoi(argv[i + 1]);
+            //DEMO_PRESENT_MODE = atoi(argv[i + 1]);
             i++;
             continue;
         }
@@ -3497,8 +3345,8 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
             continue;
         }
         if (strcmp(argv[i], "--width") == 0) {
-            if (i < argc - 1 && sscanf(argv[i + 1], "%d", &demo->width) == 1) {
-                if (demo->width > 0) {
+            if (i < argc - 1 && sscanf(argv[i + 1], "%d", &DEMO_WIDTH) == 1) {
+                if (DEMO_WIDTH > 0) {
                     i++;
                     continue;
                 } else {
@@ -3508,8 +3356,8 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
             ERR_EXIT("The --width parameter must be followed by a number", "User Error");
         }
         if (strcmp(argv[i], "--height") == 0) {
-            if (i < argc - 1 && sscanf(argv[i + 1], "%d", &demo->height) == 1) {
-                if (demo->height > 0) {
+            if (i < argc - 1 && sscanf(argv[i + 1], "%d", &DEMO_HEIGHT) == 1) {
+                if (DEMO_HEIGHT > 0) {
                     i++;
                     continue;
                 } else {
@@ -3651,6 +3499,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     demo_create_window(&demo);
     demo_init_vk_swapchain(&demo);
 
+printf("----call demo_prepare 1\n");
     demo_prepare(&demo);
 
     done = false;  // initialize loop condition variable
@@ -3688,6 +3537,7 @@ static void demo_main(struct demo *demo, void *caMetalLayer, int argc, const cha
     demo_init(demo, argc, (char **)argv);
     demo->caMetalLayer = caMetalLayer;
     demo_init_vk_swapchain(demo);
+printf("----call demo_prepare 2\n");
     demo_prepare(demo);
     demo->spin_angle = 0.4f;
 }
@@ -3739,6 +3589,7 @@ static void processCommand(struct android_app *app, int32_t cmd) {
 
                 demo.window = (void *)app->window;
                 demo_init_vk_swapchain(&demo);
+printf("----call demo_prepare 3\n");
                 demo_prepare(&demo);
                 initialized = true;
             }
@@ -3801,6 +3652,7 @@ int main(int argc, char **argv) {
 
     demo_init_vk_swapchain(&demo);
 
+printf("----call demo_prepare 4\n");
     demo_prepare(&demo);
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)

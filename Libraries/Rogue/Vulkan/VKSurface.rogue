@@ -7,20 +7,20 @@ class VKSurface
     context        : VKContext
 
     native_surface : VKNativeSurface
-    capabilities   : VKNativeSurfaceCapabilities
 
     formats        : VKSurfaceFormat[]
     present_modes  : VKPresentMode[]
 
   METHODS
     method init( context, native_surface )
-      native
-        @|$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
-         |  $context->gpu->native_gpu.value, $native_surface.value, &$capabilities.value
-         |);
 
     method current_transform->VKSurfaceTransform
-      return VKSurfaceTransform( native("(RogueInt32)$capabilities.value.currentTransform")->Int32 )
+      native
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+      return VKSurfaceTransform( native("(RogueInt32)capabilities.currentTransform")->Int32 )
 
     method destroy
       on_cleanup
@@ -49,23 +49,41 @@ class VKSurface
          return @formats
 
     method max_buffer_count->Int32
-      return VKSurfaceTransform( native("(RogueInt32)$capabilities.value.maxImageCount")->Int32 )
+      native
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+      return VKSurfaceTransform( native("(RogueInt32)capabilities.maxImageCount")->Int32 )
 
     method max_size->XY
       local w, h : Int32
       native
-        @|$w = (RogueInt32) $capabilities.value.maxImageExtent.width;
-         |$h = (RogueInt32) $capabilities.value.maxImageExtent.height;
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+         |$w = (RogueInt32) capabilities.maxImageExtent.width;
+         |$h = (RogueInt32) capabilities.maxImageExtent.height;
       return XY( w, h )
 
     method min_buffer_count->Int32
-      return VKSurfaceTransform( native("(RogueInt32)$capabilities.value.minImageCount")->Int32 )
+      native
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+      return VKSurfaceTransform( native("(RogueInt32)capabilities.minImageCount")->Int32 )
 
     method min_size->XY
       local w, h : Int32
       native
-        @|$w = (RogueInt32) $capabilities.value.minImageExtent.width;
-         |$h = (RogueInt32) $capabilities.value.minImageExtent.height;
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+         |$w = (RogueInt32) capabilities.minImageExtent.width;
+         |$h = (RogueInt32) capabilities.minImageExtent.height;
       return XY( w, h )
 
     method on_cleanup
@@ -107,14 +125,28 @@ trace "----"
     method size->XY
       local w, h : Int32
       native
-        @|$w = (RogueInt32) $capabilities.value.currentExtent.width;
-         |$h = (RogueInt32) $capabilities.value.currentExtent.height;
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+         |$w = (RogueInt32) capabilities.currentExtent.width;
+         |$h = (RogueInt32) capabilities.currentExtent.height;
       return XY( w, h )
 
     method supports_composite_alpha_type( type:VKCompositeAlphaType )->Logical
-      return (type->Int32 & native("(RogueInt32)$capabilities.supportedCompositeAlpha")->Int32)?
+      native
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+      return (type->Int32 & native("(RogueInt32)capabilities.supportedCompositeAlpha")->Int32)?
 
     method supports_transform( transform:VKSurfaceTransform )->Logical
-      return (transform->Int32 & native("(RogueInt32)$capabilities.supportedTransforms")->Int32)?
+      native
+        @|VkSurfaceCapabilitiesKHR capabilities;
+         |$context->vkGetPhysicalDeviceSurfaceCapabilitiesKHR.value(
+         |  $context->gpu->native_gpu.value, $native_surface.value, &capabilities
+         |);
+      return (transform->Int32 & native("(RogueInt32)capabilities.supportedTransforms")->Int32)?
 
 endClass

@@ -2,16 +2,20 @@ module Vulkan
 
 class VKContext
   PROPERTIES
-    instance : VKInstance
-    gpu      : VKGPU
-    surface  : VKSurface
-    device   : VKDevice
+    instance  : VKInstance
+    gpu       : VKGPU
+    surface   : VKSurface
+    device    : VKDevice
+    swapchain : Plasmacore::PVKSwapchain
 
     surface_format : VKSurfaceFormat
 
     graphics_queue_family            : VKQueueFamily
     presentation_queue_family        : VKQueueFamily
     uses_separate_presentation_queue : Logical
+
+    is_prepared                      : Logical
+    is_minimized                     : Logical
 
     # VkInstance functions
     NATIVE_PROCEDURE<<vkGetDeviceProcAddr>>

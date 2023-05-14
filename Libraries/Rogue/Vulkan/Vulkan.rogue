@@ -37,7 +37,7 @@ nativeType<<"VkPhysicalDevice">>         VKNativeGPU
 nativeType<<"VkInstance">>               VKNativeInstance
 nativeType<<"VkSurfaceKHR">>             VKNativeSurface
 nativeType<<"VkSurfaceFormatKHR">>       VKNativeSurfaceFormat
-nativeType<<"VkSurfaceCapabilitiesKHR">> VKNativeSurfaceCapabilities
+#nativeType<<"VkSurfaceCapabilitiesKHR">> VKNativeSurfaceCapabilities
 
 class VKNativeProcedure<<$NativeType>> [compound]
   PROPERTIES
