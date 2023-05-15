@@ -12,6 +12,7 @@ $include Vulkan/VKApplicationInfo
 $include Vulkan/VKBitFormat
 $include Vulkan/VKColorSpace
 $include Vulkan/VKCommandBuffer
+$include Vulkan/VKCommandPool
 $include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKContext
 $include Vulkan/VKDevice
@@ -36,6 +37,7 @@ nativeHeader
 
 nativeType<<"VkBuffer">>           VKNativeBuffer
 nativeType<<"VkCommandBuffer">>    VKNativeCommandBuffer
+nativeType<<"VkCommandPool">>      VKNativeCommandPool
 nativeType<<"VkDescriptorSet">>    VKNativeDescriptorSet
 nativeType<<"VkDevice">>           VKNativeDevice
 nativeType<<"VkDeviceMemory">>     VKNativeDeviceMemory

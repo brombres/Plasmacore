@@ -15,7 +15,7 @@ class VulkanRenderer : Renderer [essential abstract singleton]
       #swapchain.prepare
       #swapchain.block_until_ready
 
-    method configure [api]
+    method configure
 trace "----"
       # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
       local app_name = "Plasmacore App"
@@ -108,7 +108,7 @@ trace "----"
         context.surface_format = context.surface.formats.first
       endBlock
 
-    method create_device [api]
+    method create_device
       trace "----"
 
       local config = VKDeviceConfig( context )
@@ -119,14 +119,17 @@ trace "----"
 
       #swapchain = VKSwapchain( this, 3, 2 )
 
+    method dispatch_create_device [api]
+      create_device
+
+    method dispatch_create_surface [api]
+      create_surface
+      configure_surface
+
     method create_surface
 
     method end_render [override]
       trace "----"
       #swapchain.advance_frame
-
-    method handle_create_surface [api]
-      create_surface
-      configure_surface
 
 endClass

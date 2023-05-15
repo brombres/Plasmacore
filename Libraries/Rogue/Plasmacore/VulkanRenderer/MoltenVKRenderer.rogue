@@ -11,11 +11,11 @@ class MoltenVKRenderer : VulkanRenderer [essential singleton]
       Display.renderer = this
       VulkanRenderer = this
 
-    method configure( ca_metal_layer:RogueVoidPointer ) [essential]
+    method configure( ca_metal_layer:RogueVoidPointer ) [api]
       configure
       native @|$this->ca_metal_layer = $ca_metal_layer.value;
 
-    method create_surface [api override]
+    method create_surface [override]
 trace "----"
       if (context.surface) context.surface.destroy
 

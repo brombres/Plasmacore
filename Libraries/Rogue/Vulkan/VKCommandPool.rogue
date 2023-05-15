@@ -1,0 +1,20 @@
+module Vulkan
+
+class VKCommandPool
+  PROPERTIES
+    context      : VKContext
+    native_pool  : VKNativeCommandPool
+    queue_family : VKQueueFamily
+
+  METHODS
+    method init( context, queue_family )
+      native
+        @|VkCommandPoolCreateInfo cmd_pool_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+         |  .pNext = 0,
+         |  .queueFamilyIndex = $queue_family.index,
+         |  .flags = 0,
+         |};
+         |vkCreateCommandPool( $context->device->native_device.value, &cmd_pool_config, NULL, &$native_pool.value );
+endClass
