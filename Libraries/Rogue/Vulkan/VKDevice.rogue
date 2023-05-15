@@ -87,4 +87,6 @@ class VKDevice
       local result : RogueVoidPointer
       native @|$result.value = $context->vkGetDeviceProcAddr.value( $this->native_device.value, $name->data->as_utf8 );
       return result
+
+      #method swapchain_images->VKSwapchainImage
 endClass

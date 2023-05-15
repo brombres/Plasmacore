@@ -13,4 +13,5 @@ class VKSwapchainImage
     descriptor_set          : VKNativeDescriptorSet
 
   METHODS
+    method init( image )
 endClass
