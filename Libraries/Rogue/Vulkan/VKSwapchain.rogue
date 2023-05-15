@@ -10,6 +10,9 @@ class VKSwapchain
 
     native "VkSwapchainKHR native_swapchain;"
 
+    cmd_pool   : VKCommandPool
+    cmd_buffer : VKCommandBuffer
+
   METHODS
     method init( context, surface_size )
 
@@ -25,6 +28,9 @@ trace "----"
       else
         context.is_minimized = false
       endIf
+
+      ensure<<cmd_pool>>( context, context.graphics_queue_family )
+      cmd_buffer = cmd_pool.create_command_buffer
 
       if (context.surface.size.x != -1) surface_size = context.surface.size
       surface_size .= clamped( context.surface.min_size, context.surface.max_size )
@@ -118,7 +124,7 @@ trace "----"
          |        }
          |      };
          |
-                local image = VKSwapchainImage( native("(VKNativeImage){swapchain_images[i]}")->VKNativeImage )
+                local image = VKSwapchainImage( this, native("(VKNativeImage){swapchain_images[i]}")->VKNativeImage )
                 images.add( image )
       native
         @|      vkCreateImageView( $context->device->native_device.value, &image_view_config, NULL, &$image->view.value );
@@ -126,17 +132,21 @@ trace "----"
          |  }
          |}
 
+
     method create_semaphores
       forEach (i in 0..<2)
         frames.add( VKFrameControl(i,context) )
       endForEach
       current_frame = frames.first
 
+    method destroy
+      (forEach in images).destroy
+      cmd_buffer.destroy
+      cmd_pool.destroy
+      cmd_pool = null
+
     method dispatch_advance_frame [api]
       advance_frame
-
-    method dispatch_configure [api]
-      configure
 
     method dispatch_create_semaphores [api]
       create_semaphores

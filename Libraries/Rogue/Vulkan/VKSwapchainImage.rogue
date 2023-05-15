@@ -2,8 +2,9 @@ module Vulkan
 
 class VKSwapchainImage
   PROPERTIES
+    swapchain               : VKSwapchain
     image                   : VKNativeImage
-    cmd                     : VKNativeCommandBuffer
+    cmd                     : VKCommandBuffer
     cmd_graphics_to_present : VKNativeCommandBuffer
     view                    : VKNativeImageView
     uniform_buffer          : VKNativeBuffer
@@ -13,5 +14,15 @@ class VKSwapchainImage
     descriptor_set          : VKNativeDescriptorSet
 
   METHODS
-    method init( image )
+    method init( swapchain, image )
+      cmd = swapchain.cmd_pool.create_command_buffer
+
+    method destroy
+      if (cmd)
+        cmd.destroy
+        cmd = null
+      endIf
+
+    method on_cleanup
+      destroy
 endClass

@@ -17,8 +17,6 @@ class VKContext
     is_prepared                      : Logical
     is_minimized                     : Logical
 
-    cmd_pool                         : VKCommandPool
-
     # VkInstance functions
     NATIVE_PROCEDURE<<vkGetDeviceProcAddr>>
     NATIVE_PROCEDURE<<vkGetPhysicalDeviceSurfaceSupportKHR>>

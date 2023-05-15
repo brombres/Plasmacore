@@ -186,6 +186,9 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I              DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT(i)
 #define DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT(demo->current_buffer)
 
+#define DEMO_CMD_POOL (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_pool->native_pool.value)
+#define DEMO_CMD      (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_buffer->native_buffer.value)
+
 /*
  * structure to track all objects related to a texture.
  */
@@ -721,9 +724,9 @@ static void demo_flush_init_cmd(struct demo *demo) {
 
     // This function could get called twice if the texture uses a staging buffer
     // In that case the second call should be ignored
-    if (demo->cmd == VK_NULL_HANDLE) return;
+    if (DEMO_CMD == VK_NULL_HANDLE) return;
 
-    err = vkEndCommandBuffer(demo->cmd);
+    err = vkEndCommandBuffer(DEMO_CMD);
     assert(!err);
 
     VkFence fence;
@@ -736,7 +739,7 @@ static void demo_flush_init_cmd(struct demo *demo) {
     assert(!err);
     demo_name_object(demo, VK_OBJECT_TYPE_FENCE, (uint64_t)fence, "InitFence");
 
-    const VkCommandBuffer cmd_bufs[] = {demo->cmd};
+    const VkCommandBuffer cmd_bufs[] = {DEMO_CMD};
     VkSubmitInfo submit_info = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
                                 .pNext = NULL,
                                 .waitSemaphoreCount = 0,
@@ -753,15 +756,15 @@ static void demo_flush_init_cmd(struct demo *demo) {
     err = vkWaitForFences(DEMO_DEVICE, 1, &fence, VK_TRUE, UINT64_MAX);
     assert(!err);
 
-    vkFreeCommandBuffers(DEMO_DEVICE, demo->cmd_pool, 1, cmd_bufs);
+    vkFreeCommandBuffers(DEMO_DEVICE, DEMO_CMD_POOL, 1, cmd_bufs);
     vkDestroyFence(DEMO_DEVICE, fence, NULL);
-    demo->cmd = VK_NULL_HANDLE;
+    DEMO_CMD = VK_NULL_HANDLE;
 }
 
 static void demo_set_image_layout(struct demo *demo, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout old_image_layout,
                                   VkImageLayout new_image_layout, VkAccessFlagBits srcAccessMask, VkPipelineStageFlags src_stages,
                                   VkPipelineStageFlags dest_stages) {
-    assert(demo->cmd);
+    assert(DEMO_CMD);
 
     VkImageMemoryBarrier image_memory_barrier = {.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                                                  .pNext = NULL,
@@ -807,7 +810,7 @@ static void demo_set_image_layout(struct demo *demo, VkImage image, VkImageAspec
 
     VkImageMemoryBarrier *pmemory_barrier = &image_memory_barrier;
 
-    vkCmdPipelineBarrier(demo->cmd, src_stages, dest_stages, 0, 0, NULL, 0, NULL, 1, pmemory_barrier);
+    vkCmdPipelineBarrier(DEMO_CMD, src_stages, dest_stages, 0, 0, NULL, 0, NULL, 1, pmemory_barrier);
 }
 
 static void demo_draw_build_cmd(struct demo *demo, VkCommandBuffer cmd_buf) {
@@ -1136,7 +1139,7 @@ printf("-------------call demo resize 2\n");
     submit_info.waitSemaphoreCount = 1;
     submit_info.pWaitSemaphores = &DEMO_IMAGE_ACQUIRED_SEMAPHORE;
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->cmd.value;
+    submit_info.pCommandBuffers = &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->cmd->native_buffer.value;
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &DEMO_DRAW_COMPLETE_SEMAPHORE;
 
@@ -1269,12 +1272,6 @@ printf("-------------call demo resize 5\n");
     } else {
         assert(!err);
     }
-}
-
-static void demo_prepare_buffers(struct demo *demo)
-{
-  printf("----prepare buffers\n");
-  VulkanVKSwapchain__dispatch_configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 }
 
 static void demo_prepare_depth(struct demo *demo) {
@@ -1541,7 +1538,7 @@ static void demo_prepare_textures(struct demo *demo) {
         VkResult U_ASSERT_ONLY err;
 
         if ((props.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) && !demo->use_staging_buffer) {
-            demo_push_cb_label(demo, demo->cmd, NULL, "DirectTexture(%u)", i);
+            demo_push_cb_label(demo, DEMO_CMD, NULL, "DirectTexture(%u)", i);
             /* Device can texture using linear textures */
             demo_prepare_texture_image(demo, tex_files[i], &demo->textures[i], VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_SAMPLED_BIT,
                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -1551,10 +1548,10 @@ static void demo_prepare_textures(struct demo *demo) {
                                   demo->textures[i].imageLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
             demo->staging_texture.image = 0;
-            demo_pop_cb_label(demo, demo->cmd);  // "DirectTexture"
+            demo_pop_cb_label(demo, DEMO_CMD);  // "DirectTexture"
         } else if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) {
             /* Must use staging buffer to copy linear texture to optimized */
-            demo_push_cb_label(demo, demo->cmd, NULL, "StagingTexture(%u)", i);
+            demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingTexture(%u)", i);
 
             memset(&demo->staging_texture, 0, sizeof(demo->staging_texture));
             demo_prepare_texture_buffer(demo, tex_files[i], &demo->staging_texture);
@@ -1567,7 +1564,7 @@ static void demo_prepare_textures(struct demo *demo) {
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-            demo_push_cb_label(demo, demo->cmd, NULL, "StagingBufferCopy(%u)", i);
+            demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingBufferCopy(%u)", i);
 
             VkBufferImageCopy copy_region = {
                 .bufferOffset = 0,
@@ -1578,14 +1575,14 @@ static void demo_prepare_textures(struct demo *demo) {
                 .imageExtent = {demo->staging_texture.tex_width, demo->staging_texture.tex_height, 1},
             };
 
-            vkCmdCopyBufferToImage(demo->cmd, demo->staging_texture.buffer, demo->textures[i].image,
+            vkCmdCopyBufferToImage(DEMO_CMD, demo->staging_texture.buffer, demo->textures[i].image,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
-            demo_pop_cb_label(demo, demo->cmd);  // "StagingBufferCopy"
+            demo_pop_cb_label(demo, DEMO_CMD);  // "StagingBufferCopy"
 
             demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   demo->textures[i].imageLayout, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-            demo_pop_cb_label(demo, demo->cmd);  // "StagingTexture"
+            demo_pop_cb_label(demo, DEMO_CMD);  // "StagingTexture"
 
         } else {
             /* Can't support VK_FORMAT_R8G8B8A8_UNORM !? */
@@ -2094,7 +2091,7 @@ static void demo_prepare_framebuffers(struct demo *demo) {
 }
 
 static void demo_prepare(struct demo *demo) {
-    demo_prepare_buffers(demo);
+    PlasmacoreVulkanRenderer__dispatch_prepare( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
     if (DEMO_IS_MINIMIZED) {
         DEMO_IS_PREPARED = false;
@@ -2102,36 +2099,38 @@ static void demo_prepare(struct demo *demo) {
     }
 
     VkResult U_ASSERT_ONLY err;
-    if (demo->cmd_pool == VK_NULL_HANDLE)
-    {
-        const VkCommandPoolCreateInfo cmd_pool_info = {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext = NULL,
-            .queueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX,
-            .flags = 0,
-        };
-        err = vkCreateCommandPool(DEMO_DEVICE, &cmd_pool_info, NULL, &demo->cmd_pool);
-        assert(!err);
-    }
 
-    const VkCommandBufferAllocateInfo cmd = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext = NULL,
-        .commandPool = demo->cmd_pool,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
-    err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &demo->cmd);
-    assert(!err);
-    demo_name_object(demo, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)demo->cmd, "PrepareCB");
+    //if (DEMO_CMD_POOL == VK_NULL_HANDLE)
+    //{
+    //    const VkCommandPoolCreateInfo cmd_pool_info = {
+    //        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+    //        .pNext = NULL,
+    //        .queueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX,
+    //        .flags = 0,
+    //    };
+    //    err = vkCreateCommandPool(DEMO_DEVICE, &cmd_pool_info, NULL, &DEMO_CMD_POOL);
+    //    assert(!err);
+    //}
+
+    //const VkCommandBufferAllocateInfo cmd = {
+    //    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+    //    .pNext = NULL,
+    //    .commandPool = DEMO_CMD_POOL,
+    //    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+    //    .commandBufferCount = 1,
+    //};
+    //err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &DEMO_CMD);
+    //assert(!err);
+    //demo_name_object(demo, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)DEMO_CMD, "PrepareCB");
+
     VkCommandBufferBeginInfo cmd_buf_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .pNext = NULL,
         .flags = 0,
         .pInheritanceInfo = NULL,
     };
-    err = vkBeginCommandBuffer(demo->cmd, &cmd_buf_info);
-    demo_push_cb_label(demo, demo->cmd, NULL, "Prepare");
+    err = vkBeginCommandBuffer(DEMO_CMD, &cmd_buf_info);
+    demo_push_cb_label(demo, DEMO_CMD, NULL, "Prepare");
     assert(!err);
 
     demo_prepare_depth(demo);
@@ -2142,10 +2141,10 @@ static void demo_prepare(struct demo *demo) {
     demo_prepare_render_pass(demo);
     demo_prepare_pipeline(demo);
 
-    for (uint32_t i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd.value);
-        assert(!err);
-    }
+    //for (uint32_t i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
+    //    err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd->native_buffer.value);
+    //    assert(!err);
+    //}
 
     if (DEMO_SEPARATE_PRESENT_QUEUE) {
         const VkCommandPoolCreateInfo present_cmd_pool_info = {
@@ -2180,14 +2179,14 @@ static void demo_prepare(struct demo *demo) {
 
     for (uint32_t i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         demo->current_buffer = i;
-        demo_draw_build_cmd(demo, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd.value);
+        demo_draw_build_cmd(demo, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd->native_buffer.value);
     }
 
     /*
      * Prepare functions above may generate pipeline commands
      * that need to be flushed before beginning the render loop.
      */
-    demo_pop_cb_label(demo, demo->cmd);  // "Prepare"
+    demo_pop_cb_label(demo, DEMO_CMD);  // "Prepare"
     demo_flush_init_cmd(demo);
     if (demo->staging_texture.buffer) {
         demo_destroy_texture(demo, &demo->staging_texture);
@@ -2216,6 +2215,8 @@ static void demo_cleanup(struct demo *demo) {
 
     // If the window is currently minimized, demo_resize has already done some cleanup for us.
     if (!DEMO_IS_MINIMIZED) {
+        PlasmacoreVulkanRenderer__dispatch_destroy_swapchain( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
+
         for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
             vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value, NULL);
         }
@@ -2241,13 +2242,10 @@ static void demo_cleanup(struct demo *demo) {
 
         for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
             vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
-            vkFreeCommandBuffers(DEMO_DEVICE, demo->cmd_pool, 1, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd.value);
             vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
             vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
             vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
         }
-        //free(demo->swapchain_image_resources);
-        vkDestroyCommandPool(DEMO_DEVICE, demo->cmd_pool, NULL);
 
         if (DEMO_SEPARATE_PRESENT_QUEUE) {
             vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);
@@ -2305,8 +2303,11 @@ printf("----demo_resize\n");
     // AND redo the command buffers, etc.
     //
     // First, perform part of the demo_cleanup() function:
+
     DEMO_IS_PREPARED = false;
     vkDeviceWaitIdle(DEMO_DEVICE);
+
+    PlasmacoreVulkanRenderer__dispatch_destroy_swapchain( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
     for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value, NULL);
@@ -2332,13 +2333,10 @@ printf("----demo_resize\n");
 
     for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
-        vkFreeCommandBuffers(DEMO_DEVICE, demo->cmd_pool, 1, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd.value);
         vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
         vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
         vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
     }
-    vkDestroyCommandPool(DEMO_DEVICE, demo->cmd_pool, NULL);
-    demo->cmd_pool = VK_NULL_HANDLE;
     if (DEMO_SEPARATE_PRESENT_QUEUE) {
         vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);
     }
@@ -2346,7 +2344,6 @@ printf("----demo_resize\n");
 
     // Second, re-perform the demo_prepare() function, which will re-create the
     // swapchain:
-printf("----call demo_prepare 5\n");
     demo_prepare(demo);
 }
 
@@ -3021,7 +3018,6 @@ int find_display_gpu(int gpu_number, uint32_t gpu_count, VkPhysicalDevice *physi
 static void demo_init_vk(struct demo *demo) {
     VkResult err;
     DEMO_IS_MINIMIZED = false;
-    demo->cmd_pool = VK_NULL_HANDLE;
 
     // Query fine-grained feature support for this device.
     //  If app has specific feature requirements it should check supported
@@ -3424,7 +3420,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     demo_create_window(&demo);
     demo_init_vk_swapchain(&demo);
 
-printf("----call demo_prepare 1\n");
     demo_prepare(&demo);
 
     done = false;  // initialize loop condition variable
@@ -3462,7 +3457,6 @@ static void demo_main(struct demo *demo, void *caMetalLayer, int argc, const cha
     demo_init(demo, argc, (char **)argv);
     demo->caMetalLayer = caMetalLayer;
     demo_init_vk_swapchain(demo);
-printf("----call demo_prepare 2\n");
     demo_prepare(demo);
     demo->spin_angle = 0.4f;
 }
@@ -3514,7 +3508,6 @@ static void processCommand(struct android_app *app, int32_t cmd) {
 
                 demo.window = (void *)app->window;
                 demo_init_vk_swapchain(&demo);
-printf("----call demo_prepare 3\n");
                 demo_prepare(&demo);
                 initialized = true;
             }
@@ -3577,7 +3570,6 @@ int main(int argc, char **argv) {
 
     demo_init_vk_swapchain(&demo);
 
-printf("----call demo_prepare 4\n");
     demo_prepare(&demo);
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)
