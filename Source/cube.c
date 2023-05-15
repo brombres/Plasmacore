@@ -178,8 +178,8 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 
 #define DEMO_IS_PREPARED  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->is_prepared)
 #define DEMO_IS_MINIMIZED (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->is_minimized)
-#define DEMO_WIDTH  (ROGUE_SINGLETON(PlasmacoreDisplay)->size.x)
-#define DEMO_HEIGHT (ROGUE_SINGLETON(PlasmacoreDisplay)->size.y)
+#define DEMO_WIDTH  (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->surface_size.x)
+#define DEMO_HEIGHT (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->surface_size.y)
 
 #define DEMO_SWAPCHAIN_IMAGE_COUNT (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->images->count)
 #define DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT(i) ((VulkanVKSwapchainImage*)(ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->images->as_objects[i]))
@@ -1242,7 +1242,7 @@ printf("-------------call demo resize 2\n");
     }
 
     err = demo->fpQueuePresentKHR(DEMO_PRESENT_QUEUE, &present);
-PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
         // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
@@ -1273,83 +1273,8 @@ printf("-------------call demo resize 5\n");
 
 static void demo_prepare_buffers(struct demo *demo)
 {
-    VkResult U_ASSERT_ONLY err;
   printf("----prepare buffers\n");
-
-    //TODO
-    PlasmacorePVKSwapchain__configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
-
-    //uint32_t i;
-    //err = demo->fpCreateSwapchainKHR(DEMO_DEVICE, &swapchain_ci, NULL, &DEMO_SWAPCHAIN);
-    //assert(!err);
-
-    // If we just re-created an existing swapchain, we should destroy the old
-    // swapchain at this point.
-    // Note: destroying the swapchain also cleans up all its associated
-    // presentable images once the platform is done with them.
-    //if (oldSwapchain != VK_NULL_HANDLE) {
-    //    demo->fpDestroySwapchainKHR(DEMO_DEVICE, oldSwapchain, NULL);
-    //}
-
-    //TODO
-    /*
-    err = demo->fpGetSwapchainImagesKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, &DEMO_SWAPCHAIN_IMAGE_COUNT, NULL);
-    assert(!err);
-
-    VkImage *swapchainImages = (VkImage *)malloc(DEMO_SWAPCHAIN_IMAGE_COUNT * sizeof(VkImage));
-    assert(swapchainImages);
-    err = demo->fpGetSwapchainImagesKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, &DEMO_SWAPCHAIN_IMAGE_COUNT, swapchainImages);
-    assert(!err);
-
-    demo->swapchain_image_resources =
-        (SwapchainImageResources *)malloc(sizeof(SwapchainImageResources) * DEMO_SWAPCHAIN_IMAGE_COUNT);
-    assert(demo->swapchain_image_resources);
-
-    for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        demo_name_object(demo, VK_OBJECT_TYPE_IMAGE, (uint64_t)swapchainImages[i], "SwapchainImage(%u)", i);
-    }
-    for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        VkImageViewCreateInfo color_image_view = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = NULL,
-            .format = DEMO_FORMAT,
-            .components =
-                {
-                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-                },
-            .subresourceRange =
-                {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .flags = 0,
-        };
-
-        DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->image.value = swapchainImages[i];
-
-        color_image_view.image = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->image.value;
-
-        err = vkCreateImageView(DEMO_DEVICE, &color_image_view, NULL, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value);
-        assert(!err);
-        demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, "SwapchainView(%u)",
-                         i);
-    }
-    */
-
-    if (demo->VK_GOOGLE_display_timing_enabled) {
-        VkRefreshCycleDurationGOOGLE rc_dur;
-        err = demo->fpGetRefreshCycleDurationGOOGLE(DEMO_DEVICE, DEMO_SWAPCHAIN, &rc_dur);
-        assert(!err);
-        demo->refresh_duration = rc_dur.refreshDuration;
-
-        demo->syncd_with_actual_presents = false;
-        // Initially target 1X the refresh duration:
-        demo->target_IPD = demo->refresh_duration;
-        demo->refresh_duration_multiplier = 1;
-        demo->prev_desired_present_time = 0;
-        demo->next_present_id = 1;
-    }
+  VulkanVKSwapchain__configure( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 }
 
 static void demo_prepare_depth(struct demo *demo) {
@@ -2433,7 +2358,7 @@ static void demo_run(struct demo *demo) {
 
     demo_draw(demo);
     demo->curFrame++;
-    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+    VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
     if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
         PostQuitMessage(validation_error);
     }
@@ -2623,7 +2548,7 @@ static void demo_run_xlib(struct demo *demo) {
 
         demo_draw(demo);
         demo->curFrame++;
-        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+        VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
     }
 }
@@ -2690,7 +2615,7 @@ static void demo_run_xcb(struct demo *demo) {
 
         demo_draw(demo);
         demo->curFrame++;
-        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+        VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
     }
 }
@@ -2735,7 +2660,7 @@ static void demo_run(struct demo *demo) {
             wl_display_dispatch_pending(demo->display);  // don't block
             demo_draw(demo);
             demo->curFrame++;
-            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+            VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
             if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
         }
     }
@@ -2882,7 +2807,7 @@ static void demo_run_directfb(struct demo *demo) {
 
             demo_draw(demo);
             demo->curFrame++;
-            PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+            VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
             if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) demo->quit = true;
         }
     }
@@ -2893,13 +2818,13 @@ static void demo_run(struct demo *demo) {
 
     demo_draw(demo);
     demo->curFrame++;
-    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+    VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 }
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 static void demo_run(struct demo *demo) {
     demo_draw(demo);
     demo->curFrame++;
-    PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+    VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
     if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
         demo->quit = TRUE;
     }
@@ -3038,7 +2963,7 @@ static void demo_run_display(struct demo *demo) {
     while (!demo->quit) {
         demo_draw(demo);
         demo->curFrame++;
-        PlasmacorePVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+        VulkanVKSwapchain__advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount) {
             demo->quit = true;
@@ -3140,7 +3065,7 @@ printf("----demo_init_vk_swapchain\n");
     demo->quit = false;
     demo->curFrame = 0;
 
-    PlasmacorePVKSwapchain__create_semaphores( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
+    VulkanVKSwapchain__create_semaphores( ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain );
 
     // Get Memory information and properties
     vkGetPhysicalDeviceMemoryProperties(DEMO_GPU, &demo->memory_properties);

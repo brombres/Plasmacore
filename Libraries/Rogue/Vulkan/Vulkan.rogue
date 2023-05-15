@@ -25,8 +25,8 @@ $include Vulkan/VKQueueFamily
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
 $include Vulkan/VKSurfaceTransform
+$include Vulkan/VKSwapchain
 $include Vulkan/VKSwapchainImage
-#$include Vulkan/VKSwapchain
 
 #$include Vulkan/VKRenderBuffer
 

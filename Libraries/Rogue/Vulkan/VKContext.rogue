@@ -6,7 +6,7 @@ class VKContext
     gpu       : VKGPU
     surface   : VKSurface
     device    : VKDevice
-    swapchain : Plasmacore::PVKSwapchain
+    swapchain : VKSwapchain
 
     surface_format : VKSurfaceFormat
 
