@@ -17,6 +17,8 @@ class VKContext
     is_prepared                      : Logical
     is_minimized                     : Logical
 
+    depth_stencil : VKImage
+
     # VkInstance functions
     NATIVE_PROCEDURE<<vkGetDeviceProcAddr>>
     NATIVE_PROCEDURE<<vkGetPhysicalDeviceSurfaceSupportKHR>>
@@ -30,4 +32,8 @@ class VKContext
     NATIVE_PROCEDURE<<vkGetSwapchainImagesKHR>>
     NATIVE_PROCEDURE<<vkAcquireNextImageKHR>>
     NATIVE_PROCEDURE<<vkQueuePresentKHR>>
+
+  METHODS
+    method reset
+      swapchain?.reset
 endClass

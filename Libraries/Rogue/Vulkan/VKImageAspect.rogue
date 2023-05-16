@@ -1,0 +1,15 @@
+enum VKImageAspect
+  CATEGORIES
+    NONE           = 0
+    COLOR          = 0x00000001
+    DEPTH          = 0x00000002
+    STENCIL        = 0x00000004
+    METADATA       = 0x00000008
+    PLANE_0        = 0x00000010
+    PLANE_1        = 0x00000020
+    PLANE_2        = 0x00000040
+    MEMORY_PLANE_0 = 0x00000080
+    MEMORY_PLANE_1 = 0x00000100
+    MEMORY_PLANE_2 = 0x00000200
+    MEMORY_PLANE_3 = 0x00000400
+endEnum

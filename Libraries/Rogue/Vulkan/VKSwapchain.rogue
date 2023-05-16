@@ -20,7 +20,6 @@ class VKSwapchain
       current_frame = frames[ (frames.locate(current_frame).value + 1) % frames.count ]
 
     method configure
-trace "----"
       if (context.surface.max_size.min == 0)
         context.is_prepared = false
         context.is_minimized = true
@@ -31,6 +30,7 @@ trace "----"
 
       ensure<<cmd_pool>>( context, context.graphics_queue_family )
       cmd_buffer = cmd_pool.create_command_buffer
+      cmd_buffer.begin
 
       if (context.surface.size.x != -1) surface_size = context.surface.size
       surface_size .= clamped( context.surface.min_size, context.surface.max_size )
@@ -124,7 +124,7 @@ trace "----"
          |        }
          |      };
          |
-                local image = VKSwapchainImage( this, native("(VKNativeImage){swapchain_images[i]}")->VKNativeImage )
+                local image = VKSwapchainImage( context, native("(VKNativeImage){swapchain_images[i]}")->VKNativeImage )
                 images.add( image )
       native
         @|      vkCreateImageView( $context->device->native_device.value, &image_view_config, NULL, &$image->view.value );
@@ -132,14 +132,13 @@ trace "----"
          |  }
          |}
 
-
     method create_semaphores
       forEach (i in 0..<2)
         frames.add( VKFrameControl(i,context) )
       endForEach
       current_frame = frames.first
 
-    method destroy
+    method reset
       (forEach in images).destroy
       cmd_buffer.destroy
       cmd_pool.destroy

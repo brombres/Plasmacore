@@ -92,14 +92,14 @@ trace "----"
       block
         local desired_formats =
         [
-          VKBitFormat.R8G8B8A8_UNORM,
-          VKBitFormat.B8G8R8A8_UNORM,
-          VKBitFormat.A2B10G10R10_UNORM_PACK32,
-          VKBitFormat.A2R10G10B10_UNORM_PACK32,
-          VKBitFormat.R16G16B16A16_SFLOAT
+          VKFormat.R8G8B8A8_UNORM,
+          VKFormat.B8G8R8A8_UNORM,
+          VKFormat.A2B10G10R10_UNORM_PACK32,
+          VKFormat.A2R10G10B10_UNORM_PACK32,
+          VKFormat.R16G16B16A16_SFLOAT
         ]
         forEach (desired_format in desired_formats)
-          if local format = context.surface.formats.first( $.bit_format == desired_format )
+          if local format = context.surface.formats.first( $.format == desired_format )
             context.surface_format = format
             escapeBlock
           endIf
@@ -132,10 +132,8 @@ trace "----"
       create_surface
       configure_surface
 
-    method dispatch_destroy_swapchain [api]
-      if (context.swapchain)
-        context.swapchain.destroy
-      endIf
+    method dispatch_reset [api]
+      reset
 
     method end_render [override]
       trace "----"
@@ -149,4 +147,16 @@ trace "----"
         return
       endIf
 
+      local size = context.swapchain.surface_size
+      context.depth_stencil =
+        VKImage(
+          context,
+          size,
+          VKFormat.D16_UNORM,
+          VKImageUsage.DEPTH_STENCIL_ATTACHMENT,
+          VKImageAspect.DEPTH
+        )
+
+    method reset
+      context.reset
 endClass

@@ -1,6 +1,6 @@
 module Vulkan
 
-enum VKBitFormat
+enum VKFormat
   # Most common/useful formats:
   #   R8G8B8A8_UNORM
   #   B8G8R8A8_UNORM

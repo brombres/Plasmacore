@@ -54,15 +54,15 @@ class VKDevice
          |  device_info.queueCreateInfoCount = 2;
          |}
          |
-         |vkCreateDevice( $context->gpu->native_gpu.value, &device_info, NULL, &$this->native_device.value );
+         |vkCreateDevice( $context->gpu->native_gpu.value, &device_info, NULL, &$native_device.value );
          |
 
       native
         @|
-         |vkGetDeviceQueue( $this->native_device.value, $context->graphics_queue_family.index, 0, &$this->graphics_queue );
+         |vkGetDeviceQueue( $native_device.value, $context->graphics_queue_family.index, 0, &$this->graphics_queue );
          |if ($context->uses_separate_presentation_queue)
          |{
-         |  vkGetDeviceQueue( $this->native_device.value, $context->presentation_queue_family.index, 0, &$this->presentation_queue );
+         |  vkGetDeviceQueue( $native_device.value, $context->presentation_queue_family.index, 0, &$this->presentation_queue );
          |}
          |else
          |{
@@ -82,10 +82,26 @@ class VKDevice
        |printf( "---- vkAcquireNextImageKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkAcquireNextImageKHR.value );
        |printf( "---- vkQueuePresentKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkQueuePresentKHR.value );
 
+    method allocate_memory( size:Int32 )->VKNativeDeviceMemory
+      local native_memory : VKNativeDeviceMemory
+
+      native
+        @|
+         |VkMemoryAllocateInfo alloc_info =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+         |  .pNext = NULL,
+         |  .allocationSize = $size,
+         |  .memoryTypeIndex = 0
+         |};
+         |
+         |vkAllocateMemory( $native_device.value, &alloc_info, NULL, &native_memory.value );
+
+      return native_memory
 
     method procedure_address( name:String )->RogueVoidPointer
       local result : RogueVoidPointer
-      native @|$result.value = $context->vkGetDeviceProcAddr.value( $this->native_device.value, $name->data->as_utf8 );
+      native @|$result.value = $context->vkGetDeviceProcAddr.value( $native_device.value, $name->data->as_utf8 );
       return result
 
       #method swapchain_images->VKSwapchainImage

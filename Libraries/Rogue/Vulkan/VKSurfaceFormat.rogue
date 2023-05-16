@@ -2,12 +2,12 @@ module Vulkan
 
 class VKSurfaceFormat( native_format:VKNativeSurfaceFormat ) [compound]
   METHODS
-    method bit_format->VKBitFormat
-      return VKBitFormat( native("$native_format.value.format")->Int32 )
+    method format->VKFormat
+      return VKFormat( native("$native_format.value.format")->Int32 )
 
     method color_space->VKColorSpace
       return VKColorSpace( native("$native_format.value.colorSpace")->Int32 )
 
     method to->String
-      return "($ $)"(bit_format,color_space)
+      return "($ $)"(format,color_space)
 endClass

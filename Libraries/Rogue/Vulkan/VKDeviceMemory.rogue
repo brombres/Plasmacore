@@ -1,0 +1,10 @@
+module Vulkan
+
+class VKDeviceMemory
+  PROPERTIES
+    context       : VKContext
+    native_memory : VKNativeDeviceMemory
+
+  METHODS
+    method init( context, native_memory )
+endClass

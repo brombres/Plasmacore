@@ -189,6 +189,8 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define DEMO_CMD_POOL (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_pool->native_pool.value)
 #define DEMO_CMD      (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_buffer->native_buffer.value)
 
+#define DEMO_DEPTH (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->depth_stencil)
+
 /*
  * structure to track all objects related to a texture.
  */
@@ -438,7 +440,6 @@ struct demo {
         VkFormat format;
 
         VkImage image;
-        VkMemoryAllocateInfo mem_alloc;
         VkDeviceMemory mem;
         VkImageView view;
     } depth;
@@ -902,7 +903,7 @@ static void demo_draw_build_cmd(struct demo *demo, VkCommandBuffer cmd_buf) {
                                                         .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                                                         .srcQueueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX,
                                                         .dstQueueFamilyIndex = DEMO_PRESENT_QUEUE_FAMILY_INDEX,
-                                                        .image = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->image.value,
+                                                        .image = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->native_image.value,
                                                         .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
         vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0,
@@ -933,7 +934,7 @@ void demo_build_image_ownership_cmd(struct demo *demo, int i) {
                                                     .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                                                     .srcQueueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX,
                                                     .dstQueueFamilyIndex = DEMO_PRESENT_QUEUE_FAMILY_INDEX,
-                                                    .image = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->image.value,
+                                                    .image = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_image.value,
                                                     .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
     vkCmdPipelineBarrier(DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->cmd_graphics_to_present.value, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
@@ -1095,17 +1096,14 @@ static void demo_draw(struct demo *demo) {
         if (err == VK_ERROR_OUT_OF_DATE_KHR) {
             // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
             // must be recreated:
-printf("-------------call demo resize 1\n");
             demo_resize(demo);
         } else if (err == VK_SUBOPTIMAL_KHR) {
             // DEMO_SWAPCHAIN is not as optimal as it could be, but the platform's
             // presentation engine will still present the image correctly.
             break;
         } else if (err == VK_ERROR_SURFACE_LOST_KHR) {
-printf("-------------surface lost 1\n");
             //vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
             demo_create_surface(demo);
-printf("-------------call demo resize 2\n");
             demo_resize(demo);
         } else {
             assert(!err);
@@ -1250,99 +1248,23 @@ VulkanVKSwapchain__dispatch_advance_frame( ROGUE_SINGLETON(PlasmacoreVulkanRende
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
         // DEMO_SWAPCHAIN is out of date (e.g. the window was resized) and
         // must be recreated:
-printf("-------------call demo resize 3\n");
         demo_resize(demo);
     } else if (err == VK_SUBOPTIMAL_KHR) {
         // SUBOPTIMAL could be due to a resize
         VkSurfaceCapabilitiesKHR surfCapabilities;
         err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(DEMO_GPU, DEMO_SURFACE, &surfCapabilities);
         assert(!err);
-printf("-------------surfCapabilities.w:%d DEMO_WIDTH:%d\n",(int)surfCapabilities.currentExtent.width,DEMO_WIDTH);
         if (surfCapabilities.currentExtent.width != (uint32_t)DEMO_WIDTH ||
             surfCapabilities.currentExtent.height != (uint32_t)DEMO_HEIGHT) {
-printf("-------------call demo resize 4\n");
             demo_resize(demo);
         }
     } else if (err == VK_ERROR_SURFACE_LOST_KHR) {
-printf("-------------surface lost 2\n");
         //vkDestroySurfaceKHR(DEMO_INSTANCE, DEMO_SURFACE, NULL);
         demo_create_surface(demo);
-printf("-------------call demo resize 5\n");
         demo_resize(demo);
     } else {
         assert(!err);
     }
-}
-
-static void demo_prepare_depth(struct demo *demo) {
-    const VkFormat depth_format = VK_FORMAT_D16_UNORM;
-    const VkImageCreateInfo image = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .pNext = NULL,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format = depth_format,
-        .extent = {DEMO_WIDTH, DEMO_HEIGHT, 1},
-        .mipLevels = 1,
-        .arrayLayers = 1,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        .flags = 0,
-    };
-
-    VkImageViewCreateInfo view = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext = NULL,
-        .image = VK_NULL_HANDLE,
-        .format = depth_format,
-        .subresourceRange =
-            {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
-        .flags = 0,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
-    };
-
-    if (demo->force_errors) {
-        // Intentionally force a bad pNext value to generate a validation layer error
-        view.pNext = &image;
-    }
-
-    VkMemoryRequirements mem_reqs;
-    VkResult U_ASSERT_ONLY err;
-    bool U_ASSERT_ONLY pass;
-
-    demo->depth.format = depth_format;
-
-    /* create image */
-    err = vkCreateImage(DEMO_DEVICE, &image, NULL, &demo->depth.image);
-    assert(!err);
-    demo_name_object(demo, VK_OBJECT_TYPE_IMAGE, (uint64_t)demo->depth.image, "DepthImage");
-
-    vkGetImageMemoryRequirements(DEMO_DEVICE, demo->depth.image, &mem_reqs);
-    assert(!err);
-
-    demo->depth.mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    demo->depth.mem_alloc.pNext = NULL;
-    demo->depth.mem_alloc.allocationSize = mem_reqs.size;
-    demo->depth.mem_alloc.memoryTypeIndex = 0;
-
-    pass = memory_type_from_properties(demo, mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                       &demo->depth.mem_alloc.memoryTypeIndex);
-    assert(pass);
-
-    /* allocate memory */
-    err = vkAllocateMemory(DEMO_DEVICE, &demo->depth.mem_alloc, NULL, &demo->depth.mem);
-    assert(!err);
-    demo_name_object(demo, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)demo->depth.mem, "DepthMem");
-
-    /* bind memory */
-    err = vkBindImageMemory(DEMO_DEVICE, demo->depth.image, demo->depth.mem, 0);
-    assert(!err);
-
-    /* create image view */
-    view.image = demo->depth.image;
-    err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->depth.view);
-    assert(!err);
-    demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->depth.view, "DepthView");
 }
 
 /* Convert ppm image data from header file into RGBA texture image */
@@ -1768,7 +1690,7 @@ static void demo_prepare_render_pass(struct demo *demo) {
             },
         [1] =
             {
-                .format = demo->depth.format,
+                .format = DEMO_DEPTH.format.value,
                 .flags = 0,
                 .samples = VK_SAMPLE_COUNT_1_BIT,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -2066,7 +1988,7 @@ static void demo_prepare_descriptor_set(struct demo *demo) {
 
 static void demo_prepare_framebuffers(struct demo *demo) {
     VkImageView attachments[2];
-    attachments[1] = demo->depth.view;
+    attachments[1] = DEMO_DEPTH->view.value;
 
     const VkFramebufferCreateInfo fb_info = {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -2123,17 +2045,16 @@ static void demo_prepare(struct demo *demo) {
     //assert(!err);
     //demo_name_object(demo, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)DEMO_CMD, "PrepareCB");
 
-    VkCommandBufferBeginInfo cmd_buf_info = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .pInheritanceInfo = NULL,
-    };
-    err = vkBeginCommandBuffer(DEMO_CMD, &cmd_buf_info);
-    demo_push_cb_label(demo, DEMO_CMD, NULL, "Prepare");
-    assert(!err);
+    //VkCommandBufferBeginInfo cmd_buf_info = {
+    //    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    //    .pNext = NULL,
+    //    .flags = 0,
+    //    .pInheritanceInfo = NULL,
+    //};
+    //err = vkBeginCommandBuffer(DEMO_CMD, &cmd_buf_info);
+    //demo_push_cb_label(demo, DEMO_CMD, NULL, "Prepare");
+    //assert(!err);
 
-    demo_prepare_depth(demo);
     demo_prepare_textures(demo);
     demo_prepare_cube_data_buffers(demo);
 
@@ -2215,7 +2136,7 @@ static void demo_cleanup(struct demo *demo) {
 
     // If the window is currently minimized, demo_resize has already done some cleanup for us.
     if (!DEMO_IS_MINIMIZED) {
-        PlasmacoreVulkanRenderer__dispatch_destroy_swapchain( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
+        PlasmacoreVulkanRenderer__dispatch_reset( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
         for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
             vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value, NULL);
@@ -2236,9 +2157,9 @@ static void demo_cleanup(struct demo *demo) {
         }
         demo->fpDestroySwapchainKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, NULL);
 
-        vkDestroyImageView(DEMO_DEVICE, demo->depth.view, NULL);
-        vkDestroyImage(DEMO_DEVICE, demo->depth.image, NULL);
-        vkFreeMemory(DEMO_DEVICE, demo->depth.mem, NULL);
+        vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->view.value, NULL);
+        vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
+        vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->image_memory.value, NULL);
 
         for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
             vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
@@ -2291,7 +2212,6 @@ static void demo_cleanup(struct demo *demo) {
 
 static void demo_resize(struct demo *demo) {
     uint32_t i;
-printf("----demo_resize\n");
     // Don't react to resize until after first initialization.
     if (!DEMO_IS_PREPARED) {
         if (DEMO_IS_MINIMIZED) {
@@ -2327,9 +2247,9 @@ printf("----demo_resize\n");
         vkDestroySampler(DEMO_DEVICE, demo->textures[i].sampler, NULL);
     }
 
-    vkDestroyImageView(DEMO_DEVICE, demo->depth.view, NULL);
-    vkDestroyImage(DEMO_DEVICE, demo->depth.image, NULL);
-    vkFreeMemory(DEMO_DEVICE, demo->depth.mem, NULL);
+    vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->view.value, NULL);
+    vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
+    vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->image_memory.value, NULL);
 
     for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
@@ -2388,7 +2308,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             if (wParam != SIZE_MINIMIZED) {
                 demo.width = lParam & 0xffff;
                 demo.height = (lParam & 0xffff0000) >> 16;
-printf("-------------call demo resize 6\n");
                 demo_resize(&demo);
             }
             break;
@@ -2522,7 +2441,6 @@ static void demo_handle_xlib_event(struct demo *demo, const XEvent *event) {
             if ((DEMO_WIDTH != event->xconfigure.width) || (DEMO_HEIGHT != event->xconfigure.height)) {
                 DEMO_WIDTH = event->xconfigure.width;
                 DEMO_HEIGHT = event->xconfigure.height;
-printf("-------------call demo resize 7\n");
                 demo_resize(demo);
             }
             break;
@@ -2585,7 +2503,6 @@ static void demo_handle_xcb_event(struct demo *demo, const xcb_generic_event_t *
             if ((DEMO_WIDTH != cfg->width) || (DEMO_HEIGHT != cfg->height)) {
                 DEMO_WIDTH = cfg->width;
                 DEMO_HEIGHT = cfg->height;
-printf("-------------call demo resize 8\n");
                 demo_resize(demo);
             }
         } break;
@@ -2668,7 +2585,6 @@ static void handle_surface_configure(void *data, struct xdg_surface *xdg_surface
     struct demo *demo = (struct demo *)data;
     xdg_surface_ack_configure(xdg_surface, serial);
     if (demo->xdg_surface_has_been_configured) {
-printf("-------------call demo resize 9\n");
         demo_resize(demo);
     }
     demo->xdg_surface_has_been_configured = 1;
@@ -3038,7 +2954,6 @@ static void demo_create_device(struct demo *demo) {
 }
 
 static void demo_create_surface(struct demo *demo) {
-printf( "---- create surface\n" );
 
     PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreVulkanRenderer);
     PlasmacoreVulkanRenderer__dispatch_create_surface( renderer );
@@ -3047,7 +2962,6 @@ printf( "---- create surface\n" );
 static void demo_init_vk_swapchain(struct demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
-printf("----demo_init_vk_swapchain\n");
     demo_create_surface(demo);
 
 //TODO

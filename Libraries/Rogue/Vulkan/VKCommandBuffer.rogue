@@ -20,4 +20,16 @@ class VKCommandBuffer
 
     method on_cleanup
       destroy
+
+    method begin( &simultaneous )
+      native
+        @|VkCommandBufferBeginInfo cmd_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+         |  .pNext = NULL,
+         |  .flags = $simultaneous ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : 0,
+         |  .pInheritanceInfo = NULL
+         |};
+         |vkBeginCommandBuffer( $native_buffer.value, &cmd_config );
+
 endClass

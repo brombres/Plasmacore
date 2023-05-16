@@ -9,7 +9,7 @@ $macro SET_NATIVE_PROCEDURE<<$var_context,$source_context,$procedure_name>>
 $endMacro
 
 $include Vulkan/VKApplicationInfo
-$include Vulkan/VKBitFormat
+$include Vulkan/VKFormat
 $include Vulkan/VKColorSpace
 $include Vulkan/VKCommandBuffer
 $include Vulkan/VKCommandPool
@@ -18,6 +18,9 @@ $include Vulkan/VKContext
 $include Vulkan/VKDevice
 $include Vulkan/VKDeviceConfig
 $include Vulkan/VKDeviceType
+$include Vulkan/VKImage
+$include Vulkan/VKImageAspect
+$include Vulkan/VKImageUsage
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceConfig
 $include Vulkan/VKGPU

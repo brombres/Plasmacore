@@ -1,12 +1,9 @@
 module Vulkan
 
-class VKSwapchainImage
+class VKSwapchainImage : VKImage
   PROPERTIES
-    swapchain               : VKSwapchain
-    image                   : VKNativeImage
     cmd                     : VKCommandBuffer
     cmd_graphics_to_present : VKNativeCommandBuffer
-    view                    : VKNativeImageView
     uniform_buffer          : VKNativeBuffer
     uniform_memory          : VKNativeDeviceMemory
     uniform_memory_ptr      : RogueVoidPointer
@@ -14,15 +11,15 @@ class VKSwapchainImage
     descriptor_set          : VKNativeDescriptorSet
 
   METHODS
-    method init( swapchain, image )
-      cmd = swapchain.cmd_pool.create_command_buffer
+    method init( context:VKContext, native_image:VKNativeImage )
+      prior.init( context, native_image )
+      cmd = context.swapchain.cmd_pool.create_command_buffer
 
     method destroy
       if (cmd)
         cmd.destroy
         cmd = null
       endIf
+      prior.destroy
 
-    method on_cleanup
-      destroy
 endClass
