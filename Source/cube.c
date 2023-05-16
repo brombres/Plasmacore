@@ -1454,6 +1454,8 @@ static void demo_prepare_textures(struct demo *demo) {
     VkFormatProperties props;
     uint32_t i;
 
+    PlasmacoreVulkanRenderer__dispatch_load_assets( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
+
     vkGetPhysicalDeviceFormatProperties(DEMO_GPU, tex_format, &props);
 
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
@@ -1690,7 +1692,7 @@ static void demo_prepare_render_pass(struct demo *demo) {
             },
         [1] =
             {
-                .format = DEMO_DEPTH.format.value,
+                .format = DEMO_DEPTH->format.value,
                 .flags = 0,
                 .samples = VK_SAMPLE_COUNT_1_BIT,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -2227,7 +2229,7 @@ static void demo_resize(struct demo *demo) {
     DEMO_IS_PREPARED = false;
     vkDeviceWaitIdle(DEMO_DEVICE);
 
-    PlasmacoreVulkanRenderer__dispatch_destroy_swapchain( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
+    PlasmacoreVulkanRenderer__dispatch_reset( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
     for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value, NULL);

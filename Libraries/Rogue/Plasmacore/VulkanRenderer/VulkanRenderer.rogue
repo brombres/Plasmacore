@@ -2,10 +2,13 @@ module Plasmacore
 
 uses Vulkan
 
+$include LunarG
+
 class VulkanRenderer : Renderer [essential abstract singleton]
   PROPERTIES
-    context        = VKContext()
-    #swapchain                        : VKSwapchain
+    context = VKContext()
+
+    textures = VKTextureImage[]  # FIXME: only needed during development to port demo
 
   METHODS
     method init_object
@@ -125,6 +128,10 @@ trace "----"
     method dispatch_create_device [api]
       create_device
 
+    method dispatch_load_assets [api]
+      trace "----"
+      textures.add( load_texture(LunarG.bytes) )
+
     method dispatch_prepare [api]
       prepare
 
@@ -138,6 +145,14 @@ trace "----"
     method end_render [override]
       trace "----"
       #swapchain.advance_frame
+
+    method load_texture( file:File )->VKTextureImage
+      trace "TODO " file
+      return null
+
+    method load_texture( bytes:Byte[] )->VKTextureImage
+      trace "TODO " bytes.count
+      return null
 
     method prepare
       context.swapchain.configure

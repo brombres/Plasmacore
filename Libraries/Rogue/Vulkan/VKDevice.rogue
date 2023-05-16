@@ -95,7 +95,7 @@ class VKDevice
          |  .memoryTypeIndex = 0
          |};
          |
-         |vkAllocateMemory( $native_device.value, &alloc_info, NULL, &native_memory.value );
+         |vkAllocateMemory( $native_device.value, &alloc_info, NULL, &$native_memory.value );
 
       return native_memory
 

@@ -1,0 +1,13 @@
+module Vulkan
+
+class VKTextureImage : VKImage
+  PROPERTIES
+    native_sampler : VKNativeSampler
+    native_buffer  : VKNativeBuffer
+    native_layout  : VKNativeImageLayout
+
+  METHODS
+    method init( context:VKContext, native_image:VKNativeImage )
+      prior.init( context, native_image )
+
+endClass

@@ -31,6 +31,7 @@ $include Vulkan/VKSurfaceFormat
 $include Vulkan/VKSurfaceTransform
 $include Vulkan/VKSwapchain
 $include Vulkan/VKSwapchainImage
+$include Vulkan/VKTextureImage
 
 #$include Vulkan/VKRenderBuffer
 
@@ -47,8 +48,10 @@ nativeType<<"VkDeviceMemory">>     VKNativeDeviceMemory
 nativeType<<"VkFramebuffer">>      VKNativeFramebuffer
 nativeType<<"VkPhysicalDevice">>   VKNativeGPU
 nativeType<<"VkImage">>            VKNativeImage
+nativeType<<"VkImageLayout">>      VKNativeImageLayout
 nativeType<<"VkImageView">>        VKNativeImageView
 nativeType<<"VkInstance">>         VKNativeInstance
+nativeType<<"VkSampler">>          VKNativeSampler
 nativeType<<"VkSurfaceKHR">>       VKNativeSurface
 nativeType<<"VkSurfaceFormatKHR">> VKNativeSurfaceFormat
 
