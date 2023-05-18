@@ -1356,6 +1356,7 @@ static void demo_prepare_texture_buffer(struct demo *demo, const char *filename,
     err = vkMapMemory(DEMO_DEVICE, tex_obj->mem, 0, tex_obj->mem_alloc.allocationSize, 0, &data);
     assert(!err);
 
+printf("---load texture 1\n");
     if (!loadTexture(filename, data, &layout, &tex_width, &tex_height)) {
         fprintf(stderr, "Error loading texture: %s\n", filename);
     }
@@ -1418,6 +1419,7 @@ static void demo_prepare_texture_image(struct demo *demo, const char *filename, 
     err = vkBindImageMemory(DEMO_DEVICE, tex_obj->image, tex_obj->mem, 0);
     assert(!err);
 
+printf("---check VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT\n");
     if (required_props & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
         const VkImageSubresource subres = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -1432,6 +1434,7 @@ static void demo_prepare_texture_image(struct demo *demo, const char *filename, 
         err = vkMapMemory(DEMO_DEVICE, tex_obj->mem, 0, tex_obj->mem_alloc.allocationSize, 0, &data);
         assert(!err);
 
+printf("---load texture 2\n");
         if (!loadTexture(filename, data, &layout, &tex_width, &tex_height)) {
             fprintf(stderr, "Error loading texture: %s\n", filename);
         }
@@ -1461,19 +1464,7 @@ static void demo_prepare_textures(struct demo *demo) {
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         VkResult U_ASSERT_ONLY err;
 
-        if ((props.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) && !demo->use_staging_buffer) {
-            demo_push_cb_label(demo, DEMO_CMD, NULL, "DirectTexture(%u)", i);
-            /* Device can texture using linear textures */
-            demo_prepare_texture_image(demo, tex_files[i], &demo->textures[i], VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_SAMPLED_BIT,
-                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            // Nothing in the pipeline needs to be complete to start, and don't allow fragment
-            // shader to run until layout transition completes
-            demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PREINITIALIZED,
-                                  demo->textures[i].imageLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-            demo->staging_texture.image = 0;
-            demo_pop_cb_label(demo, DEMO_CMD);  // "DirectTexture"
-        } else if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) {
+        if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) {
             /* Must use staging buffer to copy linear texture to optimized */
             demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingTexture(%u)", i);
 
@@ -2023,39 +2014,6 @@ static void demo_prepare(struct demo *demo) {
     }
 
     VkResult U_ASSERT_ONLY err;
-
-    //if (DEMO_CMD_POOL == VK_NULL_HANDLE)
-    //{
-    //    const VkCommandPoolCreateInfo cmd_pool_info = {
-    //        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-    //        .pNext = NULL,
-    //        .queueFamilyIndex = DEMO_GRAPHICS_QUEUE_FAMILY_INDEX,
-    //        .flags = 0,
-    //    };
-    //    err = vkCreateCommandPool(DEMO_DEVICE, &cmd_pool_info, NULL, &DEMO_CMD_POOL);
-    //    assert(!err);
-    //}
-
-    //const VkCommandBufferAllocateInfo cmd = {
-    //    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-    //    .pNext = NULL,
-    //    .commandPool = DEMO_CMD_POOL,
-    //    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-    //    .commandBufferCount = 1,
-    //};
-    //err = vkAllocateCommandBuffers(DEMO_DEVICE, &cmd, &DEMO_CMD);
-    //assert(!err);
-    //demo_name_object(demo, VK_OBJECT_TYPE_COMMAND_BUFFER, (uint64_t)DEMO_CMD, "PrepareCB");
-
-    //VkCommandBufferBeginInfo cmd_buf_info = {
-    //    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    //    .pNext = NULL,
-    //    .flags = 0,
-    //    .pInheritanceInfo = NULL,
-    //};
-    //err = vkBeginCommandBuffer(DEMO_CMD, &cmd_buf_info);
-    //demo_push_cb_label(demo, DEMO_CMD, NULL, "Prepare");
-    //assert(!err);
 
     demo_prepare_textures(demo);
     demo_prepare_cube_data_buffers(demo);

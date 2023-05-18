@@ -1,0 +1,7 @@
+module Vulkan
+
+enum VKSharingMode
+  CATEGORIES
+    EXCLUSIVE  = 0
+    CONCURRENT = 1
+endEnum

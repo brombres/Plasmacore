@@ -17,6 +17,18 @@ class VKGPU
               |vkGetPhysicalDeviceFeatures( $this->native_gpu.value, &$this->features );
               |vkGetPhysicalDeviceMemoryProperties( $this->native_gpu.value, &$this->memory_properties );
 
+    method memory_type_index( possible_types:Int32, requirements_mask:Int32 )->Int32
+      local type_count = native( "VK_MAX_MEMORY_TYPES" )->Int32
+      forEach (i in 0..<type_count)
+        local properties = native( "$this->memory_properties.memoryTypes[$i].propertyFlags" )->Int32
+        if ((possible_types & (1:<<:i))? and ((properties & requirements_mask) == requirements_mask))
+          return i
+        endIf
+      endForEach
+
+      log.println "[Vulkan] ERROR: Required memory type not found."
+      return 0
+
     method name->String
       if (not @name)
         native @|$name = RogueString_create( (const char*) &($this->properties.deviceName) );

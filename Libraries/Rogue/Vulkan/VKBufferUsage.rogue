@@ -1,0 +1,35 @@
+module Vulkan
+
+enum VKBufferUsage [bitflags]
+  CATEGORIES
+    TRANSFER_SRC                                 = 0x00000001
+    TRANSFER_DST                                 = 0x00000002
+    UNIFORM_TEXEL_BUFFER                         = 0x00000004
+    STORAGE_TEXEL_BUFFER                         = 0x00000008
+    UNIFORM_BUFFER                               = 0x00000010
+    STORAGE_BUFFER                               = 0x00000020
+    INDEX_BUFFER                                 = 0x00000040
+    VERTEX_BUFFER                                = 0x00000080
+    INDIRECT_BUFFER                              = 0x00000100
+    SHADER_DEVICE_ADDRESS                        = 0x00020000
+    VIDEO_DECODE_SRC                             = 0x00002000
+    VIDEO_DECODE_DST                             = 0x00004000
+    TRANSFORM_FEEDBACK_BUFFER                    = 0x00000800
+    TRANSFORM_FEEDBACK_COUNTER_BUFFER            = 0x00001000
+    CONDITIONAL_RENDERING                        = 0x00000200
+    ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY = 0x00080000
+    ACCELERATION_STRUCTURE_STORAGE               = 0x00100000
+    SHADER_BINDING_TABLE                         = 0x00000400
+    VIDEO_ENCODE_DST                             = 0x00008000
+    VIDEO_ENCODE_SRC                             = 0x00010000
+    SAMPLER_DESCRIPTOR_BUFFER                    = 0x00200000
+    RESOURCE_DESCRIPTOR_BUFFER                   = 0x00400000
+    PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER           = 0x04000000
+    MICROMAP_BUILD_INPUT_READ_ONLY               = 0x00800000
+    MICROMAP_STORAGE                             = 0x01000000
+
+  DEFINITIONS
+    RAY_TRACING                                  = SHADER_BINDING_TABLE
+    SHADER_DEVICE_ADDRESS                        = SHADER_DEVICE_ADDRESS
+    SHADER_DEVICE_ADDRESS                        = SHADER_DEVICE_ADDRESS
+endEnum

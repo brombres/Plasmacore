@@ -75,13 +75,6 @@ class VKDevice
       SET_NATIVE_PROCEDURE<<context,this,vkAcquireNextImageKHR>>
       SET_NATIVE_PROCEDURE<<context,this,vkQueuePresentKHR>>
 
-      native
-      @|printf( "---- vkCreateSwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkCreateSwapchainKHR.value );
-       |printf( "---- vkDestroySwapchainKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkDestroySwapchainKHR.value );
-       |printf( "---- vkGetSwapchainImagesKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkGetSwapchainImagesKHR.value );
-       |printf( "---- vkAcquireNextImageKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkAcquireNextImageKHR.value );
-       |printf( "---- vkQueuePresentKHR:%lld\n",(RogueInt64)(intptr_t)$context->vkQueuePresentKHR.value );
-
     method allocate_memory( size:Int32 )->VKNativeDeviceMemory
       local native_memory : VKNativeDeviceMemory
 
@@ -98,6 +91,9 @@ class VKDevice
          |vkAllocateMemory( $native_device.value, &alloc_info, NULL, &$native_memory.value );
 
       return native_memory
+
+    method create_buffer( size:Int32, usage:VKBufferUsage, &concurrent )
+      return VKBuffer( context, size, usage, &=concurrent )
 
     method procedure_address( name:String )->RogueVoidPointer
       local result : RogueVoidPointer

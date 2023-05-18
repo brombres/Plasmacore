@@ -1,6 +1,6 @@
 module Vulkan
 
-enum VKSurfaceTransform
+enum VKSurfaceTransform [bitflags]
   IDENTITY                     = 0x00000001
   ROTATE_90                    = 0x00000002
   ROTATE_180                   = 0x00000004

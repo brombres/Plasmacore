@@ -1,4 +1,4 @@
-enum VKImageAspect
+enum VKImageAspect [bitflags]
   CATEGORIES
     NONE           = 0
     COLOR          = 0x00000001

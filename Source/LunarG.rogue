@@ -1,4 +1,22 @@
+uses Bitmap
+
 class LunarG
+  GLOBAL METHODS
+    method load->Bitmap
+      local iterator = bytes.iterator
+
+      loop (15) iterator.read  # "P6\n256 256\n255\n"
+
+      local pixels = Color[]( 256*256 )
+      loop (256*256)
+        local r = iterator.read->Int32
+        local g = iterator.read->Int32
+        local b = iterator.read->Int32
+        pixels.add( Color(r,g,b) )
+      endLoop
+
+      return Bitmap( 256, 256, pixels )
+
   GLOBAL PROPERTIES
     bytes = Byte[](
       "50360A323536203235360A3235350A75757575757575757575757575757575757575757575757575" ...

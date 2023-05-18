@@ -9,6 +9,8 @@ $macro SET_NATIVE_PROCEDURE<<$var_context,$source_context,$procedure_name>>
 $endMacro
 
 $include Vulkan/VKApplicationInfo
+$include Vulkan/VKBuffer
+$include Vulkan/VKBufferUsage
 $include Vulkan/VKFormat
 $include Vulkan/VKColorSpace
 $include Vulkan/VKCommandBuffer
@@ -24,8 +26,10 @@ $include Vulkan/VKImageUsage
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceConfig
 $include Vulkan/VKGPU
+$include Vulkan/VKMemoryProperty
 $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
+$include Vulkan/VKSharingMode
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
 $include Vulkan/VKSurfaceTransform

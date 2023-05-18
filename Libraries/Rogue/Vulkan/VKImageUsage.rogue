@@ -1,6 +1,6 @@
 module Vulkan
 
-enum VKImageUsage
+enum VKImageUsage [bitflags]
   CATEGORIES
     TRANSFER_SRC                     = 0x00000001
     TRANSFER_DST                     = 0x00000002
