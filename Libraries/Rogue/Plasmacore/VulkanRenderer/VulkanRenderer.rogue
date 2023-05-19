@@ -89,9 +89,6 @@ trace "----"
       context.uses_separate_presentation_queue =
           (context.graphics_queue_family.index != context.presentation_queue_family.index)
 
-      trace "----" context.graphics_queue_family
-      trace "----" context.presentation_queue_family
-
       block
         local desired_formats =
         [
@@ -130,7 +127,7 @@ trace "----"
 
     method dispatch_load_assets [api]
       trace "----"
-      textures.add( load_texture(LunarG.bytes) )
+      textures.add( load_texture(LunarG.bitmap) )
 
     method dispatch_prepare [api]
       prepare
@@ -146,13 +143,21 @@ trace "----"
       trace "----"
       #swapchain.advance_frame
 
+    method load_texture( bitmap:Bitmap )->VKTextureImage
+      local buffer = context.device.create_buffer( bitmap.size.product * 4, VKBufferUsage.TRANSFER_SRC )
+      buffer.set( bitmap )
+      trace "TODO: finish"
+      return null
+
+      #{
     method load_texture( file:File )->VKTextureImage
       trace "TODO " file
       return null
 
     method load_texture( bytes:Byte[] )->VKTextureImage
-      trace "TODO " bytes.count
+      local buffer = context.device.create_buffer(
       return null
+      }#
 
     method prepare
       context.swapchain.configure
@@ -164,7 +169,7 @@ trace "----"
 
       local size = context.swapchain.surface_size
       context.depth_stencil =
-        VKImage(
+        VKBufferImage(
           context,
           size,
           VKFormat.D16_UNORM,

@@ -2,7 +2,7 @@ uses Bitmap
 
 class LunarG
   GLOBAL METHODS
-    method load->Bitmap
+    method bitmap->Bitmap
       local iterator = bytes.iterator
 
       loop (15) iterator.read  # "P6\n256 256\n255\n"

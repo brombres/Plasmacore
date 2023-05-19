@@ -1,6 +1,6 @@
 module Vulkan
 
-enum VkMemoryProperty [bitflags]
+enum VKMemoryProperty [bitflags]
   CATEGORIES
     DEVICE_LOCAL     = 0x00000001
     HOST_VISIBLE     = 0x00000002

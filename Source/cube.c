@@ -2119,7 +2119,7 @@ static void demo_cleanup(struct demo *demo) {
 
         vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->view.value, NULL);
         vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
-        vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->image_memory.value, NULL);
+        vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->native_memory.value, NULL);
 
         for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
             vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
@@ -2209,7 +2209,7 @@ static void demo_resize(struct demo *demo) {
 
     vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->view.value, NULL);
     vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
-    vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->image_memory.value, NULL);
+    vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->native_memory.value, NULL);
 
     for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);

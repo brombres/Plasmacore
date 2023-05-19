@@ -9,10 +9,10 @@ class VKSwapchainImage : VKImage
     uniform_memory_ptr      : RogueVoidPointer
     framebuffer             : VKNativeFramebuffer
     descriptor_set          : VKNativeDescriptorSet
+    view                    : VKNativeImageView
 
   METHODS
-    method init( context:VKContext, native_image:VKNativeImage )
-      prior.init( context, native_image )
+    method init( context, native_image )
       cmd = context.swapchain.cmd_pool.create_command_buffer
 
     method destroy
@@ -20,6 +20,5 @@ class VKSwapchainImage : VKImage
         cmd.destroy
         cmd = null
       endIf
-      prior.destroy
 
 endClass

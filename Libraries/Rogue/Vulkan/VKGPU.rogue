@@ -17,11 +17,11 @@ class VKGPU
               |vkGetPhysicalDeviceFeatures( $this->native_gpu.value, &$this->features );
               |vkGetPhysicalDeviceMemoryProperties( $this->native_gpu.value, &$this->memory_properties );
 
-    method memory_type_index( possible_types:Int32, requirements_mask:Int32 )->Int32
+    method memory_type_index( possible_types:Int32, requirements_mask:VKMemoryProperty )->Int32
       local type_count = native( "VK_MAX_MEMORY_TYPES" )->Int32
       forEach (i in 0..<type_count)
         local properties = native( "$this->memory_properties.memoryTypes[$i].propertyFlags" )->Int32
-        if ((possible_types & (1:<<:i))? and ((properties & requirements_mask) == requirements_mask))
+        if ((possible_types & (1:<<:i))? and ((properties & requirements_mask.value) == requirements_mask.value))
           return i
         endIf
       endForEach

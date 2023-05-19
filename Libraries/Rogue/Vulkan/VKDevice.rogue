@@ -92,8 +92,9 @@ class VKDevice
 
       return native_memory
 
-    method create_buffer( size:Int32, usage:VKBufferUsage, &concurrent )
-      return VKBuffer( context, size, usage, &=concurrent )
+    method create_buffer( size:Int32, usage:VKBufferUsage,
+        required_properties=VKMemoryProperty[HOST_VISIBLE,HOST_COHERENT]:VKMemoryProperty, &concurrent )->VKBuffer
+      return VKBuffer( context, size, usage, required_properties, &=concurrent )
 
     method procedure_address( name:String )->RogueVoidPointer
       local result : RogueVoidPointer

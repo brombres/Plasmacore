@@ -1,5 +1,7 @@
 module Vulkan
 
+uses Bitmap [export]
+
 $macro NATIVE_PROCEDURE<<$procedure_name>>
   $procedure_name : VKNativeProcedure<<$procedure_name>>
 $endMacro
@@ -10,6 +12,7 @@ $endMacro
 
 $include Vulkan/VKApplicationInfo
 $include Vulkan/VKBuffer
+$include Vulkan/VKBufferImage
 $include Vulkan/VKBufferUsage
 $include Vulkan/VKFormat
 $include Vulkan/VKColorSpace

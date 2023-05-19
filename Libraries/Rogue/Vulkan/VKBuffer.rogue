@@ -2,13 +2,16 @@ module Vulkan
 
 class VKBuffer
   PROPERTIES
-    context       : VKContext
-    native_buffer : VKNativeBuffer
-    native_memory : VKNativeDeviceMemory
+    context         : VKContext
+    allocation_size : Int32
+    native_buffer   : VKNativeBuffer
+    native_memory   : VKNativeDeviceMemory
 
   METHODS
     method init( context, size:Int32, usage:VKBufferUsage,
-        memory_requirements=VKMemoryProperty.HOST_VISIBLE|VKMemoryProperty.HOST_COHERENT, &concurrent )
+        required_properties=VKMemoryProperty[HOST_VISIBLE,HOST_COHERENT]:VKMemoryProperty, &concurrent )
+      local mem_types      : Int32
+
       native
         @|VkDevice device = $context->device->native_device.value;
          |
@@ -24,28 +27,34 @@ class VKBuffer
          |  .pQueueFamilyIndices = NULL
          |};
          |
-         |vkCreateBuffer( device, &buffer_config, NULL, &native_buffer.value );
+         |vkCreateBuffer( device, &buffer_config, NULL, &$native_buffer.value );
          |
          |VkMemoryRequirements mem_reqs;
-         |vkGetBufferMemoryRequirements( device, native_buffer.value, &mem_reqs );
-         |
-         |VkMemoryAllocateInfo alloc_info =
+         |vkGetBufferMemoryRequirements( device, $native_buffer.value, &mem_reqs );
+         |$mem_types = mem_reqs.memoryTypeBits;
+         |$allocation_size = mem_reqs.size;
+
+         local mem_type_index = context.gpu.memory_type_index( mem_types, required_properties )
+
+      native
+        @|VkMemoryAllocateInfo alloc_info =
          |{
          |  .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
          |  .pNext = NULL,
-         |  .allocationSize = mem_reqs.size,
-         |  .memoryTypeIndex = 0
+         |  .allocationSize = $allocation_size,
+         |  .memoryTypeIndex = $mem_type_index
          |};
          |
-         |VkFlags requirements = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-         |pass = memory_type_from_properties(demo, mem_reqs.memoryTypeBits, requirements, &tex_obj->mem_alloc.memoryTypeIndex);
-         |assert(pass);
+         |vkAllocateMemory( device, &alloc_info, NULL, &$native_memory.value );
+         |vkBindBufferMemory( device, $native_buffer.value, $native_memory.value, 0 );
+
+    method set( bitmap:Bitmap )
+      local size = bitmap.size.product * 4
+      native
+        @|VkDevice device = $context->device->native_device.value;
+         |void* data;
          |
-         |err = vkAllocateMemory(DEMO_DEVICE, &tex_obj->mem_alloc, NULL, &(tex_obj->mem));
-         |assert(!err);
-         |demo_name_object(demo, VK_OBJECT_TYPE_DEVICE_MEMORY, (uint64_t)tex_obj->mem, "TexBufMemory(%s)", filename);
-         |
-         |/* bind memory */
-         |err = vkBindBufferMemory(DEMO_DEVICE, tex_obj->buffer, tex_obj->mem, 0);
-         |assert(!err);
+         |vkMapMemory( device, $native_memory.value, 0, $allocation_size, 0, &data );
+         |memcpy( data, $bitmap->pixels->data, $size );
+         |vkUnmapMemory( device, $native_memory.value );
 endClass

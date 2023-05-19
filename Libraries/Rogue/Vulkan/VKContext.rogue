@@ -17,7 +17,7 @@ class VKContext
     is_prepared                      : Logical
     is_minimized                     : Logical
 
-    depth_stencil : VKImage
+    depth_stencil : VKBufferImage
 
     # VkInstance functions
     NATIVE_PROCEDURE<<vkGetDeviceProcAddr>>
