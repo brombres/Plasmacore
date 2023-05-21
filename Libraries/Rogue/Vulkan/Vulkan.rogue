@@ -12,7 +12,7 @@ $endMacro
 
 $include Vulkan/VKApplicationInfo
 $include Vulkan/VKBuffer
-$include Vulkan/VKBufferImage
+$include Vulkan/VKAllocatedImage
 $include Vulkan/VKBufferUsage
 $include Vulkan/VKFormat
 $include Vulkan/VKColorSpace
@@ -25,6 +25,7 @@ $include Vulkan/VKDeviceConfig
 $include Vulkan/VKDeviceType
 $include Vulkan/VKImage
 $include Vulkan/VKImageAspect
+$include Vulkan/VKImageLayout
 $include Vulkan/VKImageUsage
 $include Vulkan/VKInstance
 $include Vulkan/VKInstanceConfig

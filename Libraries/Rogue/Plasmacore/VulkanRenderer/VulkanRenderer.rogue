@@ -144,10 +144,7 @@ trace "----"
       #swapchain.advance_frame
 
     method load_texture( bitmap:Bitmap )->VKTextureImage
-      local buffer = context.device.create_buffer( bitmap.size.product * 4, VKBufferUsage.TRANSFER_SRC )
-      buffer.set( bitmap )
-      trace "TODO: finish"
-      return null
+      return VKTextureImage( context, bitmap )
 
       #{
     method load_texture( file:File )->VKTextureImage
@@ -169,7 +166,7 @@ trace "----"
 
       local size = context.swapchain.surface_size
       context.depth_stencil =
-        VKBufferImage(
+        VKAllocatedImage(
           context,
           size,
           VKFormat.D16_UNORM,

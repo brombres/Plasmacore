@@ -1,8 +1,7 @@
 module Vulkan
 
-class VKBufferImage : VKImage
+class VKAllocatedImage : VKImage
   PROPERTIES
-    native_image  : VKNativeImage
     view          : VKNativeImageView
     format        : VKFormat
     native_memory : VKNativeDeviceMemory
@@ -11,6 +10,7 @@ class VKBufferImage : VKImage
   METHODS
     method init( context, size, format, usage:VKImageUsage, aspect_mask:VKImageAspect )
       local image_memory_size : Int32
+      local type_bits : Int32
 
       native
         @|VkDevice device = $context->device->native_device.value;
@@ -28,7 +28,7 @@ class VKBufferImage : VKImage
          |    .samples = VK_SAMPLE_COUNT_1_BIT,
          |    .tiling = VK_IMAGE_TILING_OPTIMAL,
          |    .usage = (VkImageUsageFlags) $usage.value,
-         |    .flags = 0,
+         |    .flags = 0
          |  };
          |
          |  vkCreateImage( device, &image_config, NULL, &$native_image.value );
@@ -49,6 +49,13 @@ class VKBufferImage : VKImage
          |      .baseArrayLayer = 0,
          |      .layerCount     = 1
          |    },
+         |    .components =
+         |    {
+         |      VK_COMPONENT_SWIZZLE_IDENTITY,
+         |      VK_COMPONENT_SWIZZLE_IDENTITY,
+         |      VK_COMPONENT_SWIZZLE_IDENTITY,
+         |      VK_COMPONENT_SWIZZLE_IDENTITY
+         |    },
          |    .flags    = 0,
          |    .viewType = VK_IMAGE_VIEW_TYPE_2D
          |  };
@@ -60,9 +67,10 @@ class VKBufferImage : VKImage
          |  VkMemoryRequirements mem_reqs;
          |  vkGetImageMemoryRequirements( device, $native_image.value, &mem_reqs );
          |  $image_memory_size = (RogueInt32) mem_reqs.size;
+         |  $type_bits = mem_reqs.memoryTypeBits;
          |}
 
-         native_memory = context.device.allocate_memory( image_memory_size )
+         native_memory = context.device.allocate_memory( image_memory_size, type_bits )
 
       native
       @|vkBindImageMemory( device, $native_image.value, $native_memory.value, 0 );

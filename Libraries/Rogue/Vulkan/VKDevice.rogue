@@ -75,8 +75,10 @@ class VKDevice
       SET_NATIVE_PROCEDURE<<context,this,vkAcquireNextImageKHR>>
       SET_NATIVE_PROCEDURE<<context,this,vkQueuePresentKHR>>
 
-    method allocate_memory( size:Int32 )->VKNativeDeviceMemory
+    method allocate_memory( size:Int32, mem_types:Int32,
+        property_requirements=VKMemoryProperty.DEVICE_LOCAL:VKMemoryProperty )->VKNativeDeviceMemory
       local native_memory : VKNativeDeviceMemory
+      local mem_index = context.gpu.memory_type_index( mem_types, property_requirements )
 
       native
         @|
@@ -85,7 +87,7 @@ class VKDevice
          |  .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
          |  .pNext = NULL,
          |  .allocationSize = $size,
-         |  .memoryTypeIndex = 0
+         |  .memoryTypeIndex = $mem_index
          |};
          |
          |vkAllocateMemory( $native_device.value, &alloc_info, NULL, &$native_memory.value );

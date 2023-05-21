@@ -1,13 +1,17 @@
 module Vulkan
 
-class VKTextureImage : VKImage
+class VKTextureImage : VKAllocatedImage
   PROPERTIES
+    buffer         : VKBuffer
     native_sampler : VKNativeSampler
-    native_buffer  : VKNativeBuffer
     native_layout  : VKNativeImageLayout
 
   METHODS
-    #method init( context:VKContext, native_image:VKNativeImage )
-      #prior.init( context, native_image )
+    method init( context, bitmap:Bitmap )
+      buffer = context.device.create_buffer( bitmap.size.product * 4, VKBufferUsage.TRANSFER_SRC )
+      buffer.set( bitmap )
+
+      #prior.init( context, bitmap.size, VKFormat.B8G8R8A8_UNORM, VKImageUsage[TRANSFER_DST,SAMPLED], VKImageAspect
+      trace "TODO: finish"
 
 endClass

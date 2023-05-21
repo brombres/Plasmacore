@@ -1464,7 +1464,6 @@ static void demo_prepare_textures(struct demo *demo) {
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         VkResult U_ASSERT_ONLY err;
 
-        if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) {
             /* Must use staging buffer to copy linear texture to optimized */
             demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingTexture(%u)", i);
 
@@ -1475,6 +1474,29 @@ static void demo_prepare_textures(struct demo *demo) {
                                        (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+
+        VkImageViewCreateInfo view = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = NULL,
+            .image = VK_NULL_HANDLE,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = tex_format,
+            .components =
+                {
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                    VK_COMPONENT_SWIZZLE_IDENTITY,
+                },
+            .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+            .flags = 0,
+        };
+
+        /* create image view */
+        view.image = demo->textures[i].image;
+        err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
+        demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
+        assert(!err);
             demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PREINITIALIZED,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                   VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1499,11 +1521,6 @@ static void demo_prepare_textures(struct demo *demo) {
                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
             demo_pop_cb_label(demo, DEMO_CMD);  // "StagingTexture"
 
-        } else {
-            /* Can't support VK_FORMAT_R8G8B8A8_UNORM !? */
-            assert(!"No support for R8G8B8A8_UNORM as texture image format");
-        }
-
         const VkSamplerCreateInfo sampler = {
             .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
             .pNext = NULL,
@@ -1523,33 +1540,11 @@ static void demo_prepare_textures(struct demo *demo) {
             .unnormalizedCoordinates = VK_FALSE,
         };
 
-        VkImageViewCreateInfo view = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = NULL,
-            .image = VK_NULL_HANDLE,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = tex_format,
-            .components =
-                {
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                },
-            .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-            .flags = 0,
-        };
-
         /* create sampler */
         err = vkCreateSampler(DEMO_DEVICE, &sampler, NULL, &demo->textures[i].sampler);
         assert(!err);
         demo_name_object(demo, VK_OBJECT_TYPE_SAMPLER, (uint64_t)demo->textures[i].sampler, "Sampler(%u)", i);
 
-        /* create image view */
-        view.image = demo->textures[i].image;
-        err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
-        demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
-        assert(!err);
     }
 }
 
