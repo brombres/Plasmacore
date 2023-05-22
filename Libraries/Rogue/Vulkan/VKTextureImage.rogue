@@ -15,15 +15,67 @@ class VKTextureImage : VKAllocatedImage
       trace "TODO: finish"
 
       #local layout = VkImageLayout.SHADER_READ_ONLY_OPTIMAL
-      # Set image layout be ready for copy
-      context.swapchain.cmd_buffer.apply_image_layout(
+      context.swapchain.cmd_buffer.cmd_set_image_layout(
         this,
         VKImageAspect.COLOR,
         VKImageLayout.PREINITIALIZED,
         VKImageLayout.TRANSFER_DST_OPTIMAL,
-        0,
+        VKAccess.NONE,
         VKPipelineStage.TOP_OF_PIPE,
         VKPipelineStage.TRANSFER
       );
 
+      context.swapchain.cmd_buffer.cmd_copy_buffer_to_image( buffer, this )
+
+      context.swapchain.cmd_buffer.cmd_set_image_layout(
+        this,
+        VKImageAspect.COLOR,
+        VKImageLayout.TRANSFER_DST_OPTIMAL,
+        VKImageLayout.SHADER_READ_ONLY_OPTIMAL,
+        VKAccess.TRANSFER_WRITE,
+        VKPipelineStage.TRANSFER,
+        VKPipelineStage.FRAGMENT_SHADER
+      );
+
+      configure_sampler( VKFilter.NEAREST, VKSamplerAddressMode.CLAMP_TO_EDGE )
+
+    method destroy [override]
+      destroy_sampler
+      prior.destroy
+
+    method destroy_sampler
+      if (native("$native_sampler.value == VK_NULL_HANDLE")->Logical) return
+      native @|vkDestroySampler( $context->device->native_device.value, $native_sampler.value, NULL );
+
+    method configure_sampler(
+        filter=VKFilter.LINEAR:VKFilter,
+        clamp=VKSamplerAddressMode.CLAMP_TO_EDGE:VKSamplerAddressMode,
+        depth_compare_op=VKCompareOp.NEVER:VKCompareOp,
+        border_color=VKBorderColor.FLOAT_OPAQUE_WHITE:VKBorderColor
+      )
+
+      destroy_sampler
+
+      native
+        @|VkSamplerCreateInfo sampler_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+         |  .pNext = NULL,
+         |  .magFilter = $filter.value,
+         |  .minFilter = $filter.value,
+         |  .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+         |  .addressModeU = $clamp.value,
+         |  .addressModeV = $clamp.value,
+         |  .addressModeW = $clamp.value,
+         |  .mipLodBias = 0.0f,
+         |  .anisotropyEnable = VK_FALSE,
+         |  .maxAnisotropy = 1,
+         |  .compareOp = $depth_compare_op.value,
+         |  .minLod = 0.0f,
+         |  .maxLod = 0.0f,
+         |  .borderColor = $border_color.value,
+         |  .unnormalizedCoordinates = VK_FALSE,
+         |};
+         |
+         |vkCreateSampler( $context->device->native_device.value, &sampler_config, NULL, &$native_sampler.value );
 endClass

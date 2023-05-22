@@ -12,13 +12,14 @@ class VKSwapchainImage : VKImage
     view                    : VKNativeImageView
 
   METHODS
-    method init( context, native_image )
+    method init( context, native_image, size )
       cmd = context.swapchain.cmd_pool.create_command_buffer
 
-    method destroy
+    method destroy [override]
       if (cmd)
         cmd.destroy
         cmd = null
       endIf
+      prior.destroy
 
 endClass

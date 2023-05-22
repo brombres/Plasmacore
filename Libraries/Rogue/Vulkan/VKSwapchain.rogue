@@ -30,7 +30,7 @@ class VKSwapchain
 
       ensure<<cmd_pool>>( context, context.graphics_queue_family )
       cmd_buffer = cmd_pool.create_command_buffer
-      cmd_buffer.begin
+      cmd_buffer.cmd_begin
 
       if (context.surface.size.x != -1) surface_size = context.surface.size
       surface_size .= clamped( context.surface.min_size, context.surface.max_size )
@@ -124,7 +124,8 @@ class VKSwapchain
          |        }
          |      };
          |
-                local image = VKSwapchainImage( context, native("(VKNativeImage){swapchain_images[i]}")->VKNativeImage )
+                local native_image = native("(VKNativeImage){swapchain_images[i]}")->VKNativeImage
+                local image = VKSwapchainImage( context, native_image, surface_size )
                 images.add( image )
       native
         @|      vkCreateImageView( $context->device->native_device.value, &image_view_config, NULL, &$image->view.value );

@@ -21,7 +21,42 @@ class VKCommandBuffer
     method on_cleanup
       destroy
 
-    method apply_image_layout( image:VKTextureImage, aspect_mask:VKImageAspect, old_layout:VKImageLayout,
+    method cmd_begin( &simultaneous )
+      native
+        @|VkCommandBufferBeginInfo cmd_config =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+         |  .pNext = NULL,
+         |  .flags = $simultaneous ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : 0,
+         |  .pInheritanceInfo = NULL
+         |};
+         |vkBeginCommandBuffer( $native_buffer.value, &cmd_config );
+
+    method cmd_copy_buffer_to_image( buffer:VKBuffer, image:VKImage,
+        dest_layout=VKImageLayout.TRANSFER_DST_OPTIMAL:VKImageLayout, region=null:Box? )
+      if (not region) region = Box( image.size )
+
+      native
+        @|VkBufferImageCopy copy_region =
+         |{
+         |  .bufferOffset = 0,
+         |  .bufferRowLength   = $region.value.size.x,
+         |  .bufferImageHeight = $region.value.size.y,
+         |  .imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+         |  .imageOffset = { $region.value.position.x, $region.value.position.y, 0},
+         |  .imageExtent = { $region.value.size.x, $region.value.size.y, 1 },
+         |};
+         |
+         |vkCmdCopyBufferToImage(
+         |  $native_buffer.value,
+         |  $buffer->native_buffer.value,
+         |  $image->native_image.value,
+         |  $dest_layout.value,
+         |  1,
+         |  &copy_region
+         |);
+
+    method cmd_set_image_layout( image:VKTextureImage, aspect_mask:VKImageAspect, old_layout:VKImageLayout,
         new_layout:VKImageLayout, src_access_mask:VKAccess, src_stages:VKPipelineStage, dest_stages:VKPipelineStage )
 
       native
@@ -70,16 +105,5 @@ class VKCommandBuffer
          |  $this->native_buffer.value, $src_stages.value, $dest_stages.value,
          |  0, 0, NULL, 0, NULL, 1, &image_memory_barrier
          |);
-
-    method begin( &simultaneous )
-      native
-        @|VkCommandBufferBeginInfo cmd_config =
-         |{
-         |  .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-         |  .pNext = NULL,
-         |  .flags = $simultaneous ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : 0,
-         |  .pInheritanceInfo = NULL
-         |};
-         |vkBeginCommandBuffer( $native_buffer.value, &cmd_config );
 
 endClass

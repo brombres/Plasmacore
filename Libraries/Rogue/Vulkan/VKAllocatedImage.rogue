@@ -5,7 +5,6 @@ class VKAllocatedImage : VKImage
     view          : VKNativeImageView
     format        : VKFormat
     native_memory : VKNativeDeviceMemory
-    size          : XY
 
   METHODS
     method init( context, size, format, usage:VKImageUsage, aspect_mask:VKImageAspect )

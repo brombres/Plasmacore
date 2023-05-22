@@ -12,6 +12,7 @@ $endMacro
 
 $include Vulkan/VKAccess
 $include Vulkan/VKApplicationInfo
+$include Vulkan/VKBorderColor
 $include Vulkan/VKBuffer
 $include Vulkan/VKAllocatedImage
 $include Vulkan/VKBufferUsage
@@ -19,11 +20,13 @@ $include Vulkan/VKFormat
 $include Vulkan/VKColorSpace
 $include Vulkan/VKCommandBuffer
 $include Vulkan/VKCommandPool
+$include Vulkan/VKCompareOp
 $include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKContext
 $include Vulkan/VKDevice
 $include Vulkan/VKDeviceConfig
 $include Vulkan/VKDeviceType
+$include Vulkan/VKFilter
 $include Vulkan/VKImage
 $include Vulkan/VKImageAspect
 $include Vulkan/VKImageLayout
@@ -35,6 +38,8 @@ $include Vulkan/VKMemoryProperty
 $include Vulkan/VKPipelineStage
 $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
+$include Vulkan/VKSamplerAddressMode
+$include Vulkan/VKSamplerMipmapMode
 $include Vulkan/VKSharingMode
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat

@@ -4,6 +4,12 @@ class VKImage
   PROPERTIES
     context       : VKContext
     native_image  : VKNativeImage
+    size          : XY
 
   METHODS
+    method on_cleanup
+      destroy
+
+    method destroy
+      noAction
 endClass

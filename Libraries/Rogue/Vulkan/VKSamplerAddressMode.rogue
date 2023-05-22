@@ -1,0 +1,13 @@
+module Vulkan
+
+enum VKSamplerAddressMode
+  CATEGORIES
+    REPEAT               = 0
+    MIRRORED_REPEAT      = 1
+    CLAMP_TO_EDGE        = 2
+    CLAMP_TO_BORDER      = 3
+
+    MIRROR_CLAMP_TO_EDGE = 4
+    # Requires VkPhysicalDeviceVulkan12Features.samplerMirrorClampToEdge or enabled extension
+    # VK_KHR_sampler_mirror_clamp_to_edge
+endEnum

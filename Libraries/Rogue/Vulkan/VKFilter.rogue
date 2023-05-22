@@ -1,0 +1,8 @@
+module Vulkan
+
+enum VKFilter
+  CATEGORIES
+    NEAREST = 0
+    LINEAR  = 1
+    CUBIC   = 1000015000
+endEnum
