@@ -1,0 +1,34 @@
+module Vulkan
+
+enum VKAccess [bitflags]
+  CATEGORIES
+    NONE                                  = 0
+    INDIRECT_COMMAND_READ                 = 0x00000001
+    INDEX_READ                            = 0x00000002
+    VERTEX_ATTRIBUTE_READ                 = 0x00000004
+    UNIFORM_READ                          = 0x00000008
+    INPUT_ATTACHMENT_READ                 = 0x00000010
+    SHADER_READ                           = 0x00000020
+    SHADER_WRITE                          = 0x00000040
+    COLOR_ATTACHMENT_READ                 = 0x00000080
+    COLOR_ATTACHMENT_WRITE                = 0x00000100
+    DEPTH_STENCIL_ATTACHMENT_READ         = 0x00000200
+    DEPTH_STENCIL_ATTACHMENT_WRITE        = 0x00000400
+    TRANSFER_READ                         = 0x00000800
+    TRANSFER_WRITE                        = 0x00001000
+    HOST_READ                             = 0x00002000
+    HOST_WRITE                            = 0x00004000
+    MEMORY_READ                           = 0x00008000
+    MEMORY_WRITE                          = 0x00010000
+    TRANSFORM_FEEDBACK_WRITE              = 0x02000000
+    TRANSFORM_FEEDBACK_COUNTER_READ       = 0x04000000
+    TRANSFORM_FEEDBACK_COUNTER_WRITE      = 0x08000000
+    CONDITIONAL_RENDERING_READ            = 0x00100000
+    COLOR_ATTACHMENT_READ_NONCOHERENT     = 0x00080000
+    ACCELERATION_STRUCTURE_READ           = 0x00200000
+    ACCELERATION_STRUCTURE_WRITE          = 0x00400000
+    FRAGMENT_DENSITY_MAP_READ             = 0x01000000
+    FRAGMENT_SHADING_RATE_ATTACHMENT_READ = 0x00800000
+    COMMAND_PREPROCESS_READ               = 0x00020000
+    COMMAND_PREPROCESS_WRITE              = 0x00040000
+endEnum

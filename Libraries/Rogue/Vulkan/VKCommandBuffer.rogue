@@ -21,6 +21,56 @@ class VKCommandBuffer
     method on_cleanup
       destroy
 
+    method apply_image_layout( image:VKTextureImage, aspect_mask:VKImageAspect, old_layout:VKImageLayout,
+        new_layout:VKImageLayout, src_access_mask:VKAccess, src_stages:VKPipelineStage, dest_stages:VKPipelineStage )
+
+      native
+        @|VkImageMemoryBarrier image_memory_barrier =
+         |{
+         |  .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+         |  .pNext = NULL,
+         |  .srcAccessMask = $src_access_mask.value,
+         |  .dstAccessMask = 0,
+         |  .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+         |  .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+         |  .oldLayout = $old_layout.value,
+         |  .newLayout = $new_layout.value,
+         |  .image = $image->native_image.value,
+         |  .subresourceRange = {$aspect_mask.value, 0, 1, 0, 1}
+         |};
+
+      local dest_access_mask : VKAccess
+      which (new_layout)
+        case VKImageLayout.TRANSFER_DST_OPTIMAL
+          # Make sure anything that was copying from this image has completed
+          dest_access_mask = VKAccess.TRANSFER_WRITE
+
+        case VKImageLayout.COLOR_ATTACHMENT_OPTIMAL
+          dest_access_mask = VKAccess.COLOR_ATTACHMENT_WRITE
+
+        case VKImageLayout.DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+          dest_access_mask = VKAccess.DEPTH_STENCIL_ATTACHMENT_WRITE
+
+        case VKImageLayout.SHADER_READ_ONLY_OPTIMAL
+          dest_access_mask = VKAccess[SHADER_READ,INPUT_ATTACHMENT_READ]
+
+        case VKImageLayout.TRANSFER_SRC_OPTIMAL
+          dest_access_mask = VKAccess.TRANSFER_READ
+
+        case VKImageLayout.PRESENT_SRC
+          dest_access_mask = VKAccess.MEMORY_READ
+
+        others
+          dest_access_mask = VKAccess.NONE
+      endWhich
+
+      native
+        @|image_memory_barrier.dstAccessMask = $dest_access_mask.value;
+         |vkCmdPipelineBarrier(
+         |  $this->native_buffer.value, $src_stages.value, $dest_stages.value,
+         |  0, 0, NULL, 0, NULL, 1, &image_memory_barrier
+         |);
+
     method begin( &simultaneous )
       native
         @|VkCommandBufferBeginInfo cmd_config =

@@ -10,6 +10,7 @@ $macro SET_NATIVE_PROCEDURE<<$var_context,$source_context,$procedure_name>>
   $var_context.$procedure_name = VKNativeProcedure<<$procedure_name>>( $source_context.procedure_address($string($procedure_name)) )
 $endMacro
 
+$include Vulkan/VKAccess
 $include Vulkan/VKApplicationInfo
 $include Vulkan/VKBuffer
 $include Vulkan/VKAllocatedImage
@@ -31,6 +32,7 @@ $include Vulkan/VKInstance
 $include Vulkan/VKInstanceConfig
 $include Vulkan/VKGPU
 $include Vulkan/VKMemoryProperty
+$include Vulkan/VKPipelineStage
 $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
 $include Vulkan/VKSharingMode
@@ -56,7 +58,6 @@ nativeType<<"VkDeviceMemory">>     VKNativeDeviceMemory
 nativeType<<"VkFramebuffer">>      VKNativeFramebuffer
 nativeType<<"VkPhysicalDevice">>   VKNativeGPU
 nativeType<<"VkImage">>            VKNativeImage
-nativeType<<"VkImageLayout">>      VKNativeImageLayout
 nativeType<<"VkImageView">>        VKNativeImageView
 nativeType<<"VkInstance">>         VKNativeInstance
 nativeType<<"VkSampler">>          VKNativeSampler

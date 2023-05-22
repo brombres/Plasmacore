@@ -4,14 +4,26 @@ class VKTextureImage : VKAllocatedImage
   PROPERTIES
     buffer         : VKBuffer
     native_sampler : VKNativeSampler
-    native_layout  : VKNativeImageLayout
 
   METHODS
     method init( context, bitmap:Bitmap )
       buffer = context.device.create_buffer( bitmap.size.product * 4, VKBufferUsage.TRANSFER_SRC )
       buffer.set( bitmap )
 
-      #prior.init( context, bitmap.size, VKFormat.B8G8R8A8_UNORM, VKImageUsage[TRANSFER_DST,SAMPLED], VKImageAspect
+      trace "init texture"
+      prior.init( context, bitmap.size, VKFormat.B8G8R8A8_UNORM, VKImageUsage[TRANSFER_DST,SAMPLED], VKImageAspect.COLOR )
       trace "TODO: finish"
+
+      #local layout = VkImageLayout.SHADER_READ_ONLY_OPTIMAL
+      # Set image layout be ready for copy
+      context.swapchain.cmd_buffer.apply_image_layout(
+        this,
+        VKImageAspect.COLOR,
+        VKImageLayout.PREINITIALIZED,
+        VKImageLayout.TRANSFER_DST_OPTIMAL,
+        0,
+        VKPipelineStage.TOP_OF_PIPE,
+        VKPipelineStage.TRANSFER
+      );
 
 endClass

@@ -1475,7 +1475,8 @@ static void demo_prepare_textures(struct demo *demo) {
                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 
-        VkImageViewCreateInfo view = {
+        VkImageViewCreateInfo view =
+        {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext = NULL,
             .image = VK_NULL_HANDLE,
@@ -1497,12 +1498,14 @@ static void demo_prepare_textures(struct demo *demo) {
         err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
         demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
         assert(!err);
+
             demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PREINITIALIZED,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingBufferCopy(%u)", i);
 
+            // TODO
             VkBufferImageCopy copy_region = {
                 .bufferOffset = 0,
                 .bufferRowLength = demo->staging_texture.tex_width,
