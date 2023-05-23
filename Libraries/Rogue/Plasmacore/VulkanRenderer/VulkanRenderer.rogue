@@ -175,5 +175,8 @@ trace "----"
         )
 
     method reset
+      trace "------------- reset renderer ----------------"
       context.reset
+      (forEach in textures).destroy
+      textures.clear
 endClass

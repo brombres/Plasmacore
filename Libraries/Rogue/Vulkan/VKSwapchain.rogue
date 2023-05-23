@@ -16,6 +16,16 @@ class VKSwapchain
   METHODS
     method init( context, surface_size )
 
+    method on_cleanup
+      (forEach in images).destroy
+      images.clear
+      cmd_buffer.destroy
+      cmd_pool.destroy
+      cmd_pool = null
+
+    method reset
+      on_cleanup
+
     method advance_frame
       current_frame = frames[ (frames.locate(current_frame).value + 1) % frames.count ]
 
@@ -128,7 +138,8 @@ class VKSwapchain
                 local image = VKSwapchainImage( context, native_image, surface_size )
                 images.add( image )
       native
-        @|      vkCreateImageView( $context->device->native_device.value, &image_view_config, NULL, &$image->view.value );
+        @|      vkCreateImageView( $context->device->native_device.value, &image_view_config, NULL, &$image->native_view.value );
+         |      $image->is_view_created = 1;
          |    }
          |  }
          |}
@@ -138,12 +149,6 @@ class VKSwapchain
         frames.add( VKFrameControl(i,context) )
       endForEach
       current_frame = frames.first
-
-    method reset
-      (forEach in images).destroy
-      cmd_buffer.destroy
-      cmd_pool.destroy
-      cmd_pool = null
 
     method dispatch_advance_frame [api]
       advance_frame

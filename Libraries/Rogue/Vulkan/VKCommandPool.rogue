@@ -19,6 +19,9 @@ class VKCommandPool
          |vkCreateCommandPool( $context->device->native_device.value, &cmd_pool_config, NULL, &$native_pool.value );
 
     method destroy
+      on_cleanup
+
+    method on_cleanup
       native
         @|if ($native_pool.value != VK_NULL_HANDLE)
          |{
@@ -26,9 +29,6 @@ class VKCommandPool
          |  vkDestroyCommandPool( device, $native_pool.value, NULL );
          |  $native_pool.value = VK_NULL_HANDLE;
          |}
-
-    method on_cleanup
-      destroy
 
     method create_command_buffer->VKCommandBuffer
       local native_buffer : VKNativeCommandBuffer

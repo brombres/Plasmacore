@@ -2,7 +2,6 @@ module Vulkan
 
 class VKAllocatedImage : VKImage
   PROPERTIES
-    view          : VKNativeImageView
     format        : VKFormat
     native_memory : VKNativeDeviceMemory
 
@@ -59,7 +58,8 @@ class VKAllocatedImage : VKImage
          |    .viewType = VK_IMAGE_VIEW_TYPE_2D
          |  };
          |
-         |  vkCreateImageView( device, &view_config, NULL, &$view.value );
+         |  vkCreateImageView( device, &view_config, NULL, &$native_view.value );
+         |  $this->is_view_created = 1;
          |}
          |
          |{
@@ -74,9 +74,19 @@ class VKAllocatedImage : VKImage
       native
       @|vkBindImageMemory( device, $native_image.value, $native_memory.value, 0 );
 
-    method destroy
-      noAction
+    method on_cleanup [override]
+      native @|VkDevice device = $context->device->native_device.value;
 
-    method on_cleanup
-      destroy
+      if (native_image)
+        native @|vkDestroyImage( device, $native_image.value, NULL );
+                |$native_image.value = NULL;
+      endIf
+
+      if (native_memory)
+        native @|vkFreeMemory( device, $native_memory.value, NULL );
+                |$native_memory.value = NULL;
+      endIf
+
+      prior.on_cleanup
+
 endClass

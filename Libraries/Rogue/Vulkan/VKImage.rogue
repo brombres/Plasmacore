@@ -2,14 +2,20 @@ module Vulkan
 
 class VKImage
   PROPERTIES
-    context       : VKContext
-    native_image  : VKNativeImage
-    size          : XY
+    context         : VKContext
+    size            : XY
+    native_image    : VKNativeImage
+    native_view     : VKNativeImageView
+    is_view_created : Logical
 
   METHODS
     method on_cleanup
-      destroy
+      if (is_view_created)
+        is_view_created = false
+        native @|VkDevice device = $context->device->native_device.value;
+                |vkDestroyImageView( device, $native_view.value, NULL );
+      endIf
 
     method destroy
-      noAction
+      on_cleanup
 endClass

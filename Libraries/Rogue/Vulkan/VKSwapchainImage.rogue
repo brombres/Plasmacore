@@ -7,19 +7,37 @@ class VKSwapchainImage : VKImage
     uniform_buffer          : VKNativeBuffer
     uniform_memory          : VKNativeDeviceMemory
     uniform_memory_ptr      : RogueVoidPointer
-    framebuffer             : VKNativeFramebuffer
+    native_framebuffer      : VKNativeFramebuffer
     descriptor_set          : VKNativeDescriptorSet
-    view                    : VKNativeImageView
 
   METHODS
     method init( context, native_image, size )
       cmd = context.swapchain.cmd_pool.create_command_buffer
 
-    method destroy [override]
+    method on_cleanup [override]
       if (cmd)
         cmd.destroy
         cmd = null
       endIf
-      prior.destroy
+
+      native @|VkDevice device = $context->device->native_device.value;
+
+      if (native_framebuffer)
+        native @|vkDestroyFramebuffer( device, $native_framebuffer.value, NULL );
+                |$native_framebuffer.value = 0;
+      endIf
+
+      if (uniform_buffer)
+        native @|vkDestroyBuffer( device, $uniform_buffer.value, NULL );
+                |$uniform_buffer.value = NULL;
+      endIf
+
+      if (uniform_memory)
+        native @|vkUnmapMemory( device, $uniform_memory.value );
+                |vkFreeMemory( device, $uniform_memory.value, NULL );
+                |$uniform_memory.value = NULL;
+      endIf
+
+      prior.on_cleanup
 
 endClass

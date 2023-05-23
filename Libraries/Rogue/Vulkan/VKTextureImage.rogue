@@ -39,9 +39,12 @@ class VKTextureImage : VKAllocatedImage
 
       configure_sampler( VKFilter.NEAREST, VKSamplerAddressMode.CLAMP_TO_EDGE )
 
-    method destroy [override]
+    method on_cleanup [override]
+#vkFreeMemory(DEMO_DEVICE, tex_objs->mem, NULL);
+#if (tex_objs->image) vkDestroyImage(DEMO_DEVICE, tex_objs->image, NULL);
+#if (tex_objs->buffer) vkDestroyBuffer(DEMO_DEVICE, tex_objs->buffer, NULL);
       destroy_sampler
-      prior.destroy
+      prior.on_cleanup
 
     method destroy_sampler
       if (native("$native_sampler.value == VK_NULL_HANDLE")->Logical) return

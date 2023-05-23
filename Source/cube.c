@@ -191,6 +191,9 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 
 #define DEMO_DEPTH (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->depth_stencil)
 
+#define DEMO_TEXTURES_AT_I_SAMPLER (((VulkanVKTextureImage*)(ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->textures->as_objects[0]))->native_sampler.value)
+#define DEMO_TEXTURES_AT_I_VIEW (((VulkanVKTextureImage*)(ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->textures->as_objects[0]))->native_view.value)
+
 /*
  * structure to track all objects related to a texture.
  */
@@ -829,7 +832,7 @@ static void demo_draw_build_cmd(struct demo *demo, VkCommandBuffer cmd_buf) {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext = NULL,
         .renderPass = demo->render_pass,
-        .framebuffer = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->framebuffer.value,
+        .framebuffer = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->native_framebuffer.value,
         .renderArea.offset.x = 0,
         .renderArea.offset.y = 0,
         .renderArea.extent.width = DEMO_WIDTH,
@@ -1454,12 +1457,12 @@ static void demo_destroy_texture(struct demo *demo, struct texture_object *tex_o
 
 static void demo_prepare_textures(struct demo *demo) {
     const VkFormat tex_format = VK_FORMAT_R8G8B8A8_UNORM;
-    VkFormatProperties props;
+    //VkFormatProperties props;
     uint32_t i;
 
     PlasmacoreVulkanRenderer__dispatch_load_assets( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
-    vkGetPhysicalDeviceFormatProperties(DEMO_GPU, tex_format, &props);
+    //vkGetPhysicalDeviceFormatProperties(DEMO_GPU, tex_format, &props);
 
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         VkResult U_ASSERT_ONLY err;
@@ -1494,10 +1497,11 @@ static void demo_prepare_textures(struct demo *demo) {
         };
 
         /* create image view */
-        view.image = demo->textures[i].image;
-        err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
-        demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
-        assert(!err);
+        //view.image = demo->textures[i].image;
+        //err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
+        //demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
+        //assert(!err);
+
 
             demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PREINITIALIZED,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -1544,9 +1548,9 @@ static void demo_prepare_textures(struct demo *demo) {
         };
 
         /* create sampler */
-        err = vkCreateSampler(DEMO_DEVICE, &sampler, NULL, &demo->textures[i].sampler);
-        assert(!err);
-        demo_name_object(demo, VK_OBJECT_TYPE_SAMPLER, (uint64_t)demo->textures[i].sampler, "Sampler(%u)", i);
+        //err = vkCreateSampler(DEMO_DEVICE, &sampler, NULL, &DEMO_TEXTURES_AT_I_SAMPLER);
+        //assert(!err);
+        //demo_name_object(demo, VK_OBJECT_TYPE_SAMPLER, (uint64_t)DEMO_TEXTURES_AT_I_SAMPLER, "Sampler(%u)", i);
 
     }
 }
@@ -1949,8 +1953,8 @@ static void demo_prepare_descriptor_set(struct demo *demo) {
 
     memset(&tex_descs, 0, sizeof(tex_descs));
     for (unsigned int i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-        tex_descs[i].sampler = demo->textures[i].sampler;
-        tex_descs[i].imageView = demo->textures[i].view;
+        tex_descs[i].sampler = DEMO_TEXTURES_AT_I_SAMPLER;
+        tex_descs[i].imageView = DEMO_TEXTURES_AT_I_VIEW;
         tex_descs[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
@@ -1979,7 +1983,7 @@ static void demo_prepare_descriptor_set(struct demo *demo) {
 
 static void demo_prepare_framebuffers(struct demo *demo) {
     VkImageView attachments[2];
-    attachments[1] = DEMO_DEPTH->view.value;
+    attachments[1] = DEMO_DEPTH->native_view.value;
 
     const VkFramebufferCreateInfo fb_info = {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -1995,10 +1999,10 @@ static void demo_prepare_framebuffers(struct demo *demo) {
     uint32_t i;
 
     for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        attachments[0] = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value;
-        err = vkCreateFramebuffer(DEMO_DEVICE, &fb_info, NULL, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value);
+        attachments[0] = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_view.value;
+        err = vkCreateFramebuffer(DEMO_DEVICE, &fb_info, NULL, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_framebuffer.value);
         assert(!err);
-        demo_name_object(demo, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value,
+        demo_name_object(demo, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_framebuffer.value,
                          "Framebuffer(%u)", i);
     }
 }
@@ -2096,9 +2100,9 @@ static void demo_cleanup(struct demo *demo) {
     if (!DEMO_IS_MINIMIZED) {
         PlasmacoreVulkanRenderer__dispatch_reset( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
-        for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-            vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value, NULL);
-        }
+        //for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
+        //    vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_framebuffer.value, NULL);
+        //}
         vkDestroyDescriptorPool(DEMO_DEVICE, demo->desc_pool, NULL);
 
         vkDestroyPipeline(DEMO_DEVICE, demo->pipeline, NULL);
@@ -2107,24 +2111,24 @@ static void demo_cleanup(struct demo *demo) {
         vkDestroyPipelineLayout(DEMO_DEVICE, demo->pipeline_layout, NULL);
         vkDestroyDescriptorSetLayout(DEMO_DEVICE, demo->desc_layout, NULL);
 
-        for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-            vkDestroyImageView(DEMO_DEVICE, demo->textures[i].view, NULL);
-            vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
-            vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
-            vkDestroySampler(DEMO_DEVICE, demo->textures[i].sampler, NULL);
-        }
+        //for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
+            //vkDestroyImageView(DEMO_DEVICE, DEMO_TEXTURES_AT_I_VIEW, NULL);
+            //vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
+            //vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
+            //vkDestroySampler(DEMO_DEVICE, DEMO_TEXTURES_AT_I_SAMPLER, NULL);
+        //}
         demo->fpDestroySwapchainKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, NULL);
 
-        vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->view.value, NULL);
+        vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->native_view.value, NULL);
         vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
         vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->native_memory.value, NULL);
 
-        for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-            vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
-            vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
-            vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
-            vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
-        }
+        //for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
+        //    vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_view.value, NULL);
+        //    vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
+        //    vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
+        //    vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
+        //}
 
         if (DEMO_SEPARATE_PRESENT_QUEUE) {
             vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);
@@ -2187,9 +2191,9 @@ static void demo_resize(struct demo *demo) {
 
     PlasmacoreVulkanRenderer__dispatch_reset( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
-    for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->framebuffer.value, NULL);
-    }
+    //for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
+    //    vkDestroyFramebuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_framebuffer.value, NULL);
+    //}
     vkDestroyDescriptorPool(DEMO_DEVICE, demo->desc_pool, NULL);
 
     vkDestroyPipeline(DEMO_DEVICE, demo->pipeline, NULL);
@@ -2198,23 +2202,23 @@ static void demo_resize(struct demo *demo) {
     vkDestroyPipelineLayout(DEMO_DEVICE, demo->pipeline_layout, NULL);
     vkDestroyDescriptorSetLayout(DEMO_DEVICE, demo->desc_layout, NULL);
 
-    for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-        vkDestroyImageView(DEMO_DEVICE, demo->textures[i].view, NULL);
-        vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
-        vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
-        vkDestroySampler(DEMO_DEVICE, demo->textures[i].sampler, NULL);
-    }
+    //for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
+        //vkDestroyImageView(DEMO_DEVICE, DEMO_TEXTURES_AT_I_VIEW, NULL);
+        //vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
+        //vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
+        //vkDestroySampler(DEMO_DEVICE, DEMO_TEXTURES_AT_I_SAMPLER, NULL);
+    //}
 
-    vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->view.value, NULL);
+    vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->native_view.value, NULL);
     vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
     vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->native_memory.value, NULL);
 
-    for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->view.value, NULL);
-        vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
-        vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
-        vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
-    }
+    //for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
+    //    vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_view.value, NULL);
+    //    vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
+    //    vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
+    //    vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
+    //}
     if (DEMO_SEPARATE_PRESENT_QUEUE) {
         vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);
     }

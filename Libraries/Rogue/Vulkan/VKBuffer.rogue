@@ -48,6 +48,13 @@ class VKBuffer
          |vkAllocateMemory( device, &alloc_info, NULL, &$native_memory.value );
          |vkBindBufferMemory( device, $native_buffer.value, $native_memory.value, 0 );
 
+    method on_cleanup
+#if (tex_objs->buffer) vkDestroyBuffer(DEMO_DEVICE, tex_objs->buffer, NULL);
+#vkFreeMemory(DEMO_DEVICE, tex_objs->mem, NULL);
+
+    method destroy
+      on_cleanup
+
     method set( bitmap:Bitmap )
       local size = bitmap.size.product * 4
       native

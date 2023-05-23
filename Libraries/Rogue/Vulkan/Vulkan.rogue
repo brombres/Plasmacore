@@ -54,20 +54,21 @@ nativeHeader
   @|#define VK_USE_PLATFORM_METAL_EXT 1
    |#include <vulkan/vulkan.h>
 
-nativeType<<"VkBuffer">>           VKNativeBuffer
-nativeType<<"VkCommandBuffer">>    VKNativeCommandBuffer
-nativeType<<"VkCommandPool">>      VKNativeCommandPool
-nativeType<<"VkDescriptorSet">>    VKNativeDescriptorSet
-nativeType<<"VkDevice">>           VKNativeDevice
-nativeType<<"VkDeviceMemory">>     VKNativeDeviceMemory
-nativeType<<"VkFramebuffer">>      VKNativeFramebuffer
-nativeType<<"VkPhysicalDevice">>   VKNativeGPU
-nativeType<<"VkImage">>            VKNativeImage
-nativeType<<"VkImageView">>        VKNativeImageView
-nativeType<<"VkInstance">>         VKNativeInstance
-nativeType<<"VkSampler">>          VKNativeSampler
-nativeType<<"VkSurfaceKHR">>       VKNativeSurface
-nativeType<<"VkSurfaceFormatKHR">> VKNativeSurfaceFormat
+NATIVE_POINTER_TYPE<< VKNativeBuffer,        "%Ns%VkBuffer" >>
+NATIVE_POINTER_TYPE<< VKNativeCommandBuffer, "%Ns%VkCommandBuffer" >>
+NATIVE_POINTER_TYPE<< VKNativeCommandPool,   "%Ns%VkCommandPool" >>
+NATIVE_POINTER_TYPE<< VKNativeDescriptorSet, "%Ns%VkDescriptorSet" >>
+NATIVE_POINTER_TYPE<< VKNativeDevice,        "%Ns%VkDevice" >>
+NATIVE_POINTER_TYPE<< VKNativeDeviceMemory,  "%Ns%VkDeviceMemory" >>
+NATIVE_POINTER_TYPE<< VKNativeFramebuffer,   "%Ns%VkFramebuffer" >>
+NATIVE_POINTER_TYPE<< VKNativeGPU,           "%Ns%VkPhysicalDevice" >>
+NATIVE_POINTER_TYPE<< VKNativeImage,         "%Ns%VkImage" >>
+NATIVE_POINTER_TYPE<< VKNativeInstance,      "%Ns%VkInstance" >>
+NATIVE_POINTER_TYPE<< VKNativeSampler,       "%Ns%VkSampler" >>
+NATIVE_POINTER_TYPE<< VKNativeSurface,       "%Ns%VkSurfaceKHR" >>
+NATIVE_POINTER_TYPE<< VKNativeSurfaceFormat, "%Ns%VkSurfaceFormatKHR" >>
+
+nativeType<<"%Ns%VkImageView">> VKNativeImageView
 
 class VKNativeProcedure<<$NativeType>> [compound]
   PROPERTIES
