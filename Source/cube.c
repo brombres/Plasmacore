@@ -447,8 +447,8 @@ struct demo {
         VkImageView view;
     } depth;
 
-    struct texture_object textures[DEMO_TEXTURE_COUNT];
-    struct texture_object staging_texture;
+    //struct texture_object textures[DEMO_TEXTURE_COUNT];
+    //struct texture_object staging_texture;
 
     VkCommandBuffer cmd;  // Buffer for initialization commands
     VkPipelineLayout pipeline_layout;
@@ -1456,103 +1456,103 @@ static void demo_destroy_texture(struct demo *demo, struct texture_object *tex_o
 }
 
 static void demo_prepare_textures(struct demo *demo) {
-    const VkFormat tex_format = VK_FORMAT_R8G8B8A8_UNORM;
+    //const VkFormat tex_format = VK_FORMAT_R8G8B8A8_UNORM;
     //VkFormatProperties props;
-    uint32_t i;
+    //uint32_t i;
 
     PlasmacoreVulkanRenderer__dispatch_load_assets( ROGUE_SINGLETON(PlasmacoreVulkanRenderer) );
 
     //vkGetPhysicalDeviceFormatProperties(DEMO_GPU, tex_format, &props);
 
-    for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-        VkResult U_ASSERT_ONLY err;
+    //for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
+    //    VkResult U_ASSERT_ONLY err;
 
-            /* Must use staging buffer to copy linear texture to optimized */
-            demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingTexture(%u)", i);
+    //        /* Must use staging buffer to copy linear texture to optimized */
+    //        demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingTexture(%u)", i);
 
-            memset(&demo->staging_texture, 0, sizeof(demo->staging_texture));
-            demo_prepare_texture_buffer(demo, tex_files[i], &demo->staging_texture);
+    //        memset(&demo->staging_texture, 0, sizeof(demo->staging_texture));
+    //        demo_prepare_texture_buffer(demo, tex_files[i], &demo->staging_texture);
 
-            demo_prepare_texture_image(demo, tex_files[i], &demo->textures[i], VK_IMAGE_TILING_OPTIMAL,
-                                       (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
-                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-
-        VkImageViewCreateInfo view =
-        {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = NULL,
-            .image = VK_NULL_HANDLE,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = tex_format,
-            .components =
-                {
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                    VK_COMPONENT_SWIZZLE_IDENTITY,
-                },
-            .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-            .flags = 0,
-        };
-
-        /* create image view */
-        //view.image = demo->textures[i].image;
-        //err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
-        //demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
-        //assert(!err);
+    //        demo_prepare_texture_image(demo, tex_files[i], &demo->textures[i], VK_IMAGE_TILING_OPTIMAL,
+    //                                   (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
+    //                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 
-            demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PREINITIALIZED,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+    //    VkImageViewCreateInfo view =
+    //    {
+    //        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+    //        .pNext = NULL,
+    //        .image = VK_NULL_HANDLE,
+    //        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+    //        .format = tex_format,
+    //        .components =
+    //            {
+    //                VK_COMPONENT_SWIZZLE_IDENTITY,
+    //                VK_COMPONENT_SWIZZLE_IDENTITY,
+    //                VK_COMPONENT_SWIZZLE_IDENTITY,
+    //                VK_COMPONENT_SWIZZLE_IDENTITY,
+    //            },
+    //        .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+    //        .flags = 0,
+    //    };
 
-            demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingBufferCopy(%u)", i);
+    //    /* create image view */
+    //    //view.image = demo->textures[i].image;
+    //    //err = vkCreateImageView(DEMO_DEVICE, &view, NULL, &demo->textures[i].view);
+    //    //demo_name_object(demo, VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)demo->textures[i].view, "TexImageView(%u)", i);
+    //    //assert(!err);
 
-            // TODO
-            VkBufferImageCopy copy_region = {
-                .bufferOffset = 0,
-                .bufferRowLength = demo->staging_texture.tex_width,
-                .bufferImageHeight = demo->staging_texture.tex_height,
-                .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
-                .imageOffset = {0, 0, 0},
-                .imageExtent = {demo->staging_texture.tex_width, demo->staging_texture.tex_height, 1},
-            };
 
-            vkCmdCopyBufferToImage(DEMO_CMD, demo->staging_texture.buffer, demo->textures[i].image,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
-            demo_pop_cb_label(demo, DEMO_CMD);  // "StagingBufferCopy"
+    //        demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PREINITIALIZED,
+    //                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    //                              VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-            demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  demo->textures[i].imageLayout, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-            demo_pop_cb_label(demo, DEMO_CMD);  // "StagingTexture"
+    //        demo_push_cb_label(demo, DEMO_CMD, NULL, "StagingBufferCopy(%u)", i);
 
-        const VkSamplerCreateInfo sampler = {
-            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            .pNext = NULL,
-            .magFilter = VK_FILTER_NEAREST,
-            .minFilter = VK_FILTER_NEAREST,
-            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-            .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            .addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            .mipLodBias = 0.0f,
-            .anisotropyEnable = VK_FALSE,
-            .maxAnisotropy = 1,
-            .compareOp = VK_COMPARE_OP_NEVER,
-            .minLod = 0.0f,
-            .maxLod = 0.0f,
-            .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-            .unnormalizedCoordinates = VK_FALSE,
-        };
+    //        // TODO
+    //        VkBufferImageCopy copy_region = {
+    //            .bufferOffset = 0,
+    //            .bufferRowLength = demo->staging_texture.tex_width,
+    //            .bufferImageHeight = demo->staging_texture.tex_height,
+    //            .imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+    //            .imageOffset = {0, 0, 0},
+    //            .imageExtent = {demo->staging_texture.tex_width, demo->staging_texture.tex_height, 1},
+    //        };
 
-        /* create sampler */
-        //err = vkCreateSampler(DEMO_DEVICE, &sampler, NULL, &DEMO_TEXTURES_AT_I_SAMPLER);
-        //assert(!err);
-        //demo_name_object(demo, VK_OBJECT_TYPE_SAMPLER, (uint64_t)DEMO_TEXTURES_AT_I_SAMPLER, "Sampler(%u)", i);
+    //        vkCmdCopyBufferToImage(DEMO_CMD, demo->staging_texture.buffer, demo->textures[i].image,
+    //                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+    //        demo_pop_cb_label(demo, DEMO_CMD);  // "StagingBufferCopy"
 
-    }
+    //        demo_set_image_layout(demo, demo->textures[i].image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    //                              demo->textures[i].imageLayout, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    //                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+    //        demo_pop_cb_label(demo, DEMO_CMD);  // "StagingTexture"
+
+    //    const VkSamplerCreateInfo sampler = {
+    //        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    //        .pNext = NULL,
+    //        .magFilter = VK_FILTER_NEAREST,
+    //        .minFilter = VK_FILTER_NEAREST,
+    //        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+    //        .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    //        .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    //        .addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+    //        .mipLodBias = 0.0f,
+    //        .anisotropyEnable = VK_FALSE,
+    //        .maxAnisotropy = 1,
+    //        .compareOp = VK_COMPARE_OP_NEVER,
+    //        .minLod = 0.0f,
+    //        .maxLod = 0.0f,
+    //        .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+    //        .unnormalizedCoordinates = VK_FALSE,
+    //    };
+
+    //    /* create sampler */
+    //    //err = vkCreateSampler(DEMO_DEVICE, &sampler, NULL, &DEMO_TEXTURES_AT_I_SAMPLER);
+    //    //assert(!err);
+    //    //demo_name_object(demo, VK_OBJECT_TYPE_SAMPLER, (uint64_t)DEMO_TEXTURES_AT_I_SAMPLER, "Sampler(%u)", i);
+
+    //}
 }
 
 void demo_prepare_cube_data_buffers(struct demo *demo) {
@@ -2071,9 +2071,9 @@ static void demo_prepare(struct demo *demo) {
      */
     demo_pop_cb_label(demo, DEMO_CMD);  // "Prepare"
     demo_flush_init_cmd(demo);
-    if (demo->staging_texture.buffer) {
-        demo_destroy_texture(demo, &demo->staging_texture);
-    }
+    //if (demo->staging_texture.buffer) {
+        //demo_destroy_texture(demo, &demo->staging_texture);
+    //}
 
     demo->current_buffer = 0;
     DEMO_IS_PREPARED = true;

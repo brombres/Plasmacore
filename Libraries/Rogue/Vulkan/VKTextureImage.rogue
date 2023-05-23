@@ -10,11 +10,8 @@ class VKTextureImage : VKAllocatedImage
       buffer = context.device.create_buffer( bitmap.size.product * 4, VKBufferUsage.TRANSFER_SRC )
       buffer.set( bitmap )
 
-      trace "init texture"
       prior.init( context, bitmap.size, VKFormat.B8G8R8A8_UNORM, VKImageUsage[TRANSFER_DST,SAMPLED], VKImageAspect.COLOR )
-      trace "TODO: finish"
 
-      #local layout = VkImageLayout.SHADER_READ_ONLY_OPTIMAL
       context.swapchain.cmd_buffer.cmd_set_image_layout(
         this,
         VKImageAspect.COLOR,
