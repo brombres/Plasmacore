@@ -49,8 +49,17 @@ class VKBuffer
          |vkBindBufferMemory( device, $native_buffer.value, $native_memory.value, 0 );
 
     method on_cleanup
-#if (tex_objs->buffer) vkDestroyBuffer(DEMO_DEVICE, tex_objs->buffer, NULL);
-#vkFreeMemory(DEMO_DEVICE, tex_objs->mem, NULL);
+      native @|VkDevice device = $context->device->native_device.value;
+
+      if (native_buffer)
+        native @|vkDestroyBuffer( device, $native_buffer.value, NULL );
+                |$native_buffer.value = NULL;
+      endIf
+
+      if (native_memory)
+        native @|vkFreeMemory( device, $native_memory.value, NULL );
+                |$native_memory.value = NULL;
+      endIf
 
     method destroy
       on_cleanup
