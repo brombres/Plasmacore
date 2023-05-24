@@ -10,8 +10,8 @@ class VKSwapchain
 
     native "VkSwapchainKHR native_swapchain;"
 
-    cmd_pool   : VKCommandPool
-    cmd_buffer : VKCommandBuffer
+    cmd_buffer_pool               : VKCommandPool
+    cmd_buffer_configure_pipeline : VKCommandBuffer
 
   METHODS
     method init( context, surface_size )
@@ -19,15 +19,35 @@ class VKSwapchain
     method on_cleanup
       (forEach in images).destroy
       images.clear
-      cmd_buffer.destroy
-      cmd_pool.destroy
-      cmd_pool = null
+      if (cmd_buffer_configure_pipeline)
+        cmd_buffer_configure_pipeline.destroy
+        cmd_buffer_configure_pipeline = null
+      endIf
+      if (cmd_buffer_pool)
+        cmd_buffer_pool.destroy
+        cmd_buffer_pool = null
+      endIf
 
     method reset
       on_cleanup
 
     method advance_frame
       current_frame = frames[ (frames.locate(current_frame).value + 1) % frames.count ]
+
+    method cmd_buffer_configure_pipeline->VKCommandBuffer
+      if (@cmd_buffer_configure_pipeline) return @cmd_buffer_configure_pipeline
+
+      @cmd_buffer_configure_pipeline = cmd_buffer_pool.create_command_buffer
+      @cmd_buffer_configure_pipeline.cmd_begin
+
+      return @cmd_buffer_configure_pipeline
+
+    method cmd_buffer_pool->VKCommandPool
+      if (@cmd_buffer_pool) return @cmd_buffer_pool
+
+      @cmd_buffer_pool = VKCommandPool( context, context.graphics_queue_family )
+      return @cmd_buffer_pool
+
 
     method configure
       if (context.surface.max_size.min == 0)
@@ -38,9 +58,7 @@ class VKSwapchain
         context.is_minimized = false
       endIf
 
-      ensure<<cmd_pool>>( context, context.graphics_queue_family )
-      cmd_buffer = cmd_pool.create_command_buffer
-      cmd_buffer.cmd_begin
+      cmd_buffer_configure_pipeline  # create command buffer
 
       if (context.surface.size.x != -1) surface_size = context.surface.size
       surface_size .= clamped( context.surface.min_size, context.surface.max_size )

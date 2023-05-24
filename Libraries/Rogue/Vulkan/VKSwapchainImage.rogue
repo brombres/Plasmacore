@@ -13,7 +13,7 @@ class VKSwapchainImage : VKImage
 
   METHODS
     method init( context, native_image, size )
-      cmd = context.swapchain.cmd_pool.create_command_buffer
+      cmd = context.swapchain.cmd_buffer_pool.create_command_buffer
 
     method on_cleanup [override]
       if (cmd)

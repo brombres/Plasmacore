@@ -19,7 +19,6 @@ class VulkanRenderer : Renderer [essential abstract singleton]
       #swapchain.block_until_ready
 
     method configure
-trace "----"
       # Identifying your app allows driver manufacturers to potentially optimize Vulkan drivers for your game.
       local app_name = "Plasmacore App"
       local app_version_code = 1
@@ -109,8 +108,6 @@ trace "----"
       endBlock
 
     method create_device
-      trace "----"
-
       local config = VKDeviceConfig( context )
       config.enable_extension( "VK_KHR_swapchain" )
       config.enable_extension( "VK_KHR_incremental_present" )
@@ -126,7 +123,6 @@ trace "----"
       create_device
 
     method dispatch_load_assets [api]
-      trace "----"
       textures.add( load_texture(LunarG.bitmap) )
 
     method dispatch_prepare [api]
@@ -175,7 +171,6 @@ trace "----"
         )
 
     method reset
-      trace "------------- reset renderer ----------------"
       context.reset
       (forEach in textures).destroy
       textures.clear

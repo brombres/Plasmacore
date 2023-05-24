@@ -12,7 +12,7 @@ class VKTextureImage : VKAllocatedImage
 
       prior.init( context, bitmap.size, VKFormat.B8G8R8A8_UNORM, VKImageUsage[TRANSFER_DST,SAMPLED], VKImageAspect.COLOR )
 
-      context.swapchain.cmd_buffer.cmd_set_image_layout(
+      context.swapchain.cmd_buffer_configure_pipeline.cmd_set_image_layout(
         this,
         VKImageAspect.COLOR,
         VKImageLayout.PREINITIALIZED,
@@ -22,9 +22,9 @@ class VKTextureImage : VKAllocatedImage
         VKPipelineStage.TRANSFER
       );
 
-      context.swapchain.cmd_buffer.cmd_copy_buffer_to_image( buffer, this )
+      context.swapchain.cmd_buffer_configure_pipeline.cmd_copy_buffer_to_image( buffer, this )
 
-      context.swapchain.cmd_buffer.cmd_set_image_layout(
+      context.swapchain.cmd_buffer_configure_pipeline.cmd_set_image_layout(
         this,
         VKImageAspect.COLOR,
         VKImageLayout.TRANSFER_DST_OPTIMAL,

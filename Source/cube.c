@@ -186,8 +186,8 @@ static PFN_vkGetDeviceProcAddr g_gdpa = NULL;
 #define DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I              DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT(i)
 #define DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT(demo->current_buffer)
 
-#define DEMO_CMD_POOL (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_pool->native_pool.value)
-#define DEMO_CMD      (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_buffer->native_buffer.value)
+#define DEMO_CMD_POOL (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_buffer_pool->native_pool.value)
+#define DEMO_CMD      (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->swapchain->cmd_buffer_configure_pipeline->native_buffer.value)
 
 #define DEMO_DEPTH (ROGUE_SINGLETON(PlasmacoreVulkanRenderer)->context->depth_stencil)
 
@@ -367,7 +367,6 @@ struct demo {
     PFN_vkGetPastPresentationTimingGOOGLE fpGetPastPresentationTimingGOOGLE;
     uint32_t swapchainImageCount;
 
-    VkCommandPool cmd_pool;
     VkCommandPool present_cmd_pool;
 
     struct {

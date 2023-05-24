@@ -16,7 +16,7 @@ class VKCommandBuffer
         @|if ($native_buffer.value != VK_NULL_HANDLE)
          |{
          |  VkDevice device    = $context->device->native_device.value;
-         |  VkCommandPool pool = $context->swapchain->cmd_pool->native_pool.value;
+         |  VkCommandPool pool = $context->swapchain->cmd_buffer_pool->native_pool.value;
          |  vkFreeCommandBuffers( device, pool, 1, &$native_buffer.value );
          |  $native_buffer.value = VK_NULL_HANDLE;
          |}
