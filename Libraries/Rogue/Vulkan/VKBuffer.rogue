@@ -64,6 +64,13 @@ class VKBuffer
     method destroy
       on_cleanup
 
+    method map( offset=0:Int32, size=null:Int32? )->RogueVoidPointer
+      local pointer : RogueVoidPointer
+      native
+        @|VkDevice device = $context->device->native_device.value;
+         |vkMapMemory( device, $native_memory.value, $offset, ($size.exists)?($size.value):(VK_WHOLE_SIZE), 0, &$pointer.value );
+      return pointer
+
     method set( bitmap:Bitmap )
       local size = bitmap.size.product * 4
       native
@@ -72,5 +79,10 @@ class VKBuffer
          |
          |vkMapMemory( device, $native_memory.value, 0, $allocation_size, 0, &data );
          |memcpy( data, $bitmap->pixels->data, $size );
+         |vkUnmapMemory( device, $native_memory.value );
+
+    method unmap
+      native
+        @|VkDevice device = $context->device->native_device.value;
          |vkUnmapMemory( device, $native_memory.value );
 endClass

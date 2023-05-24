@@ -1,0 +1,23 @@
+module Vulkan
+
+enum VKShaderStage [bitflags]
+  CATEGORIES
+    VERTEX                  = 0x00000001
+    TESSELLATION_CONTROL    = 0x00000002
+    TESSELLATION_EVALUATION = 0x00000004
+    GEOMETRY                = 0x00000008
+    FRAGMENT                = 0x00000010
+    COMPUTE                 = 0x00000020
+    ALL_GRAPHICS            = 0x0000001F
+    ALL                     = 0x7FFFFFFF
+    RAYGEN                  = 0x00000100
+    ANY_HIT                 = 0x00000200
+    CLOSEST_HIT             = 0x00000400
+    MISS                    = 0x00000800
+    INTERSECTION            = 0x00001000
+    CALLABLE                = 0x00002000
+    TASK                    = 0x00000040
+    MESH                    = 0x00000080
+    SUBPASS_SHADING         = 0x00004000
+    CLUSTER_CULLING         = 0x00080000
+endEnum

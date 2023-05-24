@@ -1027,39 +1027,11 @@ void demo_prepare_cube_data_buffers(struct demo *demo) {
         data.attr[i][3] = 0;
     }
 
-    memset(&buf_info, 0, sizeof(buf_info));
-    buf_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buf_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    buf_info.size = sizeof(data);
-
-    for (unsigned int i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        err = vkCreateBuffer(DEMO_DEVICE, &buf_info, NULL, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value);
-        assert(!err);
-
-        vkGetBufferMemoryRequirements(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, &mem_reqs);
-
-        mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        mem_alloc.pNext = NULL;
-        mem_alloc.allocationSize = mem_reqs.size;
-        mem_alloc.memoryTypeIndex = 0;
-
-        pass = memory_type_from_properties(demo, mem_reqs.memoryTypeBits,
-                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                           &mem_alloc.memoryTypeIndex);
-        assert(pass);
-
-        err = vkAllocateMemory(DEMO_DEVICE, &mem_alloc, NULL, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
-        assert(!err);
-
-        err = vkMapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, 0, VK_WHOLE_SIZE, 0,
-                          &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory_ptr.value);
-        assert(!err);
-
-        memcpy(DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory_ptr.value, &data, sizeof data);
-
-        err = vkBindBufferMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value,
-                                 DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, 0);
-        assert(!err);
+    for (unsigned int i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++)
+    {
+      VulkanVKSwapchainImage* image = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT(i);
+      VulkanVKSwapchainImage__configure_uniform_buffer__RogueInt32( image, (RogueInt32)sizeof(data) );
+      memcpy( DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory_ptr.value, &data, sizeof data );
     }
 }
 
@@ -1416,7 +1388,7 @@ static void demo_prepare_descriptor_set(struct demo *demo) {
     for (unsigned int i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
         err = vkAllocateDescriptorSets(DEMO_DEVICE, &alloc_info, &DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->descriptor_set.value);
         assert(!err);
-        buffer_info.buffer = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value;
+        buffer_info.buffer = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer->native_buffer.value;
         writes[0].dstSet = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->descriptor_set.value;
         writes[1].dstSet = DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->descriptor_set.value;
         vkUpdateDescriptorSets(DEMO_DEVICE, 2, writes, 0, NULL);
@@ -1461,6 +1433,7 @@ static void demo_prepare(struct demo *demo) {
 
     demo_prepare_cube_data_buffers(demo);
 
+    //TODO
     demo_prepare_descriptor_layout(demo);
     demo_prepare_render_pass(demo);
     demo_prepare_pipeline(demo);
@@ -1546,24 +1519,11 @@ static void demo_cleanup(struct demo *demo) {
         vkDestroyPipelineLayout(DEMO_DEVICE, demo->pipeline_layout, NULL);
         vkDestroyDescriptorSetLayout(DEMO_DEVICE, demo->desc_layout, NULL);
 
-        //for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-            //vkDestroyImageView(DEMO_DEVICE, DEMO_TEXTURES_AT_I_VIEW, NULL);
-            //vkDestroyImage(DEMO_DEVICE, demo->textures[i].image, NULL);
-            //vkFreeMemory(DEMO_DEVICE, demo->textures[i].mem, NULL);
-            //vkDestroySampler(DEMO_DEVICE, DEMO_TEXTURES_AT_I_SAMPLER, NULL);
-        //}
         demo->fpDestroySwapchainKHR(DEMO_DEVICE, DEMO_SWAPCHAIN, NULL);
 
         vkDestroyImageView(DEMO_DEVICE, DEMO_DEPTH->native_view.value, NULL);
         vkDestroyImage(DEMO_DEVICE, DEMO_DEPTH->native_image.value, NULL);
         vkFreeMemory(DEMO_DEVICE, DEMO_DEPTH->native_memory.value, NULL);
-
-        //for (i = 0; i < DEMO_SWAPCHAIN_IMAGE_COUNT; i++) {
-        //    vkDestroyImageView(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->native_view.value, NULL);
-        //    vkDestroyBuffer(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_buffer.value, NULL);
-        //    vkUnmapMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value);
-        //    vkFreeMemory(DEMO_DEVICE, DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_I->uniform_memory.value, NULL);
-        //}
 
         if (DEMO_SEPARATE_PRESENT_QUEUE) {
             vkDestroyCommandPool(DEMO_DEVICE, demo->present_cmd_pool, NULL);

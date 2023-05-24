@@ -4,8 +4,9 @@ class VKSwapchainImage : VKImage
   PROPERTIES
     cmd                     : VKCommandBuffer
     cmd_graphics_to_present : VKNativeCommandBuffer
-    uniform_buffer          : VKNativeBuffer
-    uniform_memory          : VKNativeDeviceMemory
+    uniform_buffer          : VKBuffer
+    #uniform_buffer          : VKNativeBuffer
+    #uniform_memory          : VKNativeDeviceMemory
     uniform_memory_ptr      : RogueVoidPointer
     native_framebuffer      : VKNativeFramebuffer
     descriptor_set          : VKNativeDescriptorSet
@@ -28,16 +29,25 @@ class VKSwapchainImage : VKImage
       endIf
 
       if (uniform_buffer)
-        native @|vkDestroyBuffer( device, $uniform_buffer.value, NULL );
-                |$uniform_buffer.value = NULL;
+        uniform_buffer.destroy
+        uniform_buffer = null
       endIf
 
-      if (uniform_memory)
-        native @|vkUnmapMemory( device, $uniform_memory.value );
-                |vkFreeMemory( device, $uniform_memory.value, NULL );
-                |$uniform_memory.value = NULL;
-      endIf
+      #if (uniform_buffer)
+      #  native @|vkDestroyBuffer( device, $uniform_buffer.value, NULL );
+      #          |$uniform_buffer.value = NULL;
+      #endIf
+
+      #if (uniform_memory)
+      #  native @|vkUnmapMemory( device, $uniform_memory.value );
+      #          |vkFreeMemory( device, $uniform_memory.value, NULL );
+      #          |$uniform_memory.value = NULL;
+      #endIf
 
       prior.on_cleanup
+
+    method configure_uniform_buffer( size:Int32 ) [api]
+      uniform_buffer = context.device.create_buffer( size, VKBufferUsage.UNIFORM_BUFFER )
+      uniform_memory_ptr = uniform_buffer.map
 
 endClass

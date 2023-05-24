@@ -23,6 +23,7 @@ $include Vulkan/VKCommandPool
 $include Vulkan/VKCompareOp
 $include Vulkan/VKCompositeAlphaType
 $include Vulkan/VKContext
+$include Vulkan/VKDescriptorType
 $include Vulkan/VKDevice
 $include Vulkan/VKDeviceConfig
 $include Vulkan/VKDeviceType
@@ -40,6 +41,7 @@ $include Vulkan/VKPresentMode
 $include Vulkan/VKQueueFamily
 $include Vulkan/VKSamplerAddressMode
 $include Vulkan/VKSamplerMipmapMode
+$include Vulkan/VKShaderStage
 $include Vulkan/VKSharingMode
 $include Vulkan/VKSurface
 $include Vulkan/VKSurfaceFormat
