@@ -1,6 +1,6 @@
 module Vulkan
 
-uses Bitmap [export]
+uses Graphics [export]
 
 $macro NATIVE_PROCEDURE<<$procedure_name>>
   $procedure_name : VKNativeProcedure<<$procedure_name>>

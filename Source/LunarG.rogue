@@ -1,4 +1,4 @@
-uses Bitmap
+uses Graphics
 
 class LunarG
   GLOBAL METHODS
