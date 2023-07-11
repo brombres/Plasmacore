@@ -736,7 +736,6 @@ void demo_update_data_buffer(struct demo *demo) {
     mat4x4_orthonormalize(demo->model_matrix, demo->model_matrix);
     mat4x4_mul(MVP, VP, demo->model_matrix);
 
-    //memcpy(DEMO_SWAPCHAIN_IMAGE_RESOURCES_AT_CURRENT_BUFFER->uniform_memory_ptr.value, (const void *)&MVP[0][0], matrixSize);
     PlasmacoreVulkanRenderer* renderer = ROGUE_SINGLETON(PlasmacoreVulkanRenderer);
     VulkanVKSwapchainImage* image = (VulkanVKSwapchainImage*)(renderer->context->swapchain->images->as_objects[demo->current_buffer]);
     memcpy(
@@ -1679,7 +1678,9 @@ static void demo_init(struct demo *demo, int argc, char **argv) {
     DEMO_WIDTH = 500;
     DEMO_HEIGHT = 500;
 
+printf("----------argc: %d\n", argc);
     for (int i = 1; i < argc; i++) {
+printf("----------argv[%d]: %s\n", i, argv[i]);
         if (strcmp(argv[i], "--use_staging") == 0) {
             demo->use_staging_buffer = true;
             continue;

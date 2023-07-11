@@ -32,7 +32,7 @@ class VKBuffer
          |VkMemoryRequirements mem_reqs;
          |vkGetBufferMemoryRequirements( device, $native_buffer.value, &mem_reqs );
          |$mem_types = mem_reqs.memoryTypeBits;
-         |$allocation_size = mem_reqs.size;
+         |$allocation_size = (RogueInt32) mem_reqs.size;
 
          local mem_type_index = context.gpu.memory_type_index( mem_types, required_properties )
 

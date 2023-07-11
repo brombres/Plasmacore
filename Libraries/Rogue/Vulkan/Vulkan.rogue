@@ -70,7 +70,8 @@ NATIVE_POINTER_TYPE<< VKNativeSampler,       "%Ns%VkSampler" >>
 NATIVE_POINTER_TYPE<< VKNativeSurface,       "%Ns%VkSurfaceKHR" >>
 NATIVE_POINTER_TYPE<< VKNativeSurfaceFormat, "%Ns%VkSurfaceFormatKHR" >>
 
-nativeType<<"%Ns%VkImageView">> VKNativeImageView
+nativeType<<"VkImageView">> VKNativeImageView
+nativeType<<"float[16]">>   VKNativeFloatArray16
 
 class VKNativeProcedure<<$NativeType>> [compound]
   PROPERTIES
