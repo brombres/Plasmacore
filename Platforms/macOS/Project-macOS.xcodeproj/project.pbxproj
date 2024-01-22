@@ -13,6 +13,9 @@
 		3069132E2B5E8A1A00B14F73 /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3069132C2B5E8A1A00B14F73 /* Main.cpp */; };
 		306913582B5E98C400B14F73 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 306913402B5E8D1100B14F73 /* SDL2.framework */; };
 		306913592B5E98C400B14F73 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 306913402B5E8D1100B14F73 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		306913732B5E9D4600B14F73 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 306913672B5E9D4600B14F73 /* MoltenVK.xcframework */; };
+		306913792B5EA06300B14F73 /* VulkanInterface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 306913762B5EA06300B14F73 /* VulkanInterface.cpp */; };
+		3069137A2B5EA06300B14F73 /* VulkanFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 306913782B5EA06300B14F73 /* VulkanFunctions.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -120,6 +123,11 @@
 		3069132C2B5E8A1A00B14F73 /* Main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Main.cpp; sourceTree = "<group>"; };
 		3069132D2B5E8A1A00B14F73 /* Main.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Main.hpp; sourceTree = "<group>"; };
 		306913312B5E8D1100B14F73 /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = ../../Libraries/SDL/Xcode/SDL/SDL.xcodeproj; sourceTree = "<group>"; };
+		306913672B5E9D4600B14F73 /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = ../../Libraries/MoltenVK/Package/Release/MoltenVK/MoltenVK.xcframework; sourceTree = "<group>"; };
+		306913752B5EA06300B14F73 /* VulkanInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VulkanInterface.h; path = ../../Libraries/Plasmacore/Libraries/Framework/Vulkan/VulkanInterface.h; sourceTree = "<group>"; };
+		306913762B5EA06300B14F73 /* VulkanInterface.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VulkanInterface.cpp; path = ../../Libraries/Plasmacore/Libraries/Framework/Vulkan/VulkanInterface.cpp; sourceTree = "<group>"; };
+		306913772B5EA06300B14F73 /* VulkanFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VulkanFunctions.h; path = ../../Libraries/Plasmacore/Libraries/Framework/Vulkan/VulkanFunctions.h; sourceTree = "<group>"; };
+		306913782B5EA06300B14F73 /* VulkanFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VulkanFunctions.cpp; path = ../../Libraries/Plasmacore/Libraries/Framework/Vulkan/VulkanFunctions.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -128,6 +136,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				306913582B5E98C400B14F73 /* SDL2.framework in Frameworks */,
+				306913732B5E9D4600B14F73 /* MoltenVK.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +146,7 @@
 		306912C32B5E7D7400B14F73 = {
 			isa = PBXGroup;
 			children = (
+				306913742B5EA02C00B14F73 /* Plasmacore */,
 				306913312B5E8D1100B14F73 /* SDL.xcodeproj */,
 				306912E02B5E7E1D00B14F73 /* Plasmacore.swift */,
 				306912CE2B5E7D7400B14F73 /* Project-macOS */,
@@ -188,8 +198,20 @@
 		306913552B5E8D2300B14F73 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				306913672B5E9D4600B14F73 /* MoltenVK.xcframework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		306913742B5EA02C00B14F73 /* Plasmacore */ = {
+			isa = PBXGroup;
+			children = (
+				306913782B5EA06300B14F73 /* VulkanFunctions.cpp */,
+				306913772B5EA06300B14F73 /* VulkanFunctions.h */,
+				306913762B5EA06300B14F73 /* VulkanInterface.cpp */,
+				306913752B5EA06300B14F73 /* VulkanInterface.h */,
+			);
+			name = Plasmacore;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -349,7 +371,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				3069132E2B5E8A1A00B14F73 /* Main.cpp in Sources */,
+				3069137A2B5EA06300B14F73 /* VulkanFunctions.cpp in Sources */,
 				306912D12B5E7D7400B14F73 /* AppDelegate.m in Sources */,
+				306913792B5EA06300B14F73 /* VulkanInterface.cpp in Sources */,
 				306912E12B5E7E1D00B14F73 /* Plasmacore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
